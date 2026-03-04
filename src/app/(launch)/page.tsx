@@ -2,12 +2,13 @@
  * Launch page -- the main spatial mission-control entry point.
  *
  * Renders the ZUI engine (SpatialViewport + SpatialCanvas) with the
- * Launch Atrium: 6 district capsules in a ring around a breathing hub
- * glyph, over an ambient dot grid with periodic radial pulse.
+ * Coverage Grid: live TarvaRI intel category cards in a CSS Grid,
+ * over an ambient dot grid with periodic radial pulse.
  *
- * WS-2.1: Uses MorphOrchestrator to coordinate the capsule ring and
- * district shell during morph transitions. Selection state is managed
- * by the UI store morph state machine, not local component state.
+ * WS-2.1: Uses MorphOrchestrator to coordinate the coverage grid and
+ * category icon grid across semantic zoom levels. Selection state is
+ * managed by the UI store morph state machine, not local component state.
+ * Coverage metrics come from useCoverageMetrics() (TanStack Query).
  *
  * Composes the Navigation HUD overlay (minimap, breadcrumb, zoom indicator)
  * and command palette outside the spatial canvas for fixed-position display.
@@ -16,8 +17,7 @@
  * @see WS-1.1 Deliverable 14
  * @see WS-1.2 Launch Atrium
  * @see WS-1.4 Navigation Instruments
- * @see WS-2.1 Morph Choreography
- * @see WS-2.7 Constellation View (Z0)
+ * @see WS-2.1 Coverage Grid
  * @see WS-3.3 Command Palette (replaces CommandPaletteStub)
  */
 
@@ -72,7 +72,12 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useSettingsStore } from '@/stores/settings.store'
 import { ColorSchemeSwitcher } from '@/components/ui/ColorSchemeSwitcher'
 import { returnToHub } from '@/lib/spatial-actions'
-import { DISTRICTS, MOCK_CAPSULE_DATA, type DistrictId } from '@/lib/interfaces/district'
+import { DISTRICTS, type DistrictId } from '@/lib/interfaces/district'
+import { buildGridItems, type CategoryGridItem } from '@/lib/interfaces/coverage'
+import { useCoverageMetrics } from '@/hooks/use-coverage-metrics'
+import { syncCoverageFromUrl } from '@/stores/coverage.store'
+import { CoverageOverviewStats } from '@/components/coverage/CoverageOverviewStats'
+import { GRID_HEIGHT } from '@/components/coverage/CoverageGrid'
 import { InMemoryReceiptStore } from '@/lib/interfaces/receipt-store'
 
 import '@/styles/atrium.css'
@@ -80,6 +85,7 @@ import '@/styles/morph.css'
 import '@/styles/constellation.css'
 import '@/styles/enrichment.css'
 import '@/styles/district-view.css'
+import '@/styles/coverage.css'
 
 // ---------------------------------------------------------------------------
 // Phase 3 side-effect hooks (mounted once, no UI)
@@ -149,8 +155,22 @@ export default function LaunchPage() {
   const isPanActive = usePanPause()
   const prefersReducedMotion = usePrefersReducedMotion()
 
-  // URL-based initial district
+  // URL-based initial district (legacy compatibility)
   useInitialDistrictFromUrl()
+
+  // Coverage data (WS-2.1)
+  const { data: coverageMetrics, isLoading: isMetricsLoading } = useCoverageMetrics()
+
+  // Build grid items from live metrics (Decision 4: only categories with >= 1 source)
+  const gridItems: CategoryGridItem[] = useMemo(
+    () => (coverageMetrics ? buildGridItems(coverageMetrics.byCategory) : []),
+    [coverageMetrics],
+  )
+
+  // URL sync for category selection
+  useEffect(() => {
+    syncCoverageFromUrl()
+  }, [])
 
   // Auth
   const logout = useAuthStore((s) => s.logout)
@@ -244,12 +264,33 @@ export default function LaunchPage() {
             {/* Horizon scan line moved to fixed viewport overlay below */}
           </EnrichmentLayer>
 
-          {/* Morph Orchestrator: manages capsule ring + district shell.
+          {/* Coverage overview stats -- positioned above the grid, Z1+ only */}
+          <ZoomGate show={['Z1', 'Z2', 'Z3']}>
+            <div
+              className="absolute"
+              style={{
+                left: -(560 / 2),
+                top: -(GRID_HEIGHT / 2) - 100 - 60,
+                width: 560,
+                pointerEvents: 'auto',
+              }}
+            >
+              <CoverageOverviewStats
+                totalSources={coverageMetrics?.totalSources ?? 0}
+                activeSources={coverageMetrics?.activeSources ?? 0}
+                categoriesCovered={coverageMetrics?.categoriesCovered ?? 0}
+                isLoading={isMetricsLoading}
+              />
+            </div>
+          </ZoomGate>
+
+          {/* Morph Orchestrator: manages coverage grid + category icon grid.
               Re-enable pointer-events here because SpatialCanvas disables them
               (per Q4: children re-enable individually). */}
           <div data-panning={isPanActive ? 'true' : 'false'} style={{ pointerEvents: 'auto' }}>
             <MorphOrchestrator
-              data={MOCK_CAPSULE_DATA}
+              items={gridItems}
+              metrics={coverageMetrics}
               prefersReducedMotion={prefersReducedMotion}
               isPanning={isPanActive}
             />

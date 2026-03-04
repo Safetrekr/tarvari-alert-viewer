@@ -63,7 +63,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useSettingsStore } from '@/stores/settings.store'
 import { ColorSchemeSwitcher } from '@/components/ui/ColorSchemeSwitcher'
 import { returnToHub } from '@/lib/spatial-actions'
-import { DISTRICTS, MOCK_CAPSULE_DATA, type DistrictId } from '@/lib/interfaces/district'
+import { DISTRICTS, type DistrictId } from '@/lib/interfaces/district'
 import { InMemoryReceiptStore } from '@/lib/interfaces/receipt-store'
 
 import '@/styles/atrium.css'
@@ -235,12 +235,13 @@ function LaunchPage() {
             {/* Horizon scan line moved to fixed viewport overlay below */}
           </EnrichmentLayer>
 
-          {/* Morph Orchestrator: manages capsule ring + district shell.
+          {/* Morph Orchestrator: manages coverage grid + category icon grid.
               Re-enable pointer-events here because SpatialCanvas disables them
               (per Q4: children re-enable individually). */}
           <div data-panning={isPanActive ? 'true' : 'false'} style={{ pointerEvents: 'auto' }}>
             <MorphOrchestrator
-              data={MOCK_CAPSULE_DATA}
+              items={[]}
+              metrics={undefined}
               prefersReducedMotion={prefersReducedMotion}
               isPanning={isPanActive}
             />

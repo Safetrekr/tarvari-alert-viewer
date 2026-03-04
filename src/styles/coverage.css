@@ -1,0 +1,25 @@
+/**
+ * Category color tokens for the coverage grid.
+ * Fallback hex values match KNOWN_CATEGORIES in coverage.ts.
+ *
+ * @see WS-1.2 Section 4.1.3
+ * @see WS-2.1 Section 4.6
+ */
+
+:root {
+  --category-seismic: #ef4444;
+  --category-geological: #f97316;
+  --category-disaster: #a855f7;
+  --category-humanitarian: #6366f1;
+  --category-health: #22c55e;
+  --category-aviation: #06b6d4;
+  --category-maritime: #14b8a6;
+  --category-infrastructure: #eab308;
+  --category-weather: #3b82f6;
+  --category-conflict: #dc2626;
+  --category-fire: #ea580c;
+  --category-flood: #4f46e5;
+  --category-storm: #0ea5e9;
+  --category-multi-hazard: #6b7280;
+  --category-other: #9ca3af;
+}

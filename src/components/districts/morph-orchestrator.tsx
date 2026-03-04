@@ -1,17 +1,18 @@
 /**
- * MorphOrchestrator -- coordinates the capsule ring, detail panel,
- * connector lines, and constellation view across semantic zoom levels.
+ * MorphOrchestrator -- coordinates the coverage grid, detail panel,
+ * connector lines, and category icon grid across semantic zoom levels.
  *
  * Responsibilities:
- * 1. At Z0: renders ConstellationView (beacons + global metrics).
- * 2. At Z1+: hosts the capsule ring and morph state.
- * 3. When a capsule is selected, renders DetailPanel offset to the
- *    appropriate side with SVG ConnectorLines.
+ * 1. At Z0: renders CategoryIconGrid (colored dots + codes).
+ * 2. At Z1+: hosts the coverage grid and morph state.
+ * 3. When a card is selected, triggers startMorph. The detail panel and
+ *    connector lines remain from the legacy ring system and will short-circuit
+ *    for category IDs (panel does not appear -- WS-2.2 adapts positioning).
  * 4. Handles click-outside for deselection (Escape key handled by choreography).
  *
  * @module morph-orchestrator
- * @see WS-2.1 Section 4.6
- * @see WS-2.7 Section 4.7
+ * @see WS-2.1 Section 4.8
+ * @see WS-2.2 (morph adaptation for grid layout)
  */
 
 'use client'
@@ -22,17 +23,22 @@ import { AnimatePresence } from 'motion/react'
 import { useMorphChoreography } from '@/hooks/use-morph-choreography'
 import { useSemanticZoom } from '@/hooks/use-semantic-zoom'
 import { useCameraStore } from '@/stores/camera.store'
-import { getDistrictWorldPosition, getDistrictById } from '@/lib/spatial-actions'
+import { getDistrictById } from '@/lib/spatial-actions'
 import { computeRingRotation, RING_SHIFT } from '@/lib/morph-types'
-import { CapsuleRing, computeCapsuleCenter, RING_CENTER } from './capsule-ring'
-import { ConstellationView } from './constellation-view'
+import { computeCapsuleCenter } from './capsule-ring'
+import { CoverageGrid } from '@/components/coverage/CoverageGrid'
+import { CategoryIconGrid } from '@/components/coverage/CategoryIconGrid'
 import { DetailPanel } from './detail-panel'
 import { ConnectorLines } from './connector-lines'
-import type { CapsuleData, NodeId } from '@/lib/interfaces/district'
+import type { CategoryGridItem } from '@/lib/interfaces/coverage'
+import type { CoverageMetrics } from '@/lib/coverage-utils'
+import type { NodeId } from '@/lib/interfaces/district'
 
 interface MorphOrchestratorProps {
-  /** Capsule data from the telemetry system. */
-  data: CapsuleData[]
+  /** Category grid items with live metrics. */
+  items: CategoryGridItem[]
+  /** Full coverage metrics (used for overview stats, passed through). */
+  metrics: CoverageMetrics | undefined
   /** Whether the user prefers reduced motion. */
   prefersReducedMotion: boolean
   /** Whether the ZUI viewport is actively panning. */
@@ -40,7 +46,8 @@ interface MorphOrchestratorProps {
 }
 
 export function MorphOrchestrator({
-  data,
+  items,
+  metrics: _metrics,
   prefersReducedMotion,
   isPanning = false,
 }: MorphOrchestratorProps) {
@@ -49,7 +56,7 @@ export function MorphOrchestrator({
     prefersReducedMotion,
   })
 
-  // Handle capsule selection (Z1+ click)
+  // Handle card selection (Z1+ click)
   const handleCapsuleSelect = useCallback(
     (id: NodeId) => {
       if (phase === 'idle') {
@@ -59,20 +66,16 @@ export function MorphOrchestrator({
     [phase, startMorph],
   )
 
-  // Handle beacon selection (Z0 click): zoom in to district, then morph.
+  // Handle icon selection (Z0 click): zoom to Z1 center, then morph.
+  // For category IDs (not legacy districts), zoom to world origin.
   const handleBeaconSelect = useCallback(
     (id: NodeId) => {
       if (phase !== 'idle') return
 
-      const district = getDistrictById(id)
-      if (!district) return
-
-      const pos = getDistrictWorldPosition(district.ringIndex)
       const { viewportWidth, viewportHeight, flyTo } = useCameraStore.getState()
-
       const targetZoom = 1.0
-      const targetOffsetX = viewportWidth / 2 - pos.x * targetZoom
-      const targetOffsetY = viewportHeight / 2 - pos.y * targetZoom
+      const targetOffsetX = viewportWidth / 2
+      const targetOffsetY = viewportHeight / 2
       flyTo(targetOffsetX, targetOffsetY, targetZoom)
 
       setTimeout(() => {
@@ -82,7 +85,14 @@ export function MorphOrchestrator({
     [phase, startMorph],
   )
 
-  // Compute capsule center for the selected district
+  // ---------------------------------------------------------------------------
+  // Ring-specific geometry (short-circuits for category IDs)
+  // ---------------------------------------------------------------------------
+  // Category IDs like 'seismic' are not in DISTRICTS, so getDistrictById
+  // returns undefined. This means selectedRingIndex/selectedCapsuleCenter
+  // are null, showPanel is false, and no panel or connectors appear.
+  // This is intentional per AC-17 -- WS-2.2 adapts positioning for the grid.
+
   const selectedRingIndex = useMemo(() => {
     if (!targetId) return null
     const district = getDistrictById(targetId)
@@ -113,8 +123,8 @@ export function MorphOrchestrator({
     }
   }, [panelSide, ringRotation])
 
-  // Show panel when not idle (expanding, settled, entering-district, district)
-  // Hide panel during reverse expanding (AnimatePresence handles exit)
+  // Show panel when not idle and ring geometry is available
+  // For category IDs, selectedCapsuleCenter is null so showPanel is false.
   const showPanel =
     targetId !== null &&
     selectedCapsuleCenter !== null &&
@@ -130,24 +140,27 @@ export function MorphOrchestrator({
   // Hide connector lines once the district overlay takes over
   const showConnector = showPanel && !isDistrictView
 
-  // Always use the portalled (promoted) panel — no inline panel, no blink
+  // Always use the portalled (promoted) panel
   const showPromotedPanel = showPanel && targetId && selectedRingIndex !== null
 
   return (
     <>
-      {/* Z0/Z1+ switching: constellation beacons vs capsule ring */}
+      {/* Z0/Z1+ switching: category icon dots vs coverage grid */}
       <AnimatePresence mode="wait">
         {isConstellation ? (
-          <ConstellationView key="z0" isPanning={isPanning} onBeaconSelect={handleBeaconSelect} />
+          <CategoryIconGrid
+            key="z0"
+            items={items}
+            isPanning={isPanning}
+            onIconSelect={handleBeaconSelect}
+          />
         ) : (
-          <CapsuleRing
+          <CoverageGrid
             key="z1"
-            data={data}
+            items={items}
             selectedId={targetId}
             onSelect={handleCapsuleSelect}
             morphPhase={phase}
-            panelSide={panelSide}
-            ringRotation={ringRotation}
           >
             {/* Click-outside backdrop: closes the panel when clicking off it */}
             {showPanel && !isDistrictView && (
@@ -171,12 +184,11 @@ export function MorphOrchestrator({
                 />
               )}
             </AnimatePresence>
-            {/* Panel is always rendered via portal below */}
-          </CapsuleRing>
+          </CoverageGrid>
         )}
       </AnimatePresence>
 
-      {/* Promoted (viewport-fixed) panel during district view — portalled to body */}
+      {/* Promoted (viewport-fixed) panel during district view -- portalled to body */}
       {typeof document !== 'undefined' &&
         createPortal(
           <AnimatePresence>

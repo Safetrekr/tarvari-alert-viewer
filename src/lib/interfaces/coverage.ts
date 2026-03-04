@@ -133,3 +133,37 @@ export const SOURCE_STATUSES = ['active', 'staging', 'quarantine', 'disabled'] a
 
 /** Source status type. */
 export type SourceStatus = (typeof SOURCE_STATUSES)[number]
+
+// ---------------------------------------------------------------------------
+// Grid display type (added by WS-2.1)
+// ---------------------------------------------------------------------------
+
+import type { CoverageByCategory } from '@/lib/coverage-utils'
+
+/**
+ * Display-ready category data for the coverage grid.
+ * Merges static CategoryMeta with live CoverageByCategory metrics.
+ * Categories with zero sources are excluded from the grid.
+ */
+export interface CategoryGridItem {
+  /** Category identifier (e.g. 'seismic', 'weather'). */
+  id: CategoryId
+  /** Static display metadata (name, icon, color, description). */
+  meta: CategoryMeta
+  /** Live source count metrics. Null only during loading (should not render). */
+  metrics: CoverageByCategory
+}
+
+/**
+ * Build the grid items array by joining KNOWN_CATEGORIES with live metrics.
+ * Only includes categories that have at least one source (Decision 4).
+ * Unknown categories from the database that are not in KNOWN_CATEGORIES
+ * are mapped to the 'other' entry.
+ */
+export function buildGridItems(byCategory: CoverageByCategory[]): CategoryGridItem[] {
+  return byCategory.map((cat) => ({
+    id: cat.category,
+    meta: getCategoryMeta(cat.category),
+    metrics: cat,
+  }))
+}
