@@ -1,8 +1,8 @@
 /**
  * Morph state machine types and constants.
  *
- * Defines the 3-phase morph state machine, timing configurations,
- * detail panel geometry, and panel positioning helpers.
+ * Defines the morph state machine, timing configurations,
+ * detail panel geometry, and grid panel positioning.
  *
  * @module morph-types
  * @see WS-2.1 Section 4.2
@@ -120,117 +120,29 @@ export const DETAIL_PANEL_DIMENSIONS = {
   gap: 140, // gap between ring center and panel edge
 } as const
 
-/** Dimensions of a capsule at Z1. */
-export const CAPSULE_DIMENSIONS = {
-  width: 192,
-  height: 228,
-  borderRadius: 28,
-  padding: 20,
-} as const
-
-// ============================================================
-// RING SHIFT (split-screen morph)
-// ============================================================
-
-/**
- * When a detail panel opens, the capsule ring shifts away from the panel
- * and scales down to make room. These constants define the shift amount
- * and scale factor.
- */
-export const RING_SHIFT = {
-  /** Horizontal offset in px (applied away from panel side). */
-  offset: 450,
-  /** Scale factor for the ring content when shifted. */
-  scale: 0.75,
-} as const
-
 // ============================================================
 // PANEL POSITIONING
 // ============================================================
 
+/** Panel dock side. With the grid layout, panel always docks right (WS-2.2 D-1). */
 export type PanelSide = 'left' | 'right'
 
-/**
- * Compute the ring rotation and panel side for a given capsule.
- *
- * The ring rotates so the clicked capsule lands at either 3:00 (0°) or
- * 9:00 (180°), whichever requires the shortest rotation. The panel
- * then appears on the side the capsule faces:
- *   - Capsule at 3:00 → panel on RIGHT
- *   - Capsule at 9:00 → panel on LEFT
- *
- * @param ringIndex - The clicked capsule's ring index (0-5).
- * @returns { rotation, panelSide } where rotation is in degrees.
- */
-export function computeRingRotation(ringIndex: number): {
-  rotation: number
-  panelSide: PanelSide
-} {
-  // Each capsule's starting angle: START_ANGLE + index * 60
-  // START_ANGLE = -90 (12 o'clock)
-  const capsuleAngle = -90 + ringIndex * 60
+// ============================================================
+// GRID PANEL POSITIONING
+// ============================================================
 
-  // Target: 0° (3:00) or 180° (9:00)
-  // Rotation needed = target - capsuleAngle (rotate the ring so capsule lands at target)
-  const toThreeOclock = normalizeAngle(0 - capsuleAngle) // rotation to put capsule at 3:00
-  const toNineOclock = normalizeAngle(180 - capsuleAngle) // rotation to put capsule at 9:00
-
-  // Pick whichever requires less rotation (absolute degrees)
-  const absThree = Math.abs(toThreeOclock)
-  const absNine = Math.abs(toNineOclock)
-
-  if (absThree <= absNine) {
-    return { rotation: toThreeOclock, panelSide: 'right' }
-  }
-  return { rotation: toNineOclock, panelSide: 'left' }
-}
+/** Fixed-right panel offset from viewport edge (px). */
+export const GRID_PANEL_RIGHT_OFFSET = 40
 
 /**
- * Normalize an angle to the range (-180, 180] for shortest-path rotation.
+ * Fixed-position style for the detail panel in the grid layout.
+ * Panel is vertically centered on the right side of the viewport.
  */
-function normalizeAngle(deg: number): number {
-  let a = ((deg % 360) + 360) % 360 // normalize to [0, 360)
-  if (a > 180) a -= 360 // convert to (-180, 180]
-  return a
-}
-
-/**
- * Determine which side the panel appears on based on ring position.
- * @deprecated Use computeRingRotation() instead for rotation-aware panel side.
- */
-export function getPanelSide(ringIndex: number): PanelSide {
-  return computeRingRotation(ringIndex).panelSide
-}
-
-/**
- * Compute detail panel position in ring-local coordinates.
- *
- * The panel is positioned relative to the RING CENTER (not the capsule)
- * so it stays fixed when the ring content shifts during the split-screen
- * morph. The panel sits offset from ring center by `gap` pixels.
- *
- * @param ringIndex - Capsule ring position (0-5).
- * @param ringCenter - Center of the ring container (typically RING_SIZE / 2).
- * @returns { left, top } for absolute positioning within the ring container.
- */
-export function computePanelPosition(
-  ringIndex: number,
-  ringCenter: number,
-): { left: number; top: number } {
-  const { width: panelW, height: panelH, gap } = DETAIL_PANEL_DIMENSIONS
-  const side = getPanelSide(ringIndex)
-
-  if (side === 'right') {
-    return {
-      left: ringCenter + gap,
-      top: ringCenter - panelH / 2,
-    }
-  }
-  return {
-    left: ringCenter - gap - panelW,
-    top: ringCenter - panelH / 2,
-  }
-}
+export const GRID_PANEL_POSITION = {
+  right: GRID_PANEL_RIGHT_OFFSET,
+  top: '50%',
+  transform: 'translateY(-50%)',
+} as const
 
 // ============================================================
 // STATION ENTRANCE TYPES

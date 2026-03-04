@@ -20,11 +20,8 @@
 
 'use client'
 
-import { useMemo } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useUIStore } from '@/stores/ui.store'
-import { DISTRICTS, type NodeId } from '@/lib/interfaces/district'
-import { computeRingRotation, type PanelSide } from '@/lib/morph-types'
 import { DistrictViewHeader } from './district-view-header'
 import { DistrictViewDock } from './district-view-dock'
 import { DistrictViewContent } from './district-view-content'
@@ -43,16 +40,6 @@ const DISTRICT_TINTS: Record<string, string> = {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function getPanelSideForDistrict(districtId: string): PanelSide {
-  const district = DISTRICTS.find((d) => d.id === districtId)
-  if (!district) return 'right'
-  return computeRingRotation(district.ringIndex).panelSide
-}
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -68,10 +55,8 @@ export function DistrictViewOverlay() {
 
   const districtId = targetId as string | null
 
-  const panelSide = useMemo(
-    () => (districtId ? getPanelSideForDistrict(districtId) : 'right'),
-    [districtId],
-  )
+  // Panel always docks to the right for the grid layout (WS-2.2 Decision D-1).
+  const panelSide = 'right' as const
 
   // Gradient origin follows the dock side
   const gradientOrigin = panelSide === 'right' ? '40% 50%' : '60% 50%'

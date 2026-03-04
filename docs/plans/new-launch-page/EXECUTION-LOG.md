@@ -11,7 +11,7 @@
 | Phase | Status | WS Complete | WS Total | Blocking Issues |
 |-------|--------|-------------|----------|-----------------|
 | 1 — Foundation | COMPLETE | 3 | 3 | |
-| 2 — Core UI | NOT STARTED | 0 | 2 | |
+| 2 — Core UI | IN PROGRESS | 1 | 2 | |
 | 3 — Detail + Chrome | NOT STARTED | 0 | 2 | |
 | 4 — Map | NOT STARTED | 0 | 1 | |
 
@@ -23,7 +23,7 @@
 - [x] WS-1.3: Data Layer — `react-developer` — CODE — COMPLETE
 
 ### Phase 2: Core UI
-- [ ] WS-2.1: Coverage Grid — `react-developer` — CODE — NOT STARTED
+- [x] WS-2.1: Coverage Grid — `react-developer` — CODE — COMPLETE
 - [ ] WS-2.2: Morph Adaptation — `react-developer` — CODE — NOT STARTED
 
 ### Phase 3: Detail + Chrome
@@ -50,6 +50,7 @@
 | WS-1.1 | Archive Current Page | 647e78b | 2026-03-04 | page.archived.tsx created, 4/4 ACs pass |
 | WS-1.2 | Type Foundation | 4884242 | 2026-03-04 | 1 new + 16 modified files, NodeId=string, coverage.ts with 15 categories, 11/11 ACs pass |
 | WS-1.3 | Data Layer | fb1c336 | 2026-03-04 | 4 new + 1 modified files, TanStack Query hooks, coverage store, utils, Supabase types, 15/15 ACs pass |
+| WS-2.1 | Coverage Grid | 14587bd | 2026-03-04 | 6 new + 4 modified files, CoverageGrid/CategoryCard/CategoryIconGrid/CoverageOverviewStats, Z0/Z1+ switching, live data wired, 19/19 ACs pass |
 
 ## Issues Encountered
 

@@ -1,12 +1,13 @@
 /**
- * DetailPanel -- expanded district panel that appears alongside the capsule.
+ * DetailPanel -- expanded category panel that appears alongside the grid.
  *
- * Positioned offset to the left or right of the selected capsule
- * based on its ring quadrant. Contains district header, close button,
- * and DistrictContent (station cards).
+ * Positioned fixed to the right side of the viewport when non-promoted,
+ * and viewport-centered when promoted (district view phase).
+ * Contains category header, close button, and placeholder content
+ * (WS-3.1 will add CategoryDetailScene).
  *
  * @module detail-panel
- * @see WS-2.1 Section 4.11
+ * @see WS-2.2 Section 4.3
  */
 
 'use client'
@@ -15,28 +16,20 @@ import { motion } from 'motion/react'
 
 import { cn } from '@/lib/utils'
 import type { NodeId } from '@/lib/interfaces/district'
-import { getDistrictById } from '@/lib/spatial-actions'
-import {
-  DETAIL_PANEL_DIMENSIONS,
-  getPanelSide,
-  computePanelPosition,
-} from '@/lib/morph-types'
-import { RING_CENTER } from './capsule-ring'
-import { DistrictContent } from './district-content'
+import { getCategoryMeta } from '@/lib/interfaces/coverage'
+import { DETAIL_PANEL_DIMENSIONS } from '@/lib/morph-types'
 
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 
 interface DetailPanelProps {
-  districtId: NodeId
-  ringIndex: number
+  /** Category ID being expanded. */
+  categoryId: NodeId
+  /** Close handler (triggers reverse morph). */
   onClose: () => void
-  /** When true, the panel is promoted to a fixed viewport-centered overlay
-   *  above the district view (used during entering-district / district phases). */
+  /** When true, panel is promoted to viewport-centered overlay (district view). */
   promoted?: boolean
-  /** Which side the dock is on, so we can offset the centering. */
-  dockSide?: 'left' | 'right'
 }
 
 // ---------------------------------------------------------------------------
@@ -44,39 +37,32 @@ interface DetailPanelProps {
 // ---------------------------------------------------------------------------
 
 export function DetailPanel({
-  districtId,
-  ringIndex,
+  categoryId,
   onClose,
   promoted = false,
-  dockSide = 'right',
 }: DetailPanelProps) {
-  const district = getDistrictById(districtId)
-  const displayName = district?.displayName ?? districtId
-
-  const side = getPanelSide(ringIndex)
-  const position = computePanelPosition(ringIndex, RING_CENTER)
-  const slideDirection = side === 'right' ? 40 : -40
+  const displayName = getCategoryMeta(categoryId).displayName
+  const slideDirection = 40 // Always slides in from the right
 
   // When promoted: fixed, centered in the content area between
   // back button (~70px) and dock (360px), above the overlay (zIndex 33).
-  // NOTE: No CSS `transform` here — motion/react controls `transform`
+  // NOTE: No CSS `transform` here -- motion/react controls `transform`
   // for its animations (scale, x), so a CSS transform would be overridden.
   const promotedStyle: React.CSSProperties = promoted
     ? {
         position: 'fixed',
         top: '22%',
-        left: dockSide === 'right'
-          ? 'calc((100vw - 360px) / 2 - 340px)'
-          : 'calc(360px + (100vw - 360px) / 2 - 440px)',
+        left: 'calc((100vw - 360px) / 2 - 340px)',
         width: Math.min(DETAIL_PANEL_DIMENSIONS.width, 800),
         height: 'min(80vh, 680px)',
         zIndex: 33,
         pointerEvents: 'auto',
       }
     : {
-        position: 'absolute' as const,
-        left: position.left,
-        top: position.top,
+        position: 'fixed' as const,
+        right: 40,
+        top: '50%',
+        transform: 'translateY(-50%)',
         width: DETAIL_PANEL_DIMENSIONS.width,
         height: DETAIL_PANEL_DIMENSIONS.height,
         zIndex: 20,
@@ -136,7 +122,7 @@ export function DetailPanel({
               'focus-visible:outline-2 focus-visible:outline-offset-2',
               'focus-visible:outline-[var(--color-ember-bright)]',
             )}
-            aria-label={`Close ${displayName} district`}
+            aria-label={`Close ${displayName} category`}
           >
             <svg width="16" height="16" viewBox="0 0 10 10" fill="none" aria-hidden="true">
               <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -144,9 +130,9 @@ export function DetailPanel({
           </button>
         </div>
 
-        {/* District content (station cards) */}
+        {/* Category detail content (WS-3.1) */}
         <div className="flex flex-1 flex-col gap-4 overflow-auto">
-          <DistrictContent districtId={districtId} />
+          <div className="text-text-tertiary text-sm">Category detail content (WS-3.1)</div>
         </div>
       </div>
     </motion.div>

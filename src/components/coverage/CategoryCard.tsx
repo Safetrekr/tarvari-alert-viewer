@@ -83,17 +83,17 @@ const cardVariants: Variants = {
   idle: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] },
+    transition: { type: 'spring', stiffness: 120, damping: 20, mass: 0.8 },
   },
   selected: {
-    opacity: 0.25,
-    scale: 1,
-    transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] },
+    opacity: 1,
+    scale: 1.2,
+    transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] },
   },
   dimmed: {
-    opacity: 0.5,
+    opacity: 0.3,
     scale: 1,
-    transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] },
+    transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] },
   },
 }
 
@@ -129,6 +129,8 @@ export function CategoryCard({
 
   return (
     <motion.div
+      data-category-card
+      data-selected={isSelected ? 'true' : 'false'}
       variants={cardVariants}
       animate={variant}
       whileHover={{ scale: 1.04 }}

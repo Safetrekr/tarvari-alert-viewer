@@ -5,32 +5,31 @@
  *
  * FORWARD:
  *   idle
- *     -> startMorph(districtId)
+ *     -> startMorph(categoryId)
  *   expanding (400ms)
- *     - Selected capsule dims to opacity 0.25
- *     - Sibling capsules dim to opacity 0.5
- *     - Detail panel slides in from offset side
- *     - SVG connector line draws in
+ *     - Selected card scales to 1.2x
+ *     - Sibling cards fade to opacity 0.3
+ *     - Detail panel slides in from the right
  *     -> after expanding duration
  *   settled
- *     - URL updated with ?district={id}
+ *     - URL updated with ?category={id}
  *     - Panel interactions enabled
  *
  * REVERSE:
  *   settled
  *     -> reverseMorph()
  *   expanding (300ms -- 75% of entrance)
- *     - Panel slides out, connector retracts
- *     - Capsules restore to full opacity
+ *     - Panel slides out, cards restore
+ *     - Cards restore to full opacity and scale
  *     -> after exit duration
  *   idle
  *     - resetMorph() clears selection and state
- *     - URL district param removed
+ *     - URL category param removed
  *
- * No camera movement -- the ring stays in place.
+ * No camera movement -- the grid stays in place.
  *
  * @module use-morph-choreography
- * @see WS-2.1 Section 4.4
+ * @see WS-2.2 Section 4.2
  */
 
 'use client'
@@ -115,7 +114,7 @@ export function useMorphChoreography(
 
     if (phase === 'settled') {
       // Sync URL, then auto-advance to district view after brief hold
-      syncUrlDistrict(targetId)
+      syncUrlCategory(targetId)
       clearPhaseTimer()
       phaseTimerRef.current = setTimeout(() => {
         setMorphPhase('entering-district')
@@ -141,16 +140,16 @@ export function useMorphChoreography(
       // District overlay fades out, then reset to idle
       phaseTimerRef.current = setTimeout(() => {
         resetMorph()
-        syncUrlDistrict(null)
+        syncUrlCategory(null)
       }, timing.leavingDistrict)
     }
 
     if (phase === 'expanding') {
       clearPhaseTimer()
-      // Panel slides out, capsules restore -- shorter exit
+      // Panel slides out, cards restore -- shorter exit
       phaseTimerRef.current = setTimeout(() => {
         resetMorph()
-        syncUrlDistrict(null)
+        syncUrlCategory(null)
       }, timing.expanding * 0.75)
     }
   }, [phase, direction, timing, resetMorph, clearPhaseTimer])
@@ -200,16 +199,16 @@ export function useMorphChoreography(
 // ============================================================
 
 /**
- * Update the URL search params with the current district selection.
+ * Update the URL search params with the current category selection.
  * Uses history.replaceState to avoid Next.js router re-renders.
  */
-function syncUrlDistrict(districtId: NodeId | null): void {
+function syncUrlCategory(categoryId: string | null): void {
   if (typeof window === 'undefined') return
   const url = new URL(window.location.href)
-  if (districtId) {
-    url.searchParams.set('district', districtId)
+  if (categoryId) {
+    url.searchParams.set('category', categoryId)
   } else {
-    url.searchParams.delete('district')
+    url.searchParams.delete('category')
   }
   window.history.replaceState({}, '', url.toString())
 }
