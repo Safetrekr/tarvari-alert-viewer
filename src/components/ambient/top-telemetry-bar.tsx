@@ -17,7 +17,7 @@
 
 import { memo, useEffect, useRef, useState } from 'react'
 import { useUIStore, uiSelectors } from '@/stores/ui.store'
-import { DISTRICTS } from '@/lib/interfaces/district'
+import { getCategoryMeta } from '@/lib/interfaces/coverage'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -189,9 +189,9 @@ export const TopTelemetryBar = memo(function TopTelemetryBar() {
 
   // Resolve center label based on district view state
   const centerLabel = (() => {
-    if (!isDistrictView || !targetId) return 'TARVA LAUNCH // MISSION CONTROL'
-    const district = DISTRICTS.find((d) => d.id === targetId)
-    return `TARVA LAUNCH // ${district?.displayName?.toUpperCase() ?? targetId.toUpperCase()}`
+    if (!isDistrictView || !targetId) return 'TARVARI // COVERAGE MONITOR'
+    const meta = getCategoryMeta(targetId)
+    return `TARVARI // ${meta.displayName.toUpperCase()}`
   })()
 
   return (

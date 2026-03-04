@@ -18,8 +18,6 @@
 'use client'
 
 import { memo, useEffect, useRef, useState } from 'react'
-import { useUIStore, uiSelectors } from '@/stores/ui.store'
-import type { DistrictId } from '@/lib/interfaces/district'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -137,16 +135,13 @@ function MiniWaveform({ color }: { color: string }) {
 // Subcomponent: Health dot cluster
 // ---------------------------------------------------------------------------
 
-const DEFAULT_HEALTH_LABELS = ['AGT', 'SYS', 'NET', 'DB', 'API', 'MEM'] as const
-
-const DISTRICT_HEALTH_LABELS: Record<DistrictId, readonly string[]> = {
-  'agent-builder': ['SDK', 'CLI', 'MCP', 'DB', 'TST', 'BLD'],
-  'tarva-chat': ['MSG', 'RTR', 'MCP', 'WSS', 'CTX', 'STR'],
-  'project-room': ['ORC', 'RUN', 'DAG', 'ART', 'QUE', 'LOG'],
-  'tarva-core': ['LLM', 'RSN', 'MEM', 'CTX', 'EMB', 'GPU'],
-  'tarva-erp': ['INV', 'MFG', 'BOM', 'QTY', 'WMS', 'RPT'],
-  'tarva-code': ['IDX', 'EMB', 'KNW', 'SRC', 'TAG', 'VEC'],
-}
+/**
+ * Intel pipeline health labels representing TarvaRI processing stages.
+ * Displayed in the bottom status strip as health dots.
+ *
+ * SRC = Sources, ING = Ingest, NRM = Normalize, BND = Bundle, TRI = Triage, RTR = Router
+ */
+const INTEL_HEALTH_LABELS = ['SRC', 'ING', 'NRM', 'BND', 'TRI', 'RTR'] as const
 
 function HealthDots({ labels }: { labels: readonly string[] }) {
   const [statuses, setStatuses] = useState<boolean[]>(() =>
@@ -193,12 +188,7 @@ export const BottomStatusStrip = memo(function BottomStatusStrip() {
   const throughput = useDriftingValue(2.4, 0.3, 4000)
   const latency = useDriftingValue(12, 3, 5000, 0)
   const packets = usePacketCounter()
-  const isDistrictView = useUIStore(uiSelectors.isDistrictView)
-  const targetId = useUIStore(uiSelectors.morphTargetId)
-
-  const healthLabels = isDistrictView && targetId
-    ? (DISTRICT_HEALTH_LABELS[targetId as DistrictId] ?? DEFAULT_HEALTH_LABELS)
-    : DEFAULT_HEALTH_LABELS
+  const healthLabels = INTEL_HEALTH_LABELS
 
   return (
     <div

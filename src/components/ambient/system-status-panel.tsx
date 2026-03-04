@@ -35,7 +35,7 @@ import type { HealthState } from '@/lib/interfaces/district'
 // Position & size constants (world-space pixels)
 // ---------------------------------------------------------------------------
 
-const PANEL_X = -1200
+const PANEL_X = -1400
 const PANEL_Y = -340
 const PANEL_W = 320
 const PANEL_H = 680

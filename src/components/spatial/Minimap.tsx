@@ -2,17 +2,16 @@
  * Minimap -- SVG overview of the spatial canvas.
  *
  * Renders a fixed glass panel in the bottom-right corner showing:
- * - District dots colored by health status
- * - Hub center dot (ember color)
+ * - Category dots colored by category identity, positioned in an 8-column grid
  * - Viewport rectangle tracking the visible area
  * - Click-to-navigate (click anywhere on minimap to fly there)
  *
- * All positions are derived from the camera store and districts store,
- * mapped from world coordinates to minimap coordinates via a linear
- * scale transform.
+ * All positions are derived from the camera store and coverage category
+ * grid layout, mapped from world coordinates to minimap coordinates
+ * via a linear scale transform.
  *
  * @module Minimap
- * @see WS-1.4 Deliverable 4.2
+ * @see WS-3.2 Deliverable 4.3
  */
 
 'use client'
@@ -20,13 +19,9 @@
 import { useCallback, useMemo } from 'react'
 
 import { useCameraStore } from '@/stores/camera.store'
-import { useDistrictsStore } from '@/stores/districts.store'
-import type { AppTelemetry, AppStatus } from '@/lib/telemetry-types'
-import { DISTRICTS, type DistrictMeta } from '@/lib/interfaces/district'
-import {
-  getDistrictWorldPosition,
-  flyToWorldPoint,
-} from '@/lib/spatial-actions'
+import { KNOWN_CATEGORIES, type CategoryMeta } from '@/lib/interfaces/coverage'
+import { GRID_WIDTH, GRID_HEIGHT, GRID_COLUMNS } from '@/components/coverage/CoverageGrid'
+import { flyToWorldPoint } from '@/lib/spatial-actions'
 import { cn } from '@/lib/utils'
 
 // ---------------------------------------------------------------------------
@@ -37,34 +32,16 @@ import { cn } from '@/lib/utils'
 const DEFAULT_WIDTH = 200
 const DEFAULT_HEIGHT = 150
 
-/** World bounds for Phase 1 (hardcoded). */
-const WORLD_MIN_X = -600
-const WORLD_MAX_X = 600
-const WORLD_MIN_Y = -600
-const WORLD_MAX_Y = 600
+/** World bounds sized to encompass coverage grid + outward-pushed ambient panels. */
+const WORLD_MIN_X = -1800
+const WORLD_MAX_X = 1800
+const WORLD_MIN_Y = -800
+const WORLD_MAX_Y = 800
 const WORLD_WIDTH = WORLD_MAX_X - WORLD_MIN_X
 const WORLD_HEIGHT = WORLD_MAX_Y - WORLD_MIN_Y
 
-/** District dot radius on the minimap (SVG units). */
+/** Category dot radius on the minimap (SVG units). */
 const DOT_RADIUS = 3
-
-/** Hub center dot radius on the minimap. */
-const HUB_DOT_RADIUS = 2
-
-/** Status color mapping for district dots. */
-const STATUS_COLORS: Record<AppStatus, string> = {
-  OPERATIONAL: 'var(--color-healthy, #22c55e)',
-  DEGRADED: 'var(--color-warning, #eab308)',
-  DOWN: 'var(--color-error, #ef4444)',
-  OFFLINE: 'var(--color-offline, #6b7280)',
-  UNKNOWN: 'var(--color-offline, #6b7280)',
-}
-
-/** Default color for districts without telemetry. */
-const DEFAULT_DOT_COLOR = 'var(--color-offline, #6b7280)'
-
-/** Ember color for the hub center dot. */
-const EMBER_COLOR = 'var(--color-ember, #f97316)'
 
 /** Viewport rect stroke color. */
 const VIEWPORT_STROKE_COLOR = 'var(--color-ember-bright, #fb923c)'
@@ -116,54 +93,49 @@ function minimapToWorld(
 // Sub-components
 // ---------------------------------------------------------------------------
 
-interface DistrictDotProps {
-  district: DistrictMeta
-  telemetry: AppTelemetry | undefined
+interface CategoryDotProps {
+  category: CategoryMeta
+  index: number
   minimapWidth: number
   minimapHeight: number
 }
 
-function DistrictDot({
-  district,
-  telemetry,
+function CategoryDot({
+  category,
+  index,
   minimapWidth,
   minimapHeight,
-}: DistrictDotProps) {
-  const worldPos = getDistrictWorldPosition(district.ringIndex)
-  const { mx, my } = worldToMinimap(
-    worldPos.x,
-    worldPos.y,
-    minimapWidth,
-    minimapHeight,
-  )
+}: CategoryDotProps) {
+  // Derive world position from grid index
+  const col = index % GRID_COLUMNS // 0-7
+  const row = Math.floor(index / GRID_COLUMNS) // 0 or 1
+  const cellWidth = GRID_WIDTH / GRID_COLUMNS
+  const cellHeight = GRID_HEIGHT / 2 // 2 rows max
 
-  const fillColor = telemetry
-    ? STATUS_COLORS[telemetry.status]
-    : DEFAULT_DOT_COLOR
+  // Grid is centered at world origin
+  const worldX = -(GRID_WIDTH / 2) + col * cellWidth + cellWidth / 2
+  const worldY = -(GRID_HEIGHT / 2) + row * cellHeight + cellHeight / 2
+
+  const { mx, my } = worldToMinimap(worldX, worldY, minimapWidth, minimapHeight)
 
   return (
     <g>
-      {/* District dot */}
       <circle
         cx={mx}
         cy={my}
         r={DOT_RADIUS}
-        fill={fillColor}
-        aria-label={`${district.displayName}: ${telemetry?.status ?? 'unknown'}`}
+        fill={category.color}
+        aria-label={`${category.displayName} category`}
       >
-        <title>
-          {district.displayName} ({telemetry?.status ?? 'unknown'})
-        </title>
+        <title>{category.displayName}</title>
       </circle>
-
-      {/* District label */}
       <text
         x={mx}
         y={my + DOT_RADIUS + 9}
         textAnchor="middle"
         fill="var(--color-text-tertiary, #9ca3af)"
         style={{
-          fontSize: '8px',
+          fontSize: '6px',
           fontFamily: 'var(--font-geist-mono, monospace)',
           fontWeight: 500,
           letterSpacing: '0.14em',
@@ -171,7 +143,7 @@ function DistrictDot({
           opacity: 0.5,
         }}
       >
-        {district.shortName}
+        {category.shortName}
       </text>
     </g>
   )
@@ -199,14 +171,6 @@ export function Minimap({
   const zoom = useCameraStore((s) => s.zoom)
   const viewportWidth = useCameraStore((s) => s.viewportWidth)
   const viewportHeight = useCameraStore((s) => s.viewportHeight)
-  const districts = useDistrictsStore((s) => s.districts)
-
-  // Hub center on minimap (world origin 0, 0)
-  const hubPos = useMemo(
-    () => worldToMinimap(0, 0, width, height),
-    [width, height],
-  )
-
   // Viewport rectangle in minimap coordinates
   // Camera model: transform = translate(offsetX, offsetY) scale(zoom)
   // World point at screen (0, 0): worldX = -offsetX / zoom, worldY = -offsetY / zoom
@@ -262,7 +226,7 @@ export function Minimap({
       )}
       style={{ width, height }}
       role="img"
-      aria-label="Spatial canvas minimap showing districts and current viewport position"
+      aria-label="Spatial canvas minimap showing coverage categories and current viewport position"
     >
       <svg
         width={width}
@@ -270,23 +234,12 @@ export function Minimap({
         viewBox={`0 0 ${width} ${height}`}
         className="block rounded-xl"
       >
-        {/* Hub center dot */}
-        <circle
-          cx={hubPos.mx}
-          cy={hubPos.my}
-          r={HUB_DOT_RADIUS}
-          fill={EMBER_COLOR}
-          aria-label="Hub center"
-        >
-          <title>Hub center</title>
-        </circle>
-
-        {/* District dots */}
-        {DISTRICTS.map((district) => (
-          <DistrictDot
-            key={district.id}
-            district={district}
-            telemetry={districts[district.id]}
+        {/* Category dots at grid positions */}
+        {KNOWN_CATEGORIES.map((category, index) => (
+          <CategoryDot
+            key={category.id}
+            category={category}
+            index={index}
             minimapWidth={width}
             minimapHeight={height}
           />

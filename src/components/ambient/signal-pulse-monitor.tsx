@@ -32,7 +32,7 @@ import type { WaveformState } from '@/lib/enrichment/enrichment-types'
 // Position & size constants (world-space pixels)
 // ---------------------------------------------------------------------------
 
-const PANEL_X = -1200
+const PANEL_X = -1400
 const PANEL_Y = 520
 const PANEL_W = 480
 const PANEL_H = 120

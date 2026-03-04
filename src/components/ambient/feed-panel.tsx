@@ -28,14 +28,14 @@
 import { useMemo } from 'react'
 import { useEnrichmentStore } from '@/stores/enrichment.store'
 import { DISTRICTS } from '@/lib/interfaces/district'
-import type { DistrictId } from '@/lib/interfaces/district'
+import { getCategoryMeta } from '@/lib/interfaces/coverage'
 import type { ActivityEvent } from '@/lib/enrichment/enrichment-types'
 
 // ---------------------------------------------------------------------------
 // Position & size constants (world-space pixels)
 // ---------------------------------------------------------------------------
 
-const PANEL_X = 880
+const PANEL_X = 1100
 const PANEL_Y = -290
 const PANEL_W = 320
 const PANEL_H = 580
@@ -44,10 +44,23 @@ const PANEL_H = 580
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Map DistrictId to its short name from DISTRICTS metadata. */
-const DISTRICT_SHORT_NAMES: Record<DistrictId, string> = Object.fromEntries(
-  DISTRICTS.map((d) => [d.id, d.shortName]),
-) as Record<DistrictId, string>
+/**
+ * Resolve a target ID to a short display name.
+ * Tries KNOWN_CATEGORIES first, then falls back to DISTRICTS for legacy events,
+ * and finally to the raw ID uppercased.
+ */
+function resolveTargetName(targetId: string): string {
+  // Try category lookup first
+  const catMeta = getCategoryMeta(targetId)
+  if (catMeta.id === targetId) return catMeta.shortName
+
+  // Fall back to legacy district names
+  const district = DISTRICTS.find((d) => d.id === targetId)
+  if (district) return district.shortName
+
+  // Last resort: uppercase the raw ID
+  return targetId.toUpperCase()
+}
 
 /** Format a Date as HH:MM in 24-hour format. */
 function formatTime(date: Date): string {
@@ -359,7 +372,7 @@ export function FeedPanel() {
                       marginTop: 1,
                     }}
                   >
-                    &rarr; {DISTRICT_SHORT_NAMES[evt.target] ?? evt.target}
+                    &rarr; {resolveTargetName(evt.target)}
                   </div>
                 </div>
               ))

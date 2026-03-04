@@ -37,7 +37,7 @@ import type { ActivityEvent } from '@/lib/enrichment/enrichment-types'
 // Position & size constants (world-space pixels)
 // ---------------------------------------------------------------------------
 
-const PANEL_X = 880
+const PANEL_X = 1100
 const PANEL_Y = 490
 const PANEL_W = 260
 const PANEL_H = 240

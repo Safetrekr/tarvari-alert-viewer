@@ -12,8 +12,8 @@
 // Application
 // ---------------------------------------------------------------------------
 
-export const APP_NAME = 'Tarva Launch'
-export const APP_DESCRIPTION = 'Spatial mission control for the Tarva ecosystem'
+export const APP_NAME = 'TarvaRI Alert Viewer'
+export const APP_DESCRIPTION = 'Spatial coverage monitor for TarvaRI intelligence'
 
 // ---------------------------------------------------------------------------
 // Zoom range
