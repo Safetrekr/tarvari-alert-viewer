@@ -1,24 +1,12 @@
 /**
- * SystemStatusPanel -- Oblivion-inspired left-side glass panel displaying
- * system overview telemetry in a world-space element inside SpatialCanvas.
+ * SystemStatusPanel -- left-side glass panel displaying real-time
+ * intel source health, severity breakdown, and category coverage.
  *
- * Positioned at world-space (-720, -340), 320x680px. At zoom 0.5 it
- * renders at ~160x340px on screen -- subtle ambient instrumentation.
+ * Positioned at world-space (-1400, -340), 320x900px.
  *
- * Reads live data from the enrichment store:
- * - District health states from `districts`
- * - Uptime counter from `systemEpoch`
- * - Resource bars from averaged district metrics
- *
- * Header shows "ALL CLEAR" (teal) when all districts OPERATIONAL,
- * "ANOMALY DETECTED" (ember) when any is DEGRADED or DOWN.
- *
- * All text is monospace, sizes are world-space pixels. Glass treatment
- * uses simple rgba backgrounds (no backdrop-filter per world-space
- * performance rule).
- *
- * Purely decorative: pointer-events disabled, aria-hidden assumed from
- * the parent ZoomGate / overlay wrapper.
+ * Uses real data from useCoverageMetrics() and useIntelFeed().
+ * Shows source status (active/staging/quarantine/disabled),
+ * severity distribution, and category coverage bars.
  *
  * @module system-status-panel
  * @see Phase C Spatial Enrichment
@@ -27,74 +15,36 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useEnrichmentStore } from '@/stores/enrichment.store'
 import { useAttentionStore } from '@/stores/attention.store'
-import type { HealthState } from '@/lib/interfaces/district'
+import { useCoverageMetrics } from '@/hooks/use-coverage-metrics'
+import { useIntelFeed } from '@/hooks/use-intel-feed'
+import { getCategoryColor, getCategoryMeta } from '@/lib/interfaces/coverage'
 
 // ---------------------------------------------------------------------------
 // Position & size constants (world-space pixels)
 // ---------------------------------------------------------------------------
 
 const PANEL_X = -1400
-const PANEL_Y = -340
+const PANEL_Y = -450
 const PANEL_W = 320
-const PANEL_H = 680
+const PANEL_H = 900
 
 // ---------------------------------------------------------------------------
-// Health-state-to-color mapping
+// Status color mapping
 // ---------------------------------------------------------------------------
 
-const HEALTH_COLORS: Record<HealthState, string> = {
-  OPERATIONAL: 'rgba(var(--healthy-rgb), 0.8)',
-  DEGRADED: 'rgba(234, 179, 8, 0.8)',
-  DOWN: 'rgba(239, 68, 68, 0.8)',
-  OFFLINE: 'rgba(255, 255, 255, 0.2)',
-  UNKNOWN: 'rgba(255, 255, 255, 0.2)',
+const STATUS_COLORS: Record<string, string> = {
+  active: 'rgba(34, 197, 94, 0.8)',
+  staging: 'rgba(234, 179, 8, 0.8)',
+  quarantine: 'rgba(239, 68, 68, 0.8)',
+  disabled: 'rgba(255, 255, 255, 0.2)',
 }
 
-const HEALTH_TEXT_COLORS: Record<HealthState, string> = {
-  OPERATIONAL: 'rgba(var(--healthy-rgb), 0.5)',
-  DEGRADED: 'rgba(234, 179, 8, 0.5)',
-  DOWN: 'rgba(239, 68, 68, 0.5)',
-  OFFLINE: 'rgba(255, 255, 255, 0.15)',
-  UNKNOWN: 'rgba(255, 255, 255, 0.15)',
-}
-
-// ---------------------------------------------------------------------------
-// Resource bar definitions
-// ---------------------------------------------------------------------------
-
-interface ResourceBar {
-  label: string
-  /** CSS gradient for the bar fill. */
-  gradient: string
-}
-
-const RESOURCE_DEFS: ResourceBar[] = [
-  {
-    label: 'CPU',
-    gradient: 'linear-gradient(to right, rgba(var(--ember-rgb), 0.6), rgba(var(--ember-rgb), 0))',
-  },
-  {
-    label: 'MEM',
-    gradient: 'linear-gradient(to right, rgba(14, 165, 233, 0.5), rgba(14, 165, 233, 0))',
-  },
-  {
-    label: 'NET',
-    gradient: 'linear-gradient(to right, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0))',
-  },
-]
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Format seconds into HH:MM:SS. */
-function formatUptime(totalSeconds: number): string {
-  const h = Math.floor(totalSeconds / 3600)
-  const m = Math.floor((totalSeconds % 3600) / 60)
-  const s = totalSeconds % 60
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+const STATUS_TEXT_COLORS: Record<string, string> = {
+  active: 'rgba(34, 197, 94, 0.5)',
+  staging: 'rgba(234, 179, 8, 0.5)',
+  quarantine: 'rgba(239, 68, 68, 0.5)',
+  disabled: 'rgba(255, 255, 255, 0.15)',
 }
 
 // ---------------------------------------------------------------------------
@@ -118,37 +68,45 @@ const GHOST: React.CSSProperties = {
 // ---------------------------------------------------------------------------
 
 export function SystemStatusPanel() {
-  const districts = useEnrichmentStore((s) => s.districts)
-  const systemEpoch = useEnrichmentStore((s) => s.systemEpoch)
-  const performance = useEnrichmentStore((s) => s.performance)
-  const focusedDistrictId = useEnrichmentStore((s) => s.focusedDistrictId)
   const isTightening = useAttentionStore((s) => s.attentionState === 'tighten')
+  const { data: metrics } = useCoverageMetrics()
+  const { data: feedItems = [] } = useIntelFeed()
 
-  // Derive district list for rendering
-  const districtEntries = useMemo(
-    () => Object.values(districts),
-    [districts],
-  )
+  // Source status breakdown
+  const statusCounts = useMemo(() => {
+    if (!metrics?.sourcesByCoverage) return { active: 0, staging: 0, quarantine: 0, disabled: 0 }
+    const counts: Record<string, number> = { active: 0, staging: 0, quarantine: 0, disabled: 0 }
+    for (const src of metrics.sourcesByCoverage) {
+      const status = src.status.toLowerCase()
+      if (status in counts) counts[status]++
+      else counts['disabled']++
+    }
+    return counts
+  }, [metrics])
 
-  // Derive header state: all clear vs anomaly
-  const allOperational = useMemo(
-    () => districtEntries.every((d) => d.health === 'OPERATIONAL'),
-    [districtEntries],
-  )
+  const allActive = statusCounts.quarantine === 0 && statusCounts.disabled === 0
 
-  // Derive resource percentages averaged across districts
-  const resourcePercents = useMemo(() => {
-    const count = districtEntries.length || 1
-    const cpuAvg = Math.round(
-      districtEntries.reduce((sum, d) => sum + d.cpuUsagePct, 0) / count,
-    )
-    const memAvg = Math.round(
-      districtEntries.reduce((sum, d) => sum + d.memoryUsagePct, 0) / count,
-    )
-    // NET derived from aggregate throughput
-    const netPct = Math.round(performance.throughputPct)
-    return [cpuAvg, memAvg, netPct]
-  }, [districtEntries, performance.throughputPct])
+  // Severity breakdown from live feed
+  const severityCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const item of feedItems) {
+      counts[item.severity] = (counts[item.severity] ?? 0) + 1
+    }
+    return counts
+  }, [feedItems])
+
+  // Top categories by alert count
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const item of feedItems) {
+      counts[item.category] = (counts[item.category] ?? 0) + 1
+    }
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+  }, [feedItems])
+
+  const maxCategoryCount = categoryCounts.length > 0 ? categoryCounts[0][1] : 1
 
   return (
     <div
@@ -178,7 +136,7 @@ export function SystemStatusPanel() {
           transition: 'box-shadow 500ms ease',
         }}
       >
-        {/* -- ONLINE indicator ----------------------------------------- */}
+        {/* -- Status indicator ----------------------------------------- */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
           <div
             style={{
@@ -187,14 +145,14 @@ export function SystemStatusPanel() {
               borderRadius: '50%',
               background: isTightening
                 ? 'rgba(245, 158, 11, 0.9)'
-                : allOperational
-                  ? 'rgba(var(--healthy-rgb), 0.9)'
-                  : 'rgba(var(--ember-rgb), 0.9)',
+                : allActive
+                  ? 'rgba(34, 197, 94, 0.9)'
+                  : 'rgba(239, 68, 68, 0.9)',
               boxShadow: isTightening
                 ? '0 0 8px rgba(245, 158, 11, 0.4)'
-                : allOperational
-                  ? '0 0 8px rgba(var(--healthy-rgb), 0.4)'
-                  : '0 0 8px rgba(var(--ember-rgb), 0.4)',
+                : allActive
+                  ? '0 0 8px rgba(34, 197, 94, 0.4)'
+                  : '0 0 8px rgba(239, 68, 68, 0.4)',
               flexShrink: 0,
               transition: 'background 500ms ease, box-shadow 500ms ease',
             }}
@@ -206,18 +164,18 @@ export function SystemStatusPanel() {
               fontWeight: 700,
               color: isTightening
                 ? 'rgba(245, 158, 11, 0.5)'
-                : allOperational
-                  ? 'rgba(var(--healthy-rgb), 0.5)'
-                  : 'rgba(var(--ember-rgb), 0.5)',
+                : allActive
+                  ? 'rgba(34, 197, 94, 0.5)'
+                  : 'rgba(239, 68, 68, 0.5)',
               letterSpacing: '0.12em',
               transition: 'color 500ms ease',
             }}
           >
-            {allOperational ? 'ALL CLEAR' : 'ANOMALY DETECTED'}
+            {allActive ? 'ALL CLEAR' : 'SOURCES DEGRADED'}
           </span>
         </div>
 
-        {/* -- Uptime counter ------------------------------------------- */}
+        {/* -- Source count --------------------------------------------- */}
         <div style={{ marginBottom: 24 }}>
           <div
             style={{
@@ -228,9 +186,9 @@ export function SystemStatusPanel() {
               lineHeight: 1.2,
             }}
           >
-            {formatUptime(systemEpoch)}
+            {metrics?.activeSources ?? '—'}<span style={{ fontSize: 16, color: 'rgba(255, 255, 255, 0.2)' }}>/{metrics?.totalSources ?? '—'}</span>
           </div>
-          <div style={GHOST}>SYSTEM UPTIME</div>
+          <div style={GHOST}>ACTIVE SOURCES</div>
         </div>
 
         {/* -- Mission label -------------------------------------------- */}
@@ -246,11 +204,11 @@ export function SystemStatusPanel() {
               marginTop: 4,
             }}
           >
-            PLATFORM MONITORING
+            INTEL MONITORING
           </div>
         </div>
 
-        {/* -- Districts section ---------------------------------------- */}
+        {/* -- Source status breakdown ---------------------------------- */}
         <div
           style={{
             border: '1px solid rgba(255, 255, 255, 0.04)',
@@ -269,62 +227,101 @@ export function SystemStatusPanel() {
               marginBottom: 10,
             }}
           >
-            DISTRICTS
+            SOURCE STATUS
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {districtEntries.map((d) => {
-              const isFocused = focusedDistrictId === d.id
-              const hasFocus = focusedDistrictId !== null
-              const rowOpacity = isFocused ? 1 : hasFocus ? 0.4 : 1
-
-              return (
+            {(['active', 'staging', 'quarantine', 'disabled'] as const).map((status) => (
+              <div
+                key={status}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  paddingLeft: 8,
+                }}
+              >
                 <div
-                  key={d.id}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    borderLeft: isFocused
-                      ? '2px solid rgba(14, 165, 233, 0.4)'
-                      : '2px solid transparent',
-                    paddingLeft: 8,
-                    opacity: rowOpacity,
-                    transition: 'border-color 200ms ease, opacity 200ms ease',
+                    width: 5,
+                    height: 5,
+                    borderRadius: '50%',
+                    background: STATUS_COLORS[status],
+                    boxShadow: status === 'active'
+                      ? `0 0 6px ${STATUS_COLORS[status]}`
+                      : 'none',
+                    flexShrink: 0,
+                  }}
+                />
+                <span
+                  style={{
+                    ...MONO,
+                    fontSize: 15,
+                    color: 'rgba(255, 255, 255, 0.3)',
+                    letterSpacing: '0.06em',
+                    flex: 1,
+                    textTransform: 'uppercase',
                   }}
                 >
+                  {status}
+                </span>
+                <span
+                  style={{
+                    ...MONO,
+                    fontSize: 15,
+                    color: STATUS_TEXT_COLORS[status],
+                    letterSpacing: '0.08em',
+                  }}
+                >
+                  {statusCounts[status]}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* -- Severity bars ------------------------------------------- */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ ...GHOST, marginBottom: 12 }}>SEVERITY DIST</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[
+              { key: 'Extreme', color: 'rgba(239, 68, 68, 0.6)' },
+              { key: 'Severe', color: 'rgba(249, 115, 22, 0.5)' },
+              { key: 'Moderate', color: 'rgba(234, 179, 8, 0.4)' },
+              { key: 'Minor', color: 'rgba(59, 130, 246, 0.4)' },
+            ].map((s) => {
+              const count = severityCounts[s.key] ?? 0
+              const pct = feedItems.length > 0 ? Math.round((count / feedItems.length) * 100) : 0
+              return (
+                <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div
                     style={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: '50%',
-                      background: HEALTH_COLORS[d.health],
-                      boxShadow:
-                        d.health === 'OPERATIONAL' || d.health === 'DEGRADED'
-                          ? `0 0 6px ${HEALTH_COLORS[d.health]}`
-                          : 'none',
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span
-                    style={{
-                      ...MONO,
-                      fontSize: 15,
-                      color: 'rgba(255, 255, 255, 0.3)',
-                      letterSpacing: '0.06em',
                       flex: 1,
+                      height: 6,
+                      borderRadius: 3,
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      overflow: 'hidden',
                     }}
                   >
-                    {d.displayName}
-                  </span>
+                    <div
+                      style={{
+                        width: `${pct}%`,
+                        height: '100%',
+                        borderRadius: 3,
+                        background: `linear-gradient(to right, ${s.color}, transparent)`,
+                      }}
+                    />
+                  </div>
                   <span
                     style={{
                       ...MONO,
                       fontSize: 13,
-                      color: HEALTH_TEXT_COLORS[d.health],
-                      letterSpacing: '0.08em',
+                      color: 'rgba(255, 255, 255, 0.25)',
+                      letterSpacing: '0.06em',
+                      minWidth: 80,
+                      textAlign: 'right',
                     }}
                   >
-                    {d.health}
+                    {s.key.slice(0, 4).toUpperCase()} {count}
                   </span>
                 </div>
               )
@@ -332,48 +329,77 @@ export function SystemStatusPanel() {
           </div>
         </div>
 
-        {/* -- Resource allocation bars --------------------------------- */}
+        {/* -- Category coverage bars ---------------------------------- */}
         <div style={{ marginBottom: 24 }}>
-          <div style={{ ...GHOST, marginBottom: 12 }}>RESOURCE ALLOC</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {RESOURCE_DEFS.map((r, idx) => (
-              <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div
-                  style={{
-                    flex: 1,
-                    height: 6,
-                    borderRadius: 3,
-                    background: 'rgba(255, 255, 255, 0.04)',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${resourcePercents[idx]}%`,
-                      height: '100%',
-                      borderRadius: 3,
-                      background: r.gradient,
-                    }}
-                  />
-                </div>
-                <span
-                  style={{
-                    ...MONO,
-                    fontSize: 13,
-                    color: 'rgba(255, 255, 255, 0.25)',
-                    letterSpacing: '0.06em',
-                    minWidth: 60,
-                    textAlign: 'right',
-                  }}
-                >
-                  {r.label} {resourcePercents[idx]}%
-                </span>
-              </div>
-            ))}
+          <div style={{ ...GHOST, marginBottom: 12 }}>CATEGORY ACTIVITY</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {categoryCounts.length === 0 ? (
+              <span
+                style={{
+                  ...MONO,
+                  fontSize: 12,
+                  color: 'rgba(255, 255, 255, 0.1)',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                NO DATA
+              </span>
+            ) : (
+              categoryCounts.map(([catId, count]) => {
+                const catMeta = getCategoryMeta(catId)
+                const catColor = getCategoryColor(catId)
+                const pct = Math.round((count / maxCategoryCount) * 100)
+                return (
+                  <div key={catId} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span
+                      style={{
+                        ...MONO,
+                        fontSize: 12,
+                        color: catColor,
+                        letterSpacing: '0.06em',
+                        minWidth: 36,
+                      }}
+                    >
+                      {catMeta.shortName}
+                    </span>
+                    <div
+                      style={{
+                        flex: 1,
+                        height: 5,
+                        borderRadius: 3,
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${pct}%`,
+                          height: '100%',
+                          borderRadius: 3,
+                          background: catColor,
+                          opacity: 0.5,
+                        }}
+                      />
+                    </div>
+                    <span
+                      style={{
+                        ...MONO,
+                        fontSize: 12,
+                        color: 'rgba(255, 255, 255, 0.2)',
+                        minWidth: 24,
+                        textAlign: 'right',
+                      }}
+                    >
+                      {count}
+                    </span>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
 
-        {/* -- Comm link footer ----------------------------------------- */}
+        {/* -- Coverage footer ----------------------------------------- */}
         <div
           style={{
             marginTop: 'auto',
@@ -391,7 +417,7 @@ export function SystemStatusPanel() {
               marginBottom: 8,
             }}
           >
-            COMM LINK
+            COVERAGE
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span
@@ -402,15 +428,15 @@ export function SystemStatusPanel() {
                 letterSpacing: '0.06em',
               }}
             >
-              SKYTOWER N&deg; 49
+              {metrics?.categoriesCovered ?? '—'} CATEGORIES
             </span>
             <div
               style={{
                 width: 5,
                 height: 5,
                 borderRadius: '50%',
-                background: 'rgba(var(--healthy-rgb), 0.8)',
-                boxShadow: '0 0 6px rgba(var(--healthy-rgb), 0.4)',
+                background: 'rgba(34, 197, 94, 0.8)',
+                boxShadow: '0 0 6px rgba(34, 197, 94, 0.4)',
                 flexShrink: 0,
               }}
             />
@@ -418,11 +444,11 @@ export function SystemStatusPanel() {
               style={{
                 ...MONO,
                 fontSize: 13,
-                color: 'rgba(var(--healthy-rgb), 0.5)',
+                color: 'rgba(34, 197, 94, 0.5)',
                 letterSpacing: '0.08em',
               }}
             >
-              ON
+              LIVE
             </span>
           </div>
         </div>

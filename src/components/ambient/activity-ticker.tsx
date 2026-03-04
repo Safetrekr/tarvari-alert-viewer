@@ -1,25 +1,12 @@
 /**
- * ActivityTicker -- scrolling event log styled as a mission control
- * activity feed, positioned below-right of the capsule ring.
+ * ActivityTicker -- scrolling log of real intel alerts from
+ * intel_normalized, styled as a mission control activity feed.
  *
- * Positioned at world-space (260, 490), 260x240px. At zoom 0.5 it
- * renders at ~130x120px on screen.
+ * Positioned at world-space (1100, 490), 260x240px.
  *
- * Reads live activity events from the enrichment store. Falls back to
- * static mock events when the store is empty. Events scroll upward in
- * a continuous loop using a CSS `@keyframes` animation
- * (`enrichment-ticker-scroll`) defined in `enrichment.css`.
- *
- * Events are color-coded:
- * - Teal text for data operations (QUERY, CHAT, SYNC)
- * - Ember text for deployments (DEPLOY, BUILD)
- * - White/ghost for system ops (REASON)
- *
- * Glass treatment uses simple rgba backgrounds (no backdrop-filter
- * per world-space performance rule).
- *
- * Purely decorative: pointer-events disabled, aria-hidden assumed
- * from the parent wrapper.
+ * Uses real data from useIntelFeed(). Falls back to a
+ * "NO DATA" state when empty. Events scroll upward in a
+ * continuous loop via CSS keyframes.
  *
  * @module activity-ticker
  * @see Phase C Spatial Enrichment
@@ -28,10 +15,8 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useEnrichmentStore } from '@/stores/enrichment.store'
-import { DISTRICTS } from '@/lib/interfaces/district'
-import type { DistrictId } from '@/lib/interfaces/district'
-import type { ActivityEvent } from '@/lib/enrichment/enrichment-types'
+import { useIntelFeed } from '@/hooks/use-intel-feed'
+import { getCategoryMeta, getCategoryColor } from '@/lib/interfaces/coverage'
 
 // ---------------------------------------------------------------------------
 // Position & size constants (world-space pixels)
@@ -43,66 +28,34 @@ const PANEL_W = 260
 const PANEL_H = 240
 
 // ---------------------------------------------------------------------------
-// Category color mapping
+// Severity color mapping
 // ---------------------------------------------------------------------------
 
-type EventCategory = 'data' | 'deploy' | 'system'
-
-const CATEGORY_COLORS: Record<EventCategory, string> = {
-  data: 'rgba(14, 165, 233, 0.5)',
-  deploy: 'rgba(var(--ember-rgb), 0.5)',
-  system: 'rgba(255, 255, 255, 0.25)',
+const SEVERITY_COLORS: Record<string, string> = {
+  'Extreme': 'rgba(239, 68, 68, 0.6)',
+  'Severe': 'rgba(249, 115, 22, 0.5)',
+  'Moderate': 'rgba(234, 179, 8, 0.4)',
+  'Minor': 'rgba(59, 130, 246, 0.4)',
+  'Unknown': 'rgba(255, 255, 255, 0.2)',
 }
 
-// ---------------------------------------------------------------------------
-// Static fallback event data
-// ---------------------------------------------------------------------------
-
-interface TickerEvent {
-  time: string
-  verb: string
-  target: string
-  status: string
-  category: EventCategory
+function severityColor(severity: string): string {
+  return SEVERITY_COLORS[severity] ?? SEVERITY_COLORS['Unknown']
 }
-
-const STATIC_EVENTS: TickerEvent[] = [
-  { time: '14:22', verb: 'DEPLOY.AGENT', target: 'project-room', status: 'OK', category: 'deploy' },
-  { time: '14:19', verb: 'QUERY.KNOW', target: 'agent-builder', status: 'OK', category: 'data' },
-  { time: '14:15', verb: 'CHAT.MSG', target: 'tarva-chat', status: 'OK', category: 'data' },
-  { time: '14:12', verb: 'BUILD.AGENT', target: 'agent-builder', status: 'OK', category: 'deploy' },
-  { time: '14:08', verb: 'SYNC.ERP', target: 'tarva-erp', status: 'OK', category: 'data' },
-  { time: '14:03', verb: 'REASON.CORE', target: 'tarva-core', status: 'OK', category: 'system' },
-  { time: '13:57', verb: 'DEPLOY.SKILL', target: 'project-room', status: 'OK', category: 'deploy' },
-  { time: '13:52', verb: 'QUERY.VEC', target: 'agent-builder', status: 'OK', category: 'data' },
-]
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Map a DistrictId to its human-readable display name. */
-function districtDisplayName(id: DistrictId): string {
-  const meta = DISTRICTS.find((d) => d.id === id)
-  return meta?.displayName ?? id
+/** Format ISO timestamp as HH:MM. */
+function formatTime(iso: string): string {
+  const d = new Date(iso)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-/** Format a Date to HH:MM. */
-function formatTime(date: Date): string {
-  const h = String(date.getHours()).padStart(2, '0')
-  const m = String(date.getMinutes()).padStart(2, '0')
-  return `${h}:${m}`
-}
-
-/** Convert a store ActivityEvent to the ticker display shape. */
-function toTickerEvent(event: ActivityEvent): TickerEvent {
-  return {
-    time: formatTime(event.timestamp),
-    verb: event.verb,
-    target: districtDisplayName(event.target),
-    status: event.status,
-    category: event.category,
-  }
+/** Truncate text. */
+function truncate(text: string, maxLen: number): string {
+  return text.length > maxLen ? text.slice(0, maxLen - 1) + '…' : text
 }
 
 // ---------------------------------------------------------------------------
@@ -118,21 +71,30 @@ const MONO: React.CSSProperties = {
 // ---------------------------------------------------------------------------
 
 export function ActivityTicker() {
-  const activityLog = useEnrichmentStore((s) => s.activityLog)
+  const { data: feedItems = [] } = useIntelFeed()
 
-  // Use live events if available, otherwise fall back to static
-  const events: TickerEvent[] = useMemo(() => {
-    if (activityLog.length > 0) {
-      return activityLog.map(toTickerEvent)
-    }
-    return STATIC_EVENTS
-  }, [activityLog])
+  // Build ticker events from real intel data
+  const events = useMemo(() => {
+    if (feedItems.length === 0) return []
+    return feedItems.slice(0, 20).map((item) => {
+      const catMeta = getCategoryMeta(item.category)
+      return {
+        id: item.id,
+        time: formatTime(item.ingestedAt),
+        verb: `ALERT.${catMeta.shortName}`,
+        target: truncate(item.title, 24),
+        severity: item.severity,
+        categoryColor: getCategoryColor(item.category),
+        severityColor: severityColor(item.severity),
+      }
+    })
+  }, [feedItems])
 
-  // Duplicate the events to create seamless loop
+  // Duplicate events for seamless scroll loop
   const doubled = useMemo(() => [...events, ...events], [events])
 
   // Scale animation duration with event count (3.75s per event)
-  const animationDuration = `${events.length * 3.75}s`
+  const animationDuration = `${Math.max(events.length, 1) * 3.75}s`
 
   return (
     <div
@@ -192,56 +154,79 @@ export function ActivityTicker() {
             position: 'relative',
           }}
         >
-          <div
-            className="enrichment-ticker-scroll"
-            style={{ animationDuration }}
-          >
-            {doubled.map((evt, i) => (
-              <div
-                key={`${evt.time}-${evt.verb}-${i}`}
-                style={{
-                  marginBottom: 12,
-                }}
-              >
-                {/* Timestamp + verb */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span
-                    style={{
-                      ...MONO,
-                      fontSize: 13,
-                      color: 'rgba(255, 255, 255, 0.12)',
-                      letterSpacing: '0.04em',
-                    }}
-                  >
-                    [{evt.time}]
-                  </span>
-                  <span
-                    style={{
-                      ...MONO,
-                      fontSize: 13,
-                      color: CATEGORY_COLORS[evt.category],
-                      letterSpacing: '0.06em',
-                    }}
-                  >
-                    {evt.verb}
-                  </span>
-                </div>
-                {/* Target + status */}
+          {events.length === 0 ? (
+            <span
+              style={{
+                ...MONO,
+                fontSize: 12,
+                color: 'rgba(255, 255, 255, 0.1)',
+                letterSpacing: '0.04em',
+              }}
+            >
+              NO DATA
+            </span>
+          ) : (
+            <div
+              className="enrichment-ticker-scroll"
+              style={{ animationDuration }}
+            >
+              {doubled.map((evt, i) => (
                 <div
+                  key={`${evt.id}-${i}`}
                   style={{
-                    ...MONO,
-                    fontSize: 12,
-                    color: 'rgba(255, 255, 255, 0.1)',
-                    letterSpacing: '0.04em',
-                    paddingLeft: 16,
-                    marginTop: 2,
+                    marginBottom: 12,
                   }}
                 >
-                  &rarr; {evt.target} {evt.status}
+                  {/* Timestamp + category verb */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span
+                      style={{
+                        ...MONO,
+                        fontSize: 13,
+                        color: 'rgba(255, 255, 255, 0.12)',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      [{evt.time}]
+                    </span>
+                    <span
+                      style={{
+                        ...MONO,
+                        fontSize: 13,
+                        color: evt.categoryColor,
+                        letterSpacing: '0.06em',
+                      }}
+                    >
+                      {evt.verb}
+                    </span>
+                    <span
+                      style={{
+                        ...MONO,
+                        fontSize: 11,
+                        color: evt.severityColor,
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      {evt.severity.toUpperCase()}
+                    </span>
+                  </div>
+                  {/* Alert title */}
+                  <div
+                    style={{
+                      ...MONO,
+                      fontSize: 12,
+                      color: 'rgba(255, 255, 255, 0.1)',
+                      letterSpacing: '0.04em',
+                      paddingLeft: 16,
+                      marginTop: 2,
+                    }}
+                  >
+                    &rarr; {evt.target}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

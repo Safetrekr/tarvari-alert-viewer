@@ -16,14 +16,12 @@
 'use client'
 
 import { useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import { AnimatePresence } from 'motion/react'
 import { useMorphChoreography } from '@/hooks/use-morph-choreography'
 import { useSemanticZoom } from '@/hooks/use-semantic-zoom'
 import { useCameraStore } from '@/stores/camera.store'
 import { CoverageGrid } from '@/components/coverage/CoverageGrid'
 import { CategoryIconGrid } from '@/components/coverage/CategoryIconGrid'
-import { DetailPanel } from './detail-panel'
 import type { CategoryGridItem } from '@/lib/interfaces/coverage'
 import type { CoverageMetrics } from '@/lib/coverage-utils'
 import type { NodeId } from '@/lib/interfaces/district'
@@ -37,6 +35,10 @@ interface MorphOrchestratorProps {
   prefersReducedMotion: boolean
   /** Whether the ZUI viewport is actively panning. */
   isPanning?: boolean
+  /** Currently filtered category IDs. */
+  filteredIds?: string[]
+  /** Callback when a card's filter button is clicked. */
+  onFilter?: (id: NodeId) => void
 }
 
 export function MorphOrchestrator({
@@ -44,9 +46,11 @@ export function MorphOrchestrator({
   metrics: _metrics,
   prefersReducedMotion,
   isPanning = false,
+  filteredIds,
+  onFilter,
 }: MorphOrchestratorProps) {
   const { isConstellation } = useSemanticZoom()
-  const { phase, direction, targetId, startMorph, reverseMorph } = useMorphChoreography({
+  const { phase, targetId, startMorph } = useMorphChoreography({
     prefersReducedMotion,
   })
 
@@ -79,24 +83,6 @@ export function MorphOrchestrator({
     [phase, startMorph],
   )
 
-  // ---------------------------------------------------------------------------
-  // Panel visibility (grid-aware -- no ring geometry needed)
-  // ---------------------------------------------------------------------------
-
-  // Show panel when morphing forward or settled
-  const showPanel =
-    targetId !== null &&
-    ((phase === 'expanding' && direction === 'forward') ||
-     phase === 'settled' ||
-     phase === 'entering-district' ||
-     phase === 'district')
-
-  // Panel is "promoted" to fixed viewport-centered during district view
-  const isDistrictView = phase === 'entering-district' || phase === 'district'
-
-  // Always use the portalled panel
-  const showPromotedPanel = showPanel && targetId !== null
-
   return (
     <>
       {/* Z0/Z1+ switching: category icon dots vs coverage grid */}
@@ -115,38 +101,11 @@ export function MorphOrchestrator({
             selectedId={targetId}
             onSelect={handleCapsuleSelect}
             morphPhase={phase}
-          >
-            {/* Click-outside backdrop: closes the panel when clicking off it */}
-            {showPanel && !isDistrictView && (
-              <div
-                style={{
-                  position: 'fixed',
-                  inset: 0,
-                  zIndex: 10,
-                  pointerEvents: 'auto',
-                }}
-                onClick={reverseMorph}
-              />
-            )}
-          </CoverageGrid>
+            filteredIds={filteredIds}
+            onFilter={onFilter}
+          />
         )}
       </AnimatePresence>
-
-      {/* Promoted (viewport-fixed) panel -- portalled to body */}
-      {typeof document !== 'undefined' &&
-        createPortal(
-          <AnimatePresence>
-            {showPromotedPanel && (
-              <DetailPanel
-                key="promoted-panel"
-                categoryId={targetId!}
-                onClose={reverseMorph}
-                promoted={isDistrictView}
-              />
-            )}
-          </AnimatePresence>,
-          document.body,
-        )}
     </>
   )
 }

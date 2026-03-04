@@ -23,7 +23,7 @@
 
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import dynamic from 'next/dynamic'
 
 const CoverageMapDynamic = dynamic(
@@ -79,7 +79,7 @@ import { KNOWN_CATEGORIES } from '@/lib/interfaces/coverage'
 import { buildAllGridItems, type CategoryGridItem } from '@/lib/interfaces/coverage'
 import { useCoverageMetrics } from '@/hooks/use-coverage-metrics'
 import { useCoverageMapData } from '@/hooks/use-coverage-map-data'
-import { syncCoverageFromUrl } from '@/stores/coverage.store'
+import { useCoverageStore, syncCoverageFromUrl, syncCategoriesToUrl } from '@/stores/coverage.store'
 import { CoverageOverviewStats } from '@/components/coverage/CoverageOverviewStats'
 import { GRID_WIDTH, GRID_HEIGHT } from '@/components/coverage/CoverageGrid'
 
@@ -158,7 +158,30 @@ export default function LaunchPage() {
 
   // Coverage data (WS-2.1)
   const { data: coverageMetrics, isLoading: isMetricsLoading } = useCoverageMetrics()
-  const { data: mapMarkers = [], isLoading: isMapLoading } = useCoverageMapData()
+  const selectedCategories = useCoverageStore((s) => s.selectedCategories)
+  const toggleCategory = useCoverageStore((s) => s.toggleCategory)
+  const clearSelection = useCoverageStore((s) => s.clearSelection)
+  const mapFilters = useMemo(
+    () => (selectedCategories.length > 0 ? { categories: selectedCategories } : undefined),
+    [selectedCategories],
+  )
+  const { data: mapMarkers = [], isLoading: isMapLoading } = useCoverageMapData(mapFilters)
+
+  // Filter toggle: add/remove category from filter set
+  const handleFilter = useCallback(
+    (id: string) => {
+      toggleCategory(id)
+      // Sync URL after toggle -- read fresh state
+      const next = useCoverageStore.getState().selectedCategories
+      syncCategoriesToUrl(next)
+    },
+    [toggleCategory],
+  )
+
+  const handleClearFilter = useCallback(() => {
+    clearSelection()
+    syncCategoriesToUrl([])
+  }, [clearSelection])
 
   // Build grid items for all 15 categories, merging live metrics where available
   const gridItems: CategoryGridItem[] = useMemo(
@@ -299,6 +322,8 @@ export default function LaunchPage() {
                 activeSources={coverageMetrics?.activeSources ?? 0}
                 categoriesCovered={coverageMetrics?.categoriesCovered ?? 0}
                 isLoading={isMetricsLoading}
+                isAllSelected={selectedCategories.length === 0}
+                onClearFilter={handleClearFilter}
               />
             </div>
           </ZoomGate>
@@ -312,6 +337,8 @@ export default function LaunchPage() {
               metrics={coverageMetrics}
               prefersReducedMotion={prefersReducedMotion}
               isPanning={isPanActive}
+              filteredIds={selectedCategories}
+              onFilter={handleFilter}
             />
           </div>
 

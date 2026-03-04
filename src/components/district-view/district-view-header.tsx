@@ -132,12 +132,13 @@ export function DistrictViewHeader({
 
   return (
     <>
-      {/* Category name + color dot -- top bar */}
+      {/* Category name + color dot -- top center */}
       <div
         style={{
           position: 'fixed',
           top: 56,
-          [labelSide]: 32,
+          left: '50%',
+          transform: 'translateX(-50%)',
           display: 'flex',
           alignItems: 'center',
           gap: 8,
@@ -182,12 +183,14 @@ export function DistrictViewHeader({
         style={{
           position: 'fixed',
           top: '50%',
-          [backSide]: 32,
+          [backSide]: 12,
           transform: 'translateY(-50%)',
           zIndex: 32,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          padding: '10px 16px 10px 12px',
+          justifyContent: 'center',
+          padding: '16px 6px',
           borderRadius: 8,
           border: '1px solid rgba(255, 255, 255, 0.06)',
           background: 'rgba(255, 255, 255, 0.03)',
@@ -200,6 +203,7 @@ export function DistrictViewHeader({
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
           lineHeight: 1,
+          writingMode: 'vertical-lr',
           transition: 'color 200ms ease, background 200ms ease',
         }}
         onMouseEnter={(e) => {

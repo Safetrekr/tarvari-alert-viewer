@@ -11,8 +11,8 @@
  * @see WS-2.1 Section 4.3
  */
 
-import { useCallback, type KeyboardEvent } from 'react'
-import { motion, type Variants } from 'motion/react'
+import { useCallback, useState } from 'react'
+import { motion, AnimatePresence, type Variants } from 'motion/react'
 import {
   Activity,
   Mountain,
@@ -29,6 +29,8 @@ import {
   CloudLightning,
   Layers,
   CircleDot,
+  ArrowRight,
+  MapPin,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -48,6 +50,12 @@ export interface CategoryCardProps {
   hasSelection: boolean
   /** Callback when this card is clicked. */
   onSelect: (id: NodeId) => void
+  /** Callback when the filter button is clicked. */
+  onFilter?: (id: NodeId) => void
+  /** Whether this card is the active map filter. */
+  isFiltered?: boolean
+  /** Whether this card should be dimmed because other cards have active filters. */
+  isDimmedByFilter?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -106,43 +114,46 @@ export function CategoryCard({
   isSelected,
   hasSelection,
   onSelect,
+  onFilter,
+  isFiltered = false,
+  isDimmedByFilter = false,
 }: CategoryCardProps) {
   const { id, meta, metrics } = item
   const IconComponent = ICON_MAP[meta.icon] ?? FallbackIcon
+  const [isHovered, setIsHovered] = useState(false)
 
-  // Resolve variant string
+  // Resolve variant string (morph selection takes priority, then filter dimming)
   const variant = isSelected ? 'selected' : hasSelection ? 'dimmed' : 'idle'
 
-  const handleClick = useCallback(() => {
+  const handleDistrictClick = useCallback(() => {
+    setIsHovered(false)
     onSelect(id)
   }, [id, onSelect])
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLDivElement>) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        onSelect(id)
-      }
-    },
-    [id, onSelect],
-  )
+  const handleFilterClick = useCallback(() => {
+    setIsHovered(false)
+    onFilter?.(id)
+  }, [id, onFilter])
 
   return (
     <motion.div
       data-category-card
       data-selected={isSelected ? 'true' : 'false'}
+      data-filtered={isFiltered ? 'true' : 'false'}
       variants={cardVariants}
       animate={variant}
-      whileHover={{ scale: 1.04 }}
-      role="button"
+      role="group"
       tabIndex={0}
-      aria-label={`${meta.displayName} category -- ${metrics.sourceCount} sources, ${metrics.activeSources} active`}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      className="relative flex cursor-pointer flex-col items-start gap-3 rounded-xl border bg-[rgba(var(--ambient-ink-rgb),0.05)] px-4 py-4 backdrop-blur-[12px] backdrop-saturate-[120%] border-[rgba(var(--ambient-ink-rgb),0.10)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-ember-bright)]"
+      aria-label={`${meta.displayName} category -- ${metrics.sourceCount} sources, ${metrics.activeSources} active${isFiltered ? ' (filtering map)' : ''}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="relative flex cursor-default flex-col items-start gap-3 rounded-xl border bg-[rgba(var(--ambient-ink-rgb),0.05)] px-4 py-4 backdrop-blur-[12px] backdrop-saturate-[120%] border-[rgba(var(--ambient-ink-rgb),0.10)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-ember-bright)]"
       style={{
         borderLeftWidth: 3,
         borderLeftColor: meta.color,
+        boxShadow: isFiltered ? `inset 0 0 12px ${meta.color}20, 0 0 8px ${meta.color}10` : undefined,
+        opacity: isDimmedByFilter ? 0.4 : undefined,
+        transition: 'opacity 0.3s ease',
       }}
     >
       {/* Category icon */}
@@ -166,6 +177,58 @@ export function CategoryCard({
       <span className="text-text-tertiary text-[10px] tabular-nums">
         {metrics.activeSources} active
       </span>
+
+      {/* Hover overlay with two action buttons */}
+      <AnimatePresence>
+        {isHovered && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+            className="absolute inset-0 z-10 flex flex-col items-stretch justify-center gap-3 rounded-xl px-3 py-3"
+            style={{
+              backgroundColor: 'rgba(5, 9, 17, 0.92)',
+              backdropFilter: 'blur(12px)',
+              border: `1px solid rgba(255, 255, 255, 0.10)`,
+            }}
+          >
+            <button
+              type="button"
+              onClick={handleDistrictClick}
+              className="flex items-center gap-3 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-4 py-3 font-mono text-[11px] uppercase tracking-[0.08em] transition-all duration-150 hover:border-[rgba(255,255,255,0.18)] hover:bg-[rgba(255,255,255,0.10)] hover:text-white cursor-pointer"
+              style={{ color: 'rgba(255, 255, 255, 0.6)' }}
+            >
+              <ArrowRight size={14} className="shrink-0" />
+              <span>View District</span>
+            </button>
+            {onFilter && (
+              <button
+                type="button"
+                onClick={handleFilterClick}
+                aria-label={isFiltered ? `Remove ${meta.displayName} map filter` : `Show ${meta.displayName} on map`}
+                className="flex items-center gap-3 rounded-lg border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.08em] transition-all duration-150 cursor-pointer"
+                style={{
+                  color: isFiltered ? meta.color : 'rgba(255, 255, 255, 0.6)',
+                  borderColor: isFiltered ? `${meta.color}40` : 'rgba(255, 255, 255, 0.08)',
+                  backgroundColor: isFiltered ? `${meta.color}12` : 'rgba(255, 255, 255, 0.04)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = isFiltered ? `${meta.color}60` : 'rgba(255, 255, 255, 0.18)'
+                  e.currentTarget.style.backgroundColor = isFiltered ? `${meta.color}20` : 'rgba(255, 255, 255, 0.10)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = isFiltered ? `${meta.color}40` : 'rgba(255, 255, 255, 0.08)'
+                  e.currentTarget.style.backgroundColor = isFiltered ? `${meta.color}12` : 'rgba(255, 255, 255, 0.04)'
+                }}
+              >
+                <MapPin size={14} className="shrink-0" />
+                <span>{isFiltered ? 'Remove Map Filter' : 'Show on Map'}</span>
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

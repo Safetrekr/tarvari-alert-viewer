@@ -24,6 +24,7 @@ import type { IntelNormalizedRow } from '@/lib/supabase/types'
 /** Optional filters for the coverage map data query. */
 export interface CoverageMapFilters {
   category?: string
+  categories?: string[]
   severity?: string
   startDate?: string // ISO 8601
   endDate?: string // ISO 8601
@@ -42,7 +43,8 @@ async function fetchCoverageMapData(filters?: CoverageMapFilters): Promise<MapMa
     .not('geo', 'is', null)
     .limit(1000)
 
-  if (filters?.category) query = query.eq('category', filters.category)
+  if (filters?.categories && filters.categories.length > 0) query = query.in('category', filters.categories)
+  else if (filters?.category) query = query.eq('category', filters.category)
   if (filters?.severity) query = query.eq('severity', filters.severity)
   if (filters?.startDate) query = query.gte('ingested_at', filters.startDate)
   if (filters?.endDate) query = query.lte('ingested_at', filters.endDate)

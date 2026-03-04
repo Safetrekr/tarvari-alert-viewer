@@ -22,8 +22,8 @@ import { immer } from 'zustand/middleware/immer'
 // ============================================================================
 
 interface CoverageState {
-  /** Currently selected category ID, or null for "all categories". */
-  selectedCategory: string | null
+  /** Currently selected category IDs for map filtering. Empty = show all. */
+  selectedCategories: string[]
 }
 
 // ============================================================================
@@ -31,9 +31,9 @@ interface CoverageState {
 // ============================================================================
 
 interface CoverageActions {
-  /** Select a category for filtering. Updates state only; URL sync is external. */
-  setSelectedCategory: (id: string) => void
-  /** Clear category selection (show all). */
+  /** Toggle a category in the filter set. Adds if absent, removes if present. */
+  toggleCategory: (id: string) => void
+  /** Clear all category filters (show all). */
   clearSelection: () => void
 }
 
@@ -45,16 +45,21 @@ export type CoverageStore = CoverageState & CoverageActions
 
 export const useCoverageStore = create<CoverageStore>()(
   immer((set) => ({
-    selectedCategory: null,
+    selectedCategories: [],
 
-    setSelectedCategory: (id) =>
+    toggleCategory: (id) =>
       set((state) => {
-        state.selectedCategory = id
+        const idx = state.selectedCategories.indexOf(id)
+        if (idx >= 0) {
+          state.selectedCategories.splice(idx, 1)
+        } else {
+          state.selectedCategories.push(id)
+        }
       }),
 
     clearSelection: () =>
       set((state) => {
-        state.selectedCategory = null
+        state.selectedCategories = []
       }),
   })),
 )
@@ -64,11 +69,11 @@ export const useCoverageStore = create<CoverageStore>()(
 // ============================================================================
 
 export const coverageSelectors = {
-  /** Whether any category is currently selected. */
-  hasSelection: (state: CoverageStore): boolean => state.selectedCategory !== null,
+  /** Whether any category filter is active. */
+  hasSelection: (state: CoverageStore): boolean => state.selectedCategories.length > 0,
 
-  /** The selected category ID or null. */
-  selectedCategory: (state: CoverageStore): string | null => state.selectedCategory,
+  /** The selected category IDs. */
+  selectedCategories: (state: CoverageStore): string[] => state.selectedCategories,
 } as const
 
 // ============================================================================
@@ -86,31 +91,28 @@ export function syncCoverageFromUrl(): void {
   if (typeof window === 'undefined') return
 
   const params = new URLSearchParams(window.location.search)
-  const category = params.get('category')
+  const categories = params.getAll('category')
 
-  if (category) {
-    useCoverageStore.getState().setSelectedCategory(category)
+  for (const cat of categories) {
+    useCoverageStore.getState().toggleCategory(cat)
   }
 }
 
 /**
- * Push current selection to URL query parameter.
- * Call after setSelectedCategory() or clearSelection().
+ * Push current selection to URL query parameters.
+ * Uses `replaceState` to avoid creating browser history entries.
+ * No-op on the server (SSR guard).
  *
- * Uses `replaceState` to avoid creating browser history entries
- * for filter changes. No-op on the server (SSR guard).
- *
- * @param category - The category ID to set, or null to remove the parameter.
+ * @param categories - Array of category IDs, or empty to remove param.
  */
-export function syncCoverageToUrl(category: string | null): void {
+export function syncCategoriesToUrl(categories: string[]): void {
   if (typeof window === 'undefined') return
 
   const url = new URL(window.location.href)
+  url.searchParams.delete('category')
 
-  if (category) {
-    url.searchParams.set('category', category)
-  } else {
-    url.searchParams.delete('category')
+  for (const cat of categories) {
+    url.searchParams.append('category', cat)
   }
 
   window.history.replaceState({}, '', url.toString())

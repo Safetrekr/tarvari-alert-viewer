@@ -1,23 +1,11 @@
 /**
- * FeedPanel -- Oblivion-inspired right-side glass panel showing data
- * feeds, sensor readouts, and a decorative circuit diagram.
+ * FeedPanel -- live intel feed panel showing recent alerts from
+ * the intel_normalized table, severity breakdown, and source stats.
  *
- * Positioned at world-space (400, -290), 320x580px. At zoom 0.5 it
- * renders at ~160x290px on screen.
+ * Positioned at world-space (1100, -290), 320x580px.
  *
- * Inspired by the Oblivion light table right sidebar: FEEDS header,
- * DATALINKS count, channel tabs, sensor readout key-value pairs,
- * signal strength bar, online/offline radio indicator, and a small
- * decorative circuit SVG with a pulsing teal dot.
- *
- * All values are static/mock. Glass treatment uses simple rgba
- * backgrounds (no backdrop-filter per world-space performance rule).
- *
- * The circuit SVG dot pulses via a CSS keyframe animation
- * (`enrichment-circuit-pulse`) defined in `enrichment.css`.
- *
- * Purely decorative: pointer-events disabled, aria-hidden assumed
- * from the parent wrapper.
+ * Uses real data from useIntelFeed() and useCoverageMetrics().
+ * Falls back gracefully to "NO DATA" states when loading or empty.
  *
  * @module feed-panel
  * @see Phase C Spatial Enrichment
@@ -26,69 +14,49 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useEnrichmentStore } from '@/stores/enrichment.store'
-import { DISTRICTS } from '@/lib/interfaces/district'
-import { getCategoryMeta } from '@/lib/interfaces/coverage'
-import type { ActivityEvent } from '@/lib/enrichment/enrichment-types'
+import { useIntelFeed, type IntelFeedItem } from '@/hooks/use-intel-feed'
+import { useCoverageMetrics } from '@/hooks/use-coverage-metrics'
+import { getCategoryMeta, getCategoryColor } from '@/lib/interfaces/coverage'
 
 // ---------------------------------------------------------------------------
 // Position & size constants (world-space pixels)
 // ---------------------------------------------------------------------------
 
 const PANEL_X = 1100
-const PANEL_Y = -290
+const PANEL_Y = -500
 const PANEL_W = 320
-const PANEL_H = 580
+const PANEL_H = 800
+
+// ---------------------------------------------------------------------------
+// Severity color mapping
+// ---------------------------------------------------------------------------
+
+const SEVERITY_COLORS: Record<string, string> = {
+  'Extreme': 'rgba(239, 68, 68, 0.7)',
+  'Severe': 'rgba(249, 115, 22, 0.6)',
+  'Moderate': 'rgba(234, 179, 8, 0.5)',
+  'Minor': 'rgba(59, 130, 246, 0.5)',
+  'Unknown': 'rgba(255, 255, 255, 0.2)',
+}
+
+function severityColor(severity: string): string {
+  return SEVERITY_COLORS[severity] ?? SEVERITY_COLORS['Unknown']
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Resolve a target ID to a short display name.
- * Tries KNOWN_CATEGORIES first, then falls back to DISTRICTS for legacy events,
- * and finally to the raw ID uppercased.
- */
-function resolveTargetName(targetId: string): string {
-  // Try category lookup first
-  const catMeta = getCategoryMeta(targetId)
-  if (catMeta.id === targetId) return catMeta.shortName
-
-  // Fall back to legacy district names
-  const district = DISTRICTS.find((d) => d.id === targetId)
-  if (district) return district.shortName
-
-  // Last resort: uppercase the raw ID
-  return targetId.toUpperCase()
-}
-
-/** Format a Date as HH:MM in 24-hour format. */
-function formatTime(date: Date): string {
-  const d = date instanceof Date ? date : new Date(date)
+/** Format ISO timestamp as HH:MM. */
+function formatTime(iso: string): string {
+  const d = new Date(iso)
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-/** Category color mapping for activity events (matches ActivityTicker). */
-const CATEGORY_COLORS: Record<ActivityEvent['category'], string> = {
-  data: 'rgba(14, 165, 233, 0.5)',
-  deploy: 'rgba(var(--ember-rgb), 0.5)',
-  system: 'rgba(255, 255, 255, 0.25)',
+/** Truncate text to maxLen with ellipsis. */
+function truncate(text: string, maxLen: number): string {
+  return text.length > maxLen ? text.slice(0, maxLen - 1) + '…' : text
 }
-
-// ---------------------------------------------------------------------------
-// Tab data
-// ---------------------------------------------------------------------------
-
-interface TabDef {
-  label: string
-  active: boolean
-}
-
-const TABS: TabDef[] = [
-  { label: 'MAP', active: true },
-  { label: 'AGNT', active: false },
-  { label: 'SYS', active: false },
-]
 
 // ---------------------------------------------------------------------------
 // Shared text styles (world-space)
@@ -107,7 +75,7 @@ const GHOST: React.CSSProperties = {
 }
 
 // ---------------------------------------------------------------------------
-// Circuit diagram SVG
+// Circuit diagram SVG (decorative)
 // ---------------------------------------------------------------------------
 
 function CircuitDiagram() {
@@ -122,27 +90,18 @@ function CircuitDiagram() {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Horizontal traces */}
       <line x1="20" y1="30" x2="90" y2="30" stroke={TRACE} strokeWidth={1} />
       <line x1="110" y1="30" x2="180" y2="30" stroke={TRACE} strokeWidth={1} />
       <line x1="20" y1="70" x2="90" y2="70" stroke={TRACE} strokeWidth={1} />
       <line x1="110" y1="70" x2="180" y2="70" stroke={TRACE} strokeWidth={1} />
-
-      {/* Vertical connectors */}
       <line x1="60" y1="30" x2="60" y2="70" stroke={TRACE} strokeWidth={1} />
       <line x1="140" y1="30" x2="140" y2="70" stroke={TRACE} strokeWidth={1} />
-
-      {/* Component boxes (IC symbols) */}
       <rect x="28" y="22" width="16" height="16" rx={2} stroke={COMP} strokeWidth={1} />
       <rect x="156" y="22" width="16" height="16" rx={2} stroke={COMP} strokeWidth={1} />
-
-      {/* Capacitor symbols (gap marks) */}
       <line x1="95" y1="26" x2="95" y2="34" stroke={TRACE} strokeWidth={1} />
       <line x1="99" y1="26" x2="99" y2="34" stroke={TRACE} strokeWidth={1} />
       <line x1="95" y1="66" x2="95" y2="74" stroke={TRACE} strokeWidth={1} />
       <line x1="99" y1="66" x2="99" y2="74" stroke={TRACE} strokeWidth={1} />
-
-      {/* Pulsing node dot */}
       <circle
         cx="60"
         cy="50"
@@ -159,46 +118,25 @@ function CircuitDiagram() {
 // ---------------------------------------------------------------------------
 
 export function FeedPanel() {
-  const activityLog = useEnrichmentStore((s) => s.activityLog)
-  const districts = useEnrichmentStore((s) => s.districts)
+  const { data: feedItems = [], isLoading: isFeedLoading } = useIntelFeed()
+  const { data: metrics } = useCoverageMetrics()
 
-  // Derive metrics from district data
-  const { datalinksCount, sensors } = useMemo(() => {
-    const districtValues = Object.values(districts)
-
-    // DATALINKS: count districts that are not OFFLINE or DOWN
-    const online = districtValues.filter(
-      (d) => d.health !== 'OFFLINE' && d.health !== 'DOWN',
-    )
-
-    // Sensor readouts derived from aggregate district metrics
-    const avgResponse =
-      districtValues.length > 0
-        ? Math.round(districtValues.reduce((sum, d) => sum + d.responseTimeMs, 0) / districtValues.length)
-        : 0
-    const totalAlerts = districtValues.reduce((sum, d) => sum + d.alertCount, 0)
-    const avgCpu =
-      districtValues.length > 0
-        ? Math.round(districtValues.reduce((sum, d) => sum + d.cpuUsagePct, 0) / districtValues.length)
-        : 0
-    const avgMem =
-      districtValues.length > 0
-        ? Math.round(districtValues.reduce((sum, d) => sum + d.memoryUsagePct, 0) / districtValues.length)
-        : 0
-
-    return {
-      datalinksCount: online.length,
-      sensors: [
-        { key: 'F.RATE', value: `${avgResponse}ms` },
-        { key: 'GAIN', value: `${totalAlerts}` },
-        { key: 'ELEV', value: `${avgCpu}%` },
-        { key: 'ROT', value: `${avgMem}%` },
-      ],
+  // Severity breakdown from the feed
+  const severityCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const item of feedItems) {
+      counts[item.severity] = (counts[item.severity] ?? 0) + 1
     }
-  }, [districts])
+    return [
+      { key: 'EXTREME', value: counts['Extreme'] ?? 0, color: SEVERITY_COLORS['Extreme'] },
+      { key: 'SEVERE', value: counts['Severe'] ?? 0, color: SEVERITY_COLORS['Severe'] },
+      { key: 'MODERATE', value: counts['Moderate'] ?? 0, color: SEVERITY_COLORS['Moderate'] },
+      { key: 'MINOR', value: counts['Minor'] ?? 0, color: SEVERITY_COLORS['Minor'] },
+    ]
+  }, [feedItems])
 
-  // First 5 activity events for the feed
-  const recentEvents = useMemo(() => activityLog.slice(0, 5), [activityLog])
+  // 6 most recent feed items
+  const recentItems = useMemo(() => feedItems.slice(0, 6), [feedItems])
 
   return (
     <div
@@ -234,12 +172,12 @@ export function FeedPanel() {
             marginBottom: 16,
           }}
         >
-          FEEDS
+          INTEL FEED
         </div>
 
-        {/* -- DATALINKS count --------------------------------------- */}
+        {/* -- Source stats ------------------------------------------- */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 20 }}>
-          <span style={GHOST}>DATALINKS</span>
+          <span style={GHOST}>SOURCES</span>
           <span
             style={{
               ...MONO,
@@ -248,47 +186,25 @@ export function FeedPanel() {
               letterSpacing: '0.04em',
             }}
           >
-            {datalinksCount}
+            {metrics?.activeSources ?? '—'}/{metrics?.totalSources ?? '—'}
+          </span>
+          <span
+            style={{
+              ...MONO,
+              fontSize: 12,
+              color: 'rgba(255, 255, 255, 0.12)',
+              letterSpacing: '0.04em',
+            }}
+          >
+            ACTIVE
           </span>
         </div>
 
-        {/* -- Channel tabs ------------------------------------------ */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 0,
-            marginBottom: 24,
-            border: '1px solid rgba(255, 255, 255, 0.04)',
-            borderRadius: 6,
-            overflow: 'hidden',
-          }}
-        >
-          {TABS.map((tab, index) => (
-            <div
-              key={tab.label}
-              style={{
-                flex: 1,
-                textAlign: 'center',
-                padding: '8px 0',
-                ...MONO,
-                fontSize: 16,
-                letterSpacing: '0.1em',
-                color: tab.active ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.2)',
-                background: tab.active ? 'rgba(var(--ember-rgb), 0.15)' : 'transparent',
-                borderRight:
-                  index < TABS.length - 1 ? '1px solid rgba(255, 255, 255, 0.04)' : 'none',
-              }}
-            >
-              {tab.label}
-            </div>
-          ))}
-        </div>
-
-        {/* -- Sensor readout ---------------------------------------- */}
+        {/* -- Severity breakdown ------------------------------------ */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ ...GHOST, marginBottom: 10 }}>SENSOR READOUT</div>
+          <div style={{ ...GHOST, marginBottom: 10 }}>SEVERITY</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {sensors.map((s) => (
+            {severityCounts.map((s) => (
               <div
                 key={s.key}
                 style={{
@@ -311,7 +227,7 @@ export function FeedPanel() {
                   style={{
                     ...MONO,
                     fontSize: 16,
-                    color: 'rgba(255, 255, 255, 0.35)',
+                    color: s.color,
                     letterSpacing: '0.04em',
                   }}
                 >
@@ -322,11 +238,11 @@ export function FeedPanel() {
           </div>
         </div>
 
-        {/* -- Activity feed (replaces signal strength + radio) ------ */}
+        {/* -- Recent alerts ----------------------------------------- */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ ...GHOST, marginBottom: 10 }}>ACTIVITY</div>
+          <div style={{ ...GHOST, marginBottom: 10 }}>RECENT</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {recentEvents.length === 0 ? (
+            {isFeedLoading ? (
               <span
                 style={{
                   ...MONO,
@@ -335,46 +251,22 @@ export function FeedPanel() {
                   letterSpacing: '0.04em',
                 }}
               >
-                NO EVENTS
+                LOADING…
+              </span>
+            ) : recentItems.length === 0 ? (
+              <span
+                style={{
+                  ...MONO,
+                  fontSize: 12,
+                  color: 'rgba(255, 255, 255, 0.1)',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                NO DATA
               </span>
             ) : (
-              recentEvents.map((evt) => (
-                <div key={evt.id}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span
-                      style={{
-                        ...MONO,
-                        fontSize: 12,
-                        color: 'rgba(255, 255, 255, 0.12)',
-                        letterSpacing: '0.04em',
-                      }}
-                    >
-                      [{formatTime(evt.timestamp)}]
-                    </span>
-                    <span
-                      style={{
-                        ...MONO,
-                        fontSize: 12,
-                        color: CATEGORY_COLORS[evt.category],
-                        letterSpacing: '0.06em',
-                      }}
-                    >
-                      {evt.verb}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      ...MONO,
-                      fontSize: 11,
-                      color: 'rgba(255, 255, 255, 0.1)',
-                      letterSpacing: '0.04em',
-                      paddingLeft: 12,
-                      marginTop: 1,
-                    }}
-                  >
-                    &rarr; {resolveTargetName(evt.target)}
-                  </div>
-                </div>
+              recentItems.map((item) => (
+                <FeedItem key={item.id} item={item} />
               ))
             )}
           </div>
@@ -393,6 +285,56 @@ export function FeedPanel() {
         >
           <CircuitDiagram />
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Feed item row
+// ---------------------------------------------------------------------------
+
+function FeedItem({ item }: { item: IntelFeedItem }) {
+  const catMeta = getCategoryMeta(item.category)
+  const catColor = getCategoryColor(item.category)
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span
+          style={{
+            ...MONO,
+            fontSize: 12,
+            color: 'rgba(255, 255, 255, 0.12)',
+            letterSpacing: '0.04em',
+          }}
+        >
+          [{formatTime(item.ingestedAt)}]
+        </span>
+        <span
+          style={{
+            ...MONO,
+            fontSize: 12,
+            color: severityColor(item.severity),
+            letterSpacing: '0.06em',
+          }}
+        >
+          {item.severity.toUpperCase()}
+        </span>
+      </div>
+      <div
+        style={{
+          ...MONO,
+          fontSize: 11,
+          color: 'rgba(255, 255, 255, 0.1)',
+          letterSpacing: '0.04em',
+          paddingLeft: 12,
+          marginTop: 1,
+        }}
+      >
+        <span style={{ color: catColor }}>{catMeta.shortName}</span>
+        {' → '}
+        {truncate(item.title, 32)}
       </div>
     </div>
   )

@@ -17,7 +17,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Map,
-  NavigationControl,
   Popup,
   type MapRef,
   type MapLayerMouseEvent,
@@ -97,6 +96,94 @@ function isWebGLSupported(): boolean {
   } catch {
     return false
   }
+}
+
+// ============================================================================
+// Map navigation controls (pan + zoom)
+// ============================================================================
+
+const NAV_BTN: React.CSSProperties = {
+  width: 28,
+  height: 28,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: '1px solid rgba(255,255,255,0.10)',
+  borderRadius: 4,
+  background: 'rgba(5, 9, 17, 0.85)',
+  color: 'rgba(255,255,255,0.5)',
+  cursor: 'pointer',
+  fontSize: 14,
+  fontFamily: 'var(--font-mono, monospace)',
+  lineHeight: 1,
+  padding: 0,
+  transition: 'background 0.15s, color 0.15s, border-color 0.15s',
+}
+
+function MapNavControls({ mapRef }: { mapRef: React.RefObject<MapRef | null> }) {
+  const pan = useCallback((dx: number, dy: number) => {
+    mapRef.current?.panBy([dx, dy], { duration: 300 })
+  }, [mapRef])
+
+  const zoom = useCallback((delta: number) => {
+    const m = mapRef.current
+    if (!m) return
+    m.easeTo({ zoom: m.getZoom() + delta, duration: 300 })
+  }, [mapRef])
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 10,
+        left: 10,
+        zIndex: 12,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 3,
+        pointerEvents: 'auto',
+      }}
+    >
+      {/* Directional pad */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 28px)', gap: 2 }}>
+        <div />
+        <button type="button" style={NAV_BTN} onClick={() => pan(0, -80)} aria-label="Pan up"
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(5,9,17,0.85)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
+        >&#9650;</button>
+        <div />
+
+        <button type="button" style={NAV_BTN} onClick={() => pan(-80, 0)} aria-label="Pan left"
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(5,9,17,0.85)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
+        >&#9664;</button>
+        <div />
+        <button type="button" style={NAV_BTN} onClick={() => pan(80, 0)} aria-label="Pan right"
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(5,9,17,0.85)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
+        >&#9654;</button>
+
+        <div />
+        <button type="button" style={NAV_BTN} onClick={() => pan(0, 80)} aria-label="Pan down"
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(5,9,17,0.85)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
+        >&#9660;</button>
+        <div />
+      </div>
+
+      {/* Zoom controls */}
+      <div style={{ display: 'flex', gap: 2, marginTop: 4 }}>
+        <button type="button" style={{ ...NAV_BTN, flex: 1, fontWeight: 700, fontSize: 16 }} onClick={() => zoom(1)} aria-label="Zoom in"
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(5,9,17,0.85)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
+        >+</button>
+        <button type="button" style={{ ...NAV_BTN, flex: 1, fontWeight: 700, fontSize: 16 }} onClick={() => zoom(-1)} aria-label="Zoom out"
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(5,9,17,0.85)'; e.currentTarget.style.color = 'rgba(255,255,255,0.5)' }}
+        >−</button>
+      </div>
+    </div>
+  )
 }
 
 // ============================================================================
@@ -302,19 +389,43 @@ export function CoverageMap({
 
   // -- Main render ------------------------------------------------------
 
+  const cornerSize = 14
+  const cornerOffset = -6
+  const cornerThickness = 1.5
+  const cornerColor = 'rgba(255, 255, 255, 0.18)'
+  const glowColor = 'rgba(100, 180, 220, 0.12)'
+
   return (
     <div
-      role="application"
-      aria-roledescription="map"
-      aria-label={`${categoryName} alert locations — ${markers.length > 0 ? markerCountLabel : 'no markers'}`}
       style={{
         width: '100%',
         height: '100%',
         position: 'relative',
-        borderRadius: 8,
-        overflow: 'hidden',
       }}
     >
+      {/* Decorative right-angle corner brackets (outside the map) */}
+      {/* Top-left */}
+      <div aria-hidden="true" style={{ position: 'absolute', top: cornerOffset, left: cornerOffset, width: cornerSize, height: cornerSize, zIndex: 15, pointerEvents: 'none', borderTop: `${cornerThickness}px solid ${cornerColor}`, borderLeft: `${cornerThickness}px solid ${cornerColor}` }} />
+      {/* Top-right */}
+      <div aria-hidden="true" style={{ position: 'absolute', top: cornerOffset, right: cornerOffset, width: cornerSize, height: cornerSize, zIndex: 15, pointerEvents: 'none', borderTop: `${cornerThickness}px solid ${cornerColor}`, borderRight: `${cornerThickness}px solid ${cornerColor}` }} />
+      {/* Bottom-left */}
+      <div aria-hidden="true" style={{ position: 'absolute', bottom: cornerOffset, left: cornerOffset, width: cornerSize, height: cornerSize, zIndex: 15, pointerEvents: 'none', borderBottom: `${cornerThickness}px solid ${cornerColor}`, borderLeft: `${cornerThickness}px solid ${cornerColor}` }} />
+      {/* Bottom-right */}
+      <div aria-hidden="true" style={{ position: 'absolute', bottom: cornerOffset, right: cornerOffset, width: cornerSize, height: cornerSize, zIndex: 15, pointerEvents: 'none', borderBottom: `${cornerThickness}px solid ${cornerColor}`, borderRight: `${cornerThickness}px solid ${cornerColor}` }} />
+
+      <div
+        role="application"
+        aria-roledescription="map"
+        aria-label={`${categoryName} alert locations — ${markers.length > 0 ? markerCountLabel : 'no markers'}`}
+        style={{
+          width: '100%',
+          height: '100%',
+          position: 'relative',
+          borderRadius: 8,
+          overflow: 'hidden',
+          boxShadow: `inset 0 0 20px ${glowColor}, 0 0 15px ${glowColor}, 0 0 1px rgba(255,255,255,0.06)`,
+        }}
+      >
       <Map
         ref={mapRef}
         initialViewState={INITIAL_VIEW_STATE}
@@ -327,7 +438,7 @@ export function CoverageMap({
         attributionControl={false}
         style={{ width: '100%', height: '100%' }}
       >
-        <NavigationControl position="top-right" showCompass={false} />
+        {/* Custom nav controls rendered outside Map below */}
 
         {markers.length > 0 && <MapMarkerLayer data={geojson} />}
 
@@ -348,6 +459,9 @@ export function CoverageMap({
           </Popup>
         )}
       </Map>
+
+      {/* Custom map navigation controls -- upper left */}
+      <MapNavControls mapRef={mapRef} />
 
       {/* Screen reader live region for marker count changes */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
@@ -414,6 +528,7 @@ export function CoverageMap({
           </span>
         </div>
       )}
+      </div>
     </div>
   )
 }

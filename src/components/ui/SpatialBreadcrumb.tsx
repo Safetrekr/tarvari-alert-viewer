@@ -35,6 +35,7 @@ import {
 import { useCameraStore } from '@/stores/camera.store'
 import { useUIStore } from '@/stores/ui.store'
 import { DISTRICTS, type DistrictId } from '@/lib/interfaces/district'
+import { KNOWN_CATEGORIES } from '@/lib/interfaces/coverage'
 import { returnToHub, flyToDistrict } from '@/lib/spatial-actions'
 import { cn } from '@/lib/utils'
 
@@ -49,15 +50,29 @@ interface SpatialBreadcrumbProps {
 export function SpatialBreadcrumb({ className }: SpatialBreadcrumbProps) {
   const semanticLevel = useCameraStore((s) => s.semanticLevel)
   const selectedDistrictId = useUIStore((s) => s.selectedDistrictId)
+  const morphPhase = useUIStore((s) => s.morph.phase)
 
-  // Resolve district display name from the selected ID
+  // Resolve display name from selected ID (legacy districts or coverage categories)
   const selectedDistrict = selectedDistrictId
     ? DISTRICTS.find((d) => d.id === selectedDistrictId)
     : null
+  const selectedCategory = selectedDistrictId
+    ? KNOWN_CATEGORIES.find((c) => c.id === selectedDistrictId)
+    : null
+  const selectedName = selectedDistrict?.displayName ?? selectedCategory?.displayName ?? null
+
+  // Morph is active when in any non-idle phase
+  const isInDistrict = morphPhase !== 'idle'
+
+  const resetMorph = useUIStore((s) => s.resetMorph)
 
   const handleLaunchClick = useCallback(() => {
+    // Close any active district/morph state and return camera to hub
+    if (isInDistrict) {
+      resetMorph()
+    }
     returnToHub()
-  }, [])
+  }, [isInDistrict, resetMorph])
 
   const handleDistrictClick = useCallback(() => {
     if (selectedDistrictId) {
@@ -65,10 +80,10 @@ export function SpatialBreadcrumb({ className }: SpatialBreadcrumbProps) {
     }
   }, [selectedDistrictId])
 
-  // Determine what segments to show based on semantic level
+  // Show district segment when zoomed in OR when in district view overlay
   const showDistrict =
-    (semanticLevel === 'Z2' || semanticLevel === 'Z3') && selectedDistrict
-  const showStation = semanticLevel === 'Z3' && selectedDistrict
+    ((semanticLevel === 'Z2' || semanticLevel === 'Z3') || isInDistrict) && selectedName
+  const showStation = semanticLevel === 'Z3' && selectedName
 
   return (
     <Breadcrumb
@@ -128,7 +143,7 @@ export function SpatialBreadcrumb({ className }: SpatialBreadcrumbProps) {
                     )}
                     type="button"
                   >
-                    {selectedDistrict.displayName}
+                    {selectedName}
                   </button>
                 </BreadcrumbLink>
               ) : (
@@ -138,7 +153,7 @@ export function SpatialBreadcrumb({ className }: SpatialBreadcrumbProps) {
                     'tracking-[0.02em] opacity-55',
                   )}
                 >
-                  {selectedDistrict.displayName}
+                  {selectedName}
                 </BreadcrumbPage>
               )}
             </BreadcrumbItem>

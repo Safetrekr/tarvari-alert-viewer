@@ -45,6 +45,10 @@ export interface CoverageGridProps {
   onSelect: (id: NodeId) => void
   /** Current morph phase (controls dim/scale on cards). */
   morphPhase?: MorphPhase
+  /** Currently filtered category IDs. */
+  filteredIds?: string[]
+  /** Callback when a card's filter button is clicked. */
+  onFilter?: (id: NodeId) => void
   /** Children rendered inside the grid container (e.g. ConnectorLines overlay). */
   children?: ReactNode
 }
@@ -58,9 +62,12 @@ export function CoverageGrid({
   selectedId,
   onSelect,
   morphPhase,
+  filteredIds = [],
+  onFilter,
   children,
 }: CoverageGridProps) {
   const hasSelection = selectedId !== null
+  const hasFilter = filteredIds.length > 0
   const activeMorphPhase = morphPhase ?? 'idle'
 
   return (
@@ -94,6 +101,9 @@ export function CoverageGrid({
             isSelected={selectedId === item.id}
             hasSelection={hasSelection}
             onSelect={onSelect}
+            onFilter={onFilter}
+            isFiltered={filteredIds.includes(item.id)}
+            isDimmedByFilter={hasFilter && !filteredIds.includes(item.id)}
           />
         ))}
       </div>
