@@ -1,0 +1,306 @@
+/* =============================================================
+   ATRIUM AMBIENT ANIMATIONS
+   All animations in this file are CSS @keyframes (Ambient tier).
+   Choreography-tier animations use motion/react in components.
+
+   @see WS-1.2 Section 4.11
+   ============================================================= */
+
+/* --- Health Bar Heartbeat ---
+   7s cycle, scaleY 1 -> 1.8 -> 1.1 -> 1
+   Staggered 1.2s per capsule via data-index attribute.
+   ----------------------------------------------------------- */
+@keyframes heartbeat {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scaleY(1);
+  }
+  15% {
+    opacity: 0.45;
+    transform: scaleY(1.2);
+  }
+  35% {
+    opacity: 0.38;
+    transform: scaleY(1.05);
+  }
+}
+
+/* --- Hub Center Breathing ---
+   5s cycle, glow oscillates between dim and bright.
+   ----------------------------------------------------------- */
+@keyframes breathe {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--color-ember) 6%, transparent))
+      drop-shadow(0 0 4px color-mix(in srgb, var(--color-ember) 4%, transparent));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px color-mix(in srgb, var(--color-ember) 10%, transparent))
+      drop-shadow(0 0 6px color-mix(in srgb, var(--color-ember) 6%, transparent));
+  }
+}
+
+/* --- Dot Grid Radial Pulse ---
+   12s cycle, radial expansion from center.
+   ----------------------------------------------------------- */
+@keyframes grid-pulse {
+  0% {
+    opacity: 0;
+    background-size: 0% 0%;
+  }
+  8% {
+    opacity: 0.15;
+    background-size: 20% 20%;
+  }
+  50% {
+    opacity: 0.08;
+    background-size: 200% 200%;
+  }
+  100% {
+    opacity: 0;
+    background-size: 400% 400%;
+  }
+}
+
+/* --- DOWN State Flashing Health Bar ---
+   2s cycle, opacity pulse for error state.
+   ----------------------------------------------------------- */
+@keyframes flash-error {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* --- Tarva Star Pulse (bottom-left branding mark) ---
+   3s cycle, glow + scale breathe.
+   ----------------------------------------------------------- */
+@keyframes star-pulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-ember) 30%, transparent));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 12px color-mix(in srgb, var(--color-ember) 60%, transparent));
+    transform: scale(1.1);
+  }
+}
+
+.tarva-star-pulse {
+  animation: star-pulse 3s ease-in-out infinite;
+}
+
+/* =============================================================
+   HEALTH BAR
+   ============================================================= */
+
+.capsule-health-bar {
+  width: 100%;
+  height: 3px;
+  border-radius: 1.5px;
+  transform-origin: center center;
+  animation: heartbeat var(--duration-ambient-heart) var(--heartbeat-delay, 0s) infinite;
+}
+
+/* Stagger: 1.2s per capsule */
+.capsule-health-bar[data-index='0'] {
+  --heartbeat-delay: 0s;
+}
+.capsule-health-bar[data-index='1'] {
+  --heartbeat-delay: 1.2s;
+}
+.capsule-health-bar[data-index='2'] {
+  --heartbeat-delay: 2.4s;
+}
+.capsule-health-bar[data-index='3'] {
+  --heartbeat-delay: 3.6s;
+}
+.capsule-health-bar[data-index='4'] {
+  --heartbeat-delay: 4.8s;
+}
+.capsule-health-bar[data-index='5'] {
+  --heartbeat-delay: 6s;
+}
+
+/* Offline: no heartbeat, reduced opacity */
+.capsule-health-bar[data-health='OFFLINE'],
+.capsule-health-bar[data-health='UNKNOWN'] {
+  animation: none;
+  opacity: 0.25;
+}
+
+/* DOWN state: flashing variant */
+.capsule-health-bar[data-health='DOWN'] {
+  animation:
+    heartbeat var(--duration-ambient-heart) var(--heartbeat-delay, 0s) infinite,
+    flash-error 2s ease-in-out infinite;
+}
+
+/* =============================================================
+   HUB CENTER GLYPH
+   ============================================================= */
+
+.hub-center-glyph {
+  animation: breathe var(--duration-ambient-breathe) ease-in-out infinite;
+}
+
+/* =============================================================
+   DOT GRID PULSE
+   ============================================================= */
+
+.dot-grid-pulse {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle at var(--pulse-x, 50%) var(--pulse-y, 50%),
+    rgba(var(--ambient-ink-rgb), 0.015) 0%,
+    rgba(var(--ambient-ink-rgb), 0.006) 30%,
+    rgba(var(--ambient-ink-rgb), 0.006) 100%
+  );
+  animation: grid-pulse var(--duration-ambient-grid) ease-out infinite;
+  opacity: 0;
+}
+
+/* =============================================================
+   CAPSULE HOVER / SELECTION GLOW TRANSITIONS
+   ============================================================= */
+
+/* Resting state */
+.district-capsule {
+  box-shadow:
+    inset 0 1px 0 0 rgba(var(--ambient-ink-rgb), 0.02),
+    0 0 8px color-mix(in srgb, var(--color-ember) 4%, transparent);
+  transition:
+    box-shadow 0.4s ease,
+    background 0.4s ease,
+    border-color 0.4s ease;
+}
+
+/* Hover state */
+.district-capsule:hover {
+  background: rgba(var(--ambient-ink-rgb), 0.05);
+  border-color: rgba(var(--ambient-ink-rgb), 0.10);
+  box-shadow:
+    inset 0 1px 0 0 rgba(var(--ambient-ink-rgb), 0.03),
+    0 0 16px color-mix(in srgb, var(--color-ember) 8%, transparent),
+    0 0 4px color-mix(in srgb, var(--color-ember-bright) 12%, transparent);
+  z-index: 10;
+}
+
+/* Selected / expanded state */
+.district-capsule[data-selected='true'] {
+  border-color: color-mix(in srgb, var(--color-ember-bright) 20%, transparent);
+  box-shadow:
+    inset 0 1px 0 0 rgba(var(--ambient-ink-rgb), 0.03),
+    0 0 24px color-mix(in srgb, var(--color-ember) 10%, transparent),
+    0 0 8px color-mix(in srgb, var(--color-ember-bright) 15%, transparent);
+}
+
+/* Offline capsule: suppress glow */
+.district-capsule[data-health='OFFLINE'],
+.district-capsule[data-health='UNKNOWN'] {
+  box-shadow: inset 0 1px 0 0 rgba(var(--ambient-ink-rgb), 0.02);
+}
+
+.district-capsule[data-health='OFFLINE']:hover,
+.district-capsule[data-health='UNKNOWN']:hover {
+  box-shadow:
+    inset 0 1px 0 0 rgba(var(--ambient-ink-rgb), 0.02),
+    0 0 8px rgba(107, 114, 128, 0.08);
+}
+
+/* =============================================================
+   TELEMETRY TEXT HOVER TRANSITIONS
+   ============================================================= */
+
+.district-capsule [data-slot='telemetry-label'] {
+  opacity: 0.4;
+  transition: opacity var(--duration-hover) ease-out;
+}
+.district-capsule:hover [data-slot='telemetry-label'] {
+  opacity: 0.7;
+}
+
+.district-capsule [data-slot='telemetry-value'] {
+  opacity: 0.7;
+  transition: opacity var(--duration-hover) ease-out;
+}
+.district-capsule:hover [data-slot='telemetry-value'],
+.district-capsule:focus-visible [data-slot='telemetry-value'] {
+  opacity: 1;
+}
+
+/* =============================================================
+   SPARKLINE HOVER TRANSITION
+   ============================================================= */
+
+.district-capsule [data-slot='capsule-sparkline'] {
+  opacity: 0.3;
+  transition: opacity var(--duration-hover) ease-out;
+}
+.district-capsule:hover [data-slot='capsule-sparkline'] {
+  opacity: 0.5;
+}
+
+/* =============================================================
+   PANNING OPTIMIZATION
+   Disable expensive effects during camera motion.
+   ============================================================= */
+
+[data-panning='true'] .district-capsule {
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color-ember) 10%, transparent);
+  backdrop-filter: none;
+}
+
+/* =============================================================
+   REDUCED MOTION
+   Disable all ambient animations for accessibility.
+   ============================================================= */
+
+/* =============================================================
+   COMMAND PALETTE GLASS STYLING
+   WS-1.4: Heavy glass for the Cmd+K command palette.
+   ============================================================= */
+
+[data-slot='dialog-overlay'] {
+  /* Darken overlay for spatial context */
+}
+
+[data-slot='dialog-content']:has([data-slot='command']) {
+  max-width: 480px;
+  border-color: rgba(var(--ambient-ink-rgb), 0.08);
+  background: rgba(40, 49, 62, 0.8);
+  backdrop-filter: blur(24px);
+  box-shadow:
+    inset 0 1px 0 0 rgba(var(--ambient-ink-rgb), 0.04),
+    0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* =============================================================
+   REDUCED MOTION
+   Disable all ambient animations for accessibility.
+   ============================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .capsule-health-bar,
+  .hub-center-glyph,
+  .dot-grid-pulse,
+  .tarva-star-pulse {
+    animation: none !important;
+  }
+
+  .hub-center-glyph {
+    filter: drop-shadow(0 0 14px color-mix(in srgb, var(--color-ember) 20%, transparent))
+      drop-shadow(0 0 5px color-mix(in srgb, var(--color-ember) 12%, transparent));
+  }
+
+  .capsule-health-bar {
+    opacity: 0.45;
+  }
+}

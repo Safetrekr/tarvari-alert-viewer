@@ -1,0 +1,107 @@
+/* =================================================================
+   Login Experience -- Keyframes & Scoped Styles
+   =================================================================
+   Extracted from styled-jsx blocks in auth components.
+   styled-jsx is not reliably supported in Next.js 16 App Router,
+   so these animations live in a co-located CSS file instead.
+   ================================================================= */
+
+/* -----------------------------------------------------------------
+   Attractor Glyph -- Breathing Animation
+   5s ease-in-out cycle, ember glow oscillation.
+   Source: VISUAL-DESIGN-SPEC.md Section 5.3
+   ----------------------------------------------------------------- */
+
+@keyframes login-breathe {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(var(--ember-rgb), 0.3));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(var(--ember-rgb), 0.6));
+    transform: scale(1.08);
+  }
+}
+
+.attractor-glyph {
+  animation: login-breathe 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attractor-glyph {
+    animation: none;
+    filter: drop-shadow(0 0 12px rgba(var(--ember-rgb), 0.4));
+  }
+}
+
+/* -----------------------------------------------------------------
+   Scanline Sweep -- 1 primary + 2 ghost lines
+   Source: VISUAL-DESIGN-SPEC.md Section 5.5
+   ----------------------------------------------------------------- */
+
+@keyframes login-scan {
+  0% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+.scanline-primary {
+  box-shadow: 0 0 4px rgba(var(--ember-rgb), 0.1);
+  transform: translateY(-2px);
+  animation: login-scan 350ms ease-out forwards;
+}
+
+.scanline-ghost-1 {
+  transform: translateY(-2px);
+  animation: login-scan 350ms ease-out forwards;
+  animation-delay: 30ms;
+}
+
+.scanline-ghost-2 {
+  transform: translateY(-2px);
+  animation: login-scan 350ms ease-out forwards;
+  animation-delay: 60ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanline-primary,
+  .scanline-ghost-1,
+  .scanline-ghost-2 {
+    animation: none;
+    display: none;
+  }
+}
+
+/* -----------------------------------------------------------------
+   Receipt Stamp -- Typography
+   Source: VISUAL-DESIGN-SPEC.md Section 3.4
+   ----------------------------------------------------------------- */
+
+.receipt-stamp {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ember-bright);
+  opacity: 0.75;
+}
+
+.receipt-separator {
+  opacity: 0.35;
+  margin: 0 0.4em;
+}
+
+.receipt-trace {
+  color: var(--color-ember-glow);
+  opacity: 0.9;
+}
+
+.receipt-timestamp {
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+}

@@ -1,0 +1,153 @@
+/* =================================================================
+   Tarva Launch -- Visual Polish Overrides
+   =================================================================
+   Source: WS-4.4 (Visual Polish Pass)
+   Applied AFTER all component stylesheets.
+   Contains: transition timing corrections, glow intensity tuning,
+   spring-physics visual compensation, and pan-state optimizations.
+
+   Load order:
+   1. @tarva/ui base styles
+   2. spatial-tokens.css (WS-0.2)
+   3. ambient-effects.css (WS-1.6, polished by WS-4.4)
+   4. station-panel.css (WS-2.6)
+   5. attention-choreography.css (WS-3.7)
+   6. visual-polish-overrides.css (THIS FILE -- last)
+   ================================================================= */
+
+/* -----------------------------------------------------------------
+   TRANSITION TIMING CORRECTIONS
+   Polish pass found that hover transitions feel snappier at 180ms
+   than the spec's 200ms when combined with the glass material change.
+   The 20ms reduction removes a perceptible "lag" after cursor enters.
+   ----------------------------------------------------------------- */
+.capsule,
+[data-capsule] {
+  transition:
+    transform 180ms var(--ease-hover),
+    box-shadow 200ms var(--ease-glow),
+    background-color 200ms ease-out,
+    border-color 200ms ease-out;
+}
+
+/* -----------------------------------------------------------------
+   MORPH PHASE TIMING VISUAL COMPENSATION
+   During the "focusing" phase (300ms), the camera spring and capsule
+   scale animate simultaneously. The scale needs to lead by ~30ms
+   to feel connected to the camera motion rather than lagging behind.
+   This is achieved by shortening the scale transition duration.
+   ----------------------------------------------------------------- */
+[data-morph-phase='focusing'] .capsule[data-selected='true'] {
+  transition: transform 270ms var(--ease-morph);
+}
+
+/* Siblings drift out slightly faster to clear visual space */
+[data-morph-phase='focusing'] .capsule[data-selected='false'] {
+  transition:
+    transform 300ms var(--ease-morph),
+    opacity 250ms ease-out;
+}
+
+/* -----------------------------------------------------------------
+   UNFURLING STATION ENTRANCE STAGGER REFINEMENT
+   The base 80ms stagger from WS-2.1 works for 3 stations but
+   feels rushed at 5 stations. Use a slightly longer stagger (90ms)
+   and a softer easing for a more "unfurling" feel.
+   ----------------------------------------------------------------- */
+[data-morph-phase='unfurling'] [data-station-entrance] {
+  --station-stagger: 90ms;
+}
+
+/* -----------------------------------------------------------------
+   GLOW INTENSITY CORRECTIONS
+   Full-system review revealed that ember glow-subtle is too dim
+   against the void background when multiple capsules are visible.
+   Increase the outer haze opacity from 0.08 to 0.10 for better
+   ambient presence at Z1 atrium view.
+   ----------------------------------------------------------------- */
+.capsule:not(:hover):not([data-selected='true']) {
+  box-shadow:
+    0 0 14px rgba(var(--ember-rgb), 0.1),
+    0 0 5px rgba(var(--ember-rgb), 0.14);
+}
+
+/* -----------------------------------------------------------------
+   GLASS PANEL PAN-STATE FALLBACK REFINEMENT
+   WS-2.6 swaps backdrop-filter to none during pan. The transition
+   back to blur after pan-end should be imperceptible. Use a 100ms
+   fade-in for the blur restoration to avoid a visual "pop".
+   ----------------------------------------------------------------- */
+.station-panel,
+.station-glass,
+.station-glass-active,
+.capsule {
+  transition:
+    backdrop-filter 100ms ease-out,
+    -webkit-backdrop-filter 100ms ease-out;
+}
+
+/* During pan: immediate removal (no transition delay) */
+[data-panning='true'] .station-panel,
+[data-panning='true'] .station-glass,
+[data-panning='true'] .station-glass-active,
+[data-panning='true'] .capsule {
+  transition: none;
+}
+
+/* -----------------------------------------------------------------
+   HUB CENTER GLYPH GLOW FLOOR
+   The breathing animation dips to 0.06 opacity at its minimum,
+   which can make the hub center feel "dead" when other capsule
+   glows are brighter. Set a minimum glow floor so the center
+   always maintains a faint ember presence.
+   ----------------------------------------------------------------- */
+.hub-center {
+  box-shadow:
+    0 0 20px rgba(var(--ember-rgb), 0.06),
+    0 0 8px rgba(var(--ember-rgb), 0.1);
+  /* The breathe animation overrides this; this is the static fallback */
+}
+
+/* -----------------------------------------------------------------
+   TEAL DATA GLOW CONSISTENCY
+   Ensure all telemetry sparklines and data values that use teal
+   glow share the same 2-layer recipe from VISUAL-DESIGN-SPEC.md
+   Section 1.8.
+   ----------------------------------------------------------------- */
+.sparkline-glow,
+[data-telemetry-highlight] {
+  box-shadow:
+    0 0 12px rgba(var(--teal-rgb), 0.1),
+    0 0 4px rgba(var(--teal-bright-rgb), 0.15);
+}
+
+.sparkline-glow:hover,
+[data-telemetry-highlight]:hover {
+  box-shadow:
+    0 0 20px rgba(var(--teal-rgb), 0.15),
+    0 0 8px rgba(var(--teal-glow-rgb), 0.25);
+}
+
+/* -----------------------------------------------------------------
+   FILM GRAIN Z-INDEX FIX
+   Film grain must be above everything but below the command palette.
+   WS-1.6 set z-index: 9999 which conflicts with modals. Correct
+   to z-40 (below command palette at z-50).
+   ----------------------------------------------------------------- */
+.noise-overlay,
+.film-grain-overlay {
+  z-index: 40;
+}
+
+/* -----------------------------------------------------------------
+   NARRATION PANEL GLASS TREATMENT
+   WS-3.6 NarrationPanel should use standard glass, not active glass,
+   because it is supplementary information, not the focused element.
+   ----------------------------------------------------------------- */
+[data-narration-panel] {
+  background: rgba(var(--ambient-ink-rgb), 0.03);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border: 1px solid rgba(var(--ambient-ink-rgb), 0.06);
+  box-shadow: inset 0 1px 0 0 rgba(var(--ambient-ink-rgb), 0.03);
+}

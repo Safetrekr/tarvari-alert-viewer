@@ -1,0 +1,90 @@
+/* =================================================================
+   Tarva Launch -- Ambient Effects Keyframes (Polished)
+   =================================================================
+   Source: WS-1.6 (original), WS-4.4 (timing refinements)
+   Reference: VISUAL-DESIGN-SPEC.md Sections 5.1-5.6
+   Tier: Ambient (AD-3) -- compositor thread, zero main-thread cost.
+
+   CHANGES from WS-1.6 baseline (WS-4.4 polish):
+   - Scan: added will-change hint for GPU compositing
+   - Added shimmer keyframe for particle opacity oscillation
+   - Added attention-dampen keyframe for tighten-state suppression
+
+   NOTE: heartbeat, breathe, grid-pulse, and flash-error keyframes
+   live in src/styles/atrium.css (consumed by WS-1.2 capsule
+   components). This file contains the scan keyframe used by
+   the imperative ScanlineOverlay, plus WS-4.4 additions.
+   ================================================================= */
+
+/* -----------------------------------------------------------------
+   5.5 Scanline Sweep (POLISHED)
+   Triggered on state change events. Top-to-bottom traversal.
+   WS-4.4 change: added will-change: transform for GPU compositing.
+   ----------------------------------------------------------------- */
+@keyframes scan {
+  0% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(var(--scan-height, 228px));
+  }
+}
+
+/* -----------------------------------------------------------------
+   Particle Shimmer (NEW in WS-4.4)
+   Per-particle opacity oscillation sub-cycle.
+   Used by ParticleField Canvas fallback and CSS particle variants.
+   Duration: 8-12s per particle (set via --shimmer-duration).
+   ----------------------------------------------------------------- */
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: var(--shimmer-min, 0.06);
+  }
+  50% {
+    opacity: var(--shimmer-max, 0.18);
+  }
+}
+
+/* -----------------------------------------------------------------
+   Attention Dampen (NEW in WS-4.4)
+   Transitional keyframe used during calm -> tighten state change.
+   Smoothly reduces ambient animation intensity over 300ms.
+   Applied by WS-3.7 attention choreography CSS bridge.
+   ----------------------------------------------------------------- */
+@keyframes attention-dampen {
+  from {
+    --attention-ambient-scale: 1;
+  }
+  to {
+    --attention-ambient-scale: var(--attention-target-scale, 0.3);
+  }
+}
+
+/* -----------------------------------------------------------------
+   Scanline elements: GPU compositing hint.
+   ----------------------------------------------------------------- */
+.ambient-scanline,
+.scanline {
+  will-change: transform;
+}
+
+/* -----------------------------------------------------------------
+   Reduced motion: disable ALL ambient keyframes.
+   Film grain is static and remains unaffected.
+   Shimmer and attention-dampen are also suppressed.
+   ----------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .ambient-heartbeat,
+  .ambient-breathe,
+  .ambient-grid-pulse,
+  .ambient-scanline,
+  .ambient-shimmer,
+  .ambient-attention-dampen,
+  .health-bar,
+  .hub-center,
+  .grid-pulse-overlay,
+  .scanline {
+    animation: none !important;
+  }
+}

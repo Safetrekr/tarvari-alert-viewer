@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+
+# Build
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# MCP configuration (contains local paths/keys)
+.mcp.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+
+# Supabase local
+.supabase/
+
+# Vercel
+.vercel/
+
+# Secrets and credentials
+*.pem
+*.key
+
+# Playwright MCP
+.playwright-mcp/

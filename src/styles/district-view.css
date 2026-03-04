@@ -1,0 +1,140 @@
+/* =============================================================
+   DISTRICT VIEW CSS
+   Keyframes, stagger animations, and phase-aware selectors
+   for the full-screen district view overlay.
+   ============================================================= */
+
+/* --- Data stream scroll (used by DataStream primitive) --- */
+@keyframes district-data-stream {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+/* --- Ambient element entrance stagger --- */
+.district-ambient-element {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 400ms ease,
+    transform 400ms ease;
+}
+
+.district-view-active .district-ambient-element {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.district-ambient-element:nth-child(1) {
+  transition-delay: 100ms;
+}
+.district-ambient-element:nth-child(2) {
+  transition-delay: 200ms;
+}
+.district-ambient-element:nth-child(3) {
+  transition-delay: 300ms;
+}
+.district-ambient-element:nth-child(4) {
+  transition-delay: 400ms;
+}
+.district-ambient-element:nth-child(5) {
+  transition-delay: 500ms;
+}
+.district-ambient-element:nth-child(6) {
+  transition-delay: 600ms;
+}
+
+/* --- Pipeline segment fill animation --- */
+@keyframes district-pipeline-fill {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: var(--fill-percent, 80%);
+  }
+}
+
+/* --- Node pulse for workflow graphs --- */
+@keyframes district-node-pulse {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.15);
+  }
+}
+
+.district-node-pulse {
+  animation: district-node-pulse 3s ease-in-out infinite;
+}
+
+/* --- Propagation pulse for neural mesh --- */
+@keyframes district-propagation {
+  0% {
+    opacity: 0.03;
+  }
+  15% {
+    opacity: 0.25;
+  }
+  100% {
+    opacity: 0.03;
+  }
+}
+
+/* --- Gauge arc fill --- */
+@keyframes district-arc-fill {
+  from {
+    stroke-dashoffset: var(--arc-circumference, 200);
+  }
+  to {
+    stroke-dashoffset: var(--arc-target, 60);
+  }
+}
+
+.district-arc-fill {
+  animation: district-arc-fill 1.5s ease-out forwards;
+  animation-delay: 300ms;
+}
+
+/* --- Dock panel health dot pulse --- */
+@keyframes district-health-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.district-health-dot-pulse {
+  animation: district-health-pulse 3s ease-in-out infinite;
+}
+
+/* --- Reduced motion: disable all district view animations --- */
+@media (prefers-reduced-motion: reduce) {
+  .district-ambient-element {
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .district-node-pulse {
+    animation: none !important;
+  }
+
+  .district-arc-fill {
+    animation: none !important;
+  }
+
+  .district-health-dot-pulse {
+    animation: none !important;
+    opacity: 0.8;
+  }
+}

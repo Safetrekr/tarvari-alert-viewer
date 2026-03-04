@@ -1,0 +1,175 @@
+/* =================================================================
+   Station Panel -- Glass Material + Luminous Border
+   Source: VISUAL-DESIGN-SPEC.md Sections 1.7, 4.1, 4.4
+   ================================================================= */
+
+/* -----------------------------------------------------------------
+   Glass: Standard (Z2 unfurled, resting)
+   VISUAL-DESIGN-SPEC.md Section 1.7 "Standard Glass Panel"
+   ----------------------------------------------------------------- */
+.station-glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+}
+
+/* -----------------------------------------------------------------
+   Glass: Active (Z3 focused station -- the primary station style)
+   VISUAL-DESIGN-SPEC.md Section 1.7 "Active Glass Panel"
+   ----------------------------------------------------------------- */
+.station-glass-active {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
+    0 0 1px 0 rgba(var(--ember-rgb), 0.3);
+}
+
+/* -----------------------------------------------------------------
+   Glass: Hover (station hovered at Z2/Z3)
+   Blend between standard and active with brighter border.
+   ----------------------------------------------------------------- */
+.station-glass-hover {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
+    0 0 1px 0 rgba(var(--ember-rgb), 0.3);
+}
+
+/* -----------------------------------------------------------------
+   Luminous Border: Ember (default station glow)
+   VISUAL-DESIGN-SPEC.md Section 4.4 -- 3-layer technique.
+   "The border color must match the glow color exactly
+   (same hue/saturation, only opacity differs)."
+   ----------------------------------------------------------------- */
+.station-luminous-border {
+  border: 1px solid rgba(var(--ember-rgb), 0.25);
+  box-shadow:
+    /* Layer 1: Outer glow bleed past the border */
+    0 0 10px rgba(var(--ember-rgb), 0.1),
+    /* Layer 2: Tight outer glow */ 0 0 3px rgba(var(--ember-rgb), 0.18),
+    /* Layer 3: Inner glow bleed inward from the border */ inset 0 0 10px rgba(var(--ember-rgb), 0.04),
+    /* Layer 4: Tight inner glow */ inset 0 0 2px rgba(var(--ember-rgb), 0.08);
+}
+
+/* -----------------------------------------------------------------
+   Luminous Border: Status color variants.
+   Same 3-layer technique, color-shifted per status.
+   ----------------------------------------------------------------- */
+.station-luminous-border-healthy {
+  border: 1px solid rgba(var(--healthy-rgb), 0.25);
+  box-shadow:
+    0 0 10px rgba(var(--healthy-rgb), 0.1),
+    0 0 3px rgba(var(--healthy-rgb), 0.18),
+    inset 0 0 10px rgba(var(--healthy-rgb), 0.04),
+    inset 0 0 2px rgba(var(--healthy-rgb), 0.08);
+}
+
+.station-luminous-border-warning {
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  box-shadow:
+    0 0 10px rgba(234, 179, 8, 0.1),
+    0 0 3px rgba(234, 179, 8, 0.18),
+    inset 0 0 10px rgba(234, 179, 8, 0.04),
+    inset 0 0 2px rgba(234, 179, 8, 0.08);
+}
+
+.station-luminous-border-error {
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  box-shadow:
+    0 0 10px rgba(239, 68, 68, 0.1),
+    0 0 3px rgba(239, 68, 68, 0.18),
+    inset 0 0 10px rgba(239, 68, 68, 0.04),
+    inset 0 0 2px rgba(239, 68, 68, 0.08);
+}
+
+.station-luminous-border-offline {
+  border: 1px solid rgba(107, 114, 128, 0.15);
+  box-shadow:
+    0 0 10px rgba(107, 114, 128, 0.06),
+    0 0 3px rgba(107, 114, 128, 0.1),
+    inset 0 0 10px rgba(107, 114, 128, 0.02),
+    inset 0 0 2px rgba(107, 114, 128, 0.04);
+}
+
+/* -----------------------------------------------------------------
+   Combined: Glass + Luminous Border (the full station treatment).
+   Applied when a station is at Z3 and is the focused panel.
+   Merges the active glass background with the luminous border glow.
+   ----------------------------------------------------------------- */
+.station-panel {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  border: 1px solid rgba(var(--ember-rgb), 0.25);
+  box-shadow:
+    /* Top-edge highlight (glass) */
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
+    /* Luminous border outer bleed */ 0 0 10px rgba(var(--ember-rgb), 0.1),
+    /* Luminous border tight outer */ 0 0 3px rgba(var(--ember-rgb), 0.18),
+    /* Luminous border inner bleed */ inset 0 0 10px rgba(var(--ember-rgb), 0.04),
+    /* Luminous border tight inner */ inset 0 0 2px rgba(var(--ember-rgb), 0.08);
+  border-radius: 16px;
+  contain: layout style paint;
+}
+
+/* -----------------------------------------------------------------
+   Pan/Zoom Performance Fallback
+   VISUAL-DESIGN-SPEC.md Section 4.3 rule #2:
+   "Avoid backdrop-filter on moving elements."
+   When canvas is panning, swap glass to opaque dark background.
+   ----------------------------------------------------------------- */
+[data-panning='true'] .station-panel,
+[data-panning='true'] .station-glass,
+[data-panning='true'] .station-glass-active {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--color-deep); /* #0f161f -- matches --card */
+  box-shadow: 0 0 8px rgba(var(--ember-rgb), 0.1); /* single-layer glow */
+}
+
+/* -----------------------------------------------------------------
+   Reduced Motion: Disable glow pulse, simplify to static border.
+   ----------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .station-panel {
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    transition: none;
+  }
+}
+
+/* -----------------------------------------------------------------
+   Receipt Stamp Overlay
+   VISUAL-DESIGN-SPEC.md Section 3.4 Receipt Stamp Typography
+   ----------------------------------------------------------------- */
+.receipt-stamp-overlay {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ember-bright);
+  opacity: 0.75;
+}
+
+.receipt-stamp-overlay .separator {
+  opacity: 0.35;
+  margin: 0 0.4em;
+}
+
+.receipt-stamp-overlay .trace-id {
+  color: var(--color-ember-glow);
+  opacity: 0.9;
+}
+
+.receipt-stamp-overlay .timestamp {
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+}

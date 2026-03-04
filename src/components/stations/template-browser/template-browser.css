@@ -1,0 +1,38 @@
+/* =================================================================
+   Template Browser -- Glass Material Override
+   Uses Active Glass from VISUAL-DESIGN-SPEC.md Section 1.7
+   ================================================================= */
+
+.template-browser-dialog {
+  background: rgba(15, 22, 31, 0.95);
+  backdrop-filter: blur(20px) saturate(130%);
+  -webkit-backdrop-filter: blur(20px) saturate(130%);
+  border: 1px solid rgba(var(--ember-rgb), 0.15);
+  box-shadow:
+    0 0 20px rgba(var(--ember-rgb), 0.06),
+    0 0 4px rgba(var(--ember-rgb), 0.12),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+}
+
+/* Override @tarva/ui Dialog default background */
+.template-browser-dialog[data-state='open'] {
+  animation: template-browser-enter 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes template-browser-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .template-browser-dialog[data-state='open'] {
+    animation: none;
+  }
+}

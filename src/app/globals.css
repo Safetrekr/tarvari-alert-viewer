@@ -1,0 +1,179 @@
+/* =================================================================
+   Tarva Launch -- Global Stylesheet
+   =================================================================
+   Layer order:
+   1. @tarva/ui base tokens (colors, typography, animations)
+   2. Launch spatial tokens (custom properties)
+   3. Tailwind CSS v4 engine
+   4. @theme inline bridge (makes @tarva/ui tokens Tailwind-usable)
+   5. @theme spatial (makes Launch tokens Tailwind-usable)
+   6. Base layer (body defaults)
+   ================================================================= */
+
+@import '@tarva/ui/styles.css';
+@import '../styles/spatial-tokens.css';
+@source '../../node_modules/@tarva/ui/dist/**/*.js';
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+/* -----------------------------------------------------------------
+   Bridge @tarva/ui semantic tokens into Tailwind v4 theme namespace.
+   This makes `bg-background`, `text-primary`, etc. work in utilities.
+   Pattern source: Agent Builder globals.css [ECOSYSTEM]
+   ----------------------------------------------------------------- */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+/* -----------------------------------------------------------------
+   Register Launch spatial tokens into the Tailwind theme namespace.
+   Color tokens use `@theme inline` so they respond to [data-color-scheme]
+   changes at runtime (var() references). Non-color tokens (spacing,
+   duration, easing, blur, fonts) use static `@theme`.
+   Source: VISUAL-DESIGN-SPEC.md Section 6.2 [SPEC]
+   ----------------------------------------------------------------- */
+@theme inline {
+  /* Background scale (overridden by [data-color-scheme] in spatial-tokens.css) */
+  --color-void: var(--color-void);
+  --color-abyss: var(--color-abyss);
+  --color-deep: var(--color-deep);
+  --color-surface: var(--color-surface);
+  --color-raised: var(--color-raised);
+  --color-overlay: var(--color-overlay);
+
+  /* Ember accent (overridden by color scheme) */
+  --color-ember-dim: var(--color-ember-dim);
+  --color-ember-muted: var(--color-ember-muted);
+  --color-ember: var(--color-ember);
+  --color-ember-bright: var(--color-ember-bright);
+  --color-ember-glow: var(--color-ember-glow);
+  --color-ember-white: var(--color-ember-white);
+
+  /* Teal accent (overridden by color scheme) */
+  --color-teal-dim: var(--color-teal-dim);
+  --color-teal-muted: var(--color-teal-muted);
+  --color-teal: var(--color-teal);
+  --color-teal-bright: var(--color-teal-bright);
+  --color-teal-glow: var(--color-teal-glow);
+  --color-teal-white: var(--color-teal-white);
+
+  /* Status: healthy (overridden by color scheme) */
+  --color-healthy-dim: var(--color-healthy-dim);
+  --color-healthy: var(--color-healthy);
+  --color-healthy-glow: var(--color-healthy-glow);
+
+  /* Status: warning */
+  --color-warning-dim: var(--color-warning-dim);
+  --color-warning: var(--color-warning);
+  --color-warning-glow: var(--color-warning-glow);
+
+  /* Status: error */
+  --color-error-dim: var(--color-error-dim);
+  --color-error: var(--color-error);
+  --color-error-glow: var(--color-error-glow);
+
+  /* Status: offline (overridden by color scheme) */
+  --color-offline-dim: var(--color-offline-dim);
+  --color-offline: var(--color-offline);
+  --color-offline-glow: var(--color-offline-glow);
+
+  /* Text scale (overridden by color scheme) */
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-tertiary: var(--color-text-tertiary);
+  --color-text-ghost: var(--color-text-ghost);
+}
+
+@theme {
+  /* Spatial spacing */
+  --spacing-capsule-padding: 20px;
+  --spacing-capsule-gap: 48px;
+  --spacing-ring-radius: 300px;
+  --spacing-district-padding: 64px;
+  --spacing-station-margin: 32px;
+  --spacing-station-gap: 24px;
+  --spacing-hud-inset: 16px;
+  --spacing-hud-inset-lg: 24px;
+
+  /* Animation durations */
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-hover: 200ms;
+  --duration-transition: 300ms;
+  --duration-scanline: 350ms;
+  --duration-morph: 600ms;
+  --duration-morph-complex: 900ms;
+  --duration-ambient-breathe: 5000ms;
+  --duration-ambient-heart: 7000ms;
+  --duration-ambient-grid: 12000ms;
+  --duration-ambient-drift: 45000ms;
+
+  /* Easing curves */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-hover: cubic-bezier(0, 0, 0.2, 1);
+  --ease-morph: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-glow: cubic-bezier(0.4, 0, 0.6, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Blur radii for backdrop-filter */
+  --blur-ambient: 8px;
+  --blur-standard: 12px;
+  --blur-active: 16px;
+  --blur-heavy: 24px;
+
+  /* Font families */
+  --font-sans: 'Geist Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+}
+
+/* -----------------------------------------------------------------
+   Base layer: default styles for body and universal selectors.
+   ----------------------------------------------------------------- */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-void text-foreground antialiased;
+  }
+}

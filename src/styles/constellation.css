@@ -1,0 +1,59 @@
+/* =============================================================
+   CONSTELLATION AMBIENT ANIMATIONS
+   Beacon pulse and flash animations for Z0 view.
+   All animations are CSS @keyframes (Ambient tier).
+   ============================================================= */
+
+/* --- Beacon pulse (OPERATIONAL) --- */
+@keyframes beacon-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 8px var(--beacon-glow-outer),
+      0 0 3px var(--beacon-glow-inner);
+  }
+  50% {
+    box-shadow:
+      0 0 14px var(--beacon-glow-outer),
+      0 0 6px var(--beacon-glow-inner);
+  }
+}
+
+.beacon-pulse {
+  animation: beacon-pulse 3s ease-in-out infinite;
+}
+
+/* --- Beacon flash (DOWN) --- */
+@keyframes beacon-flash {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.beacon-flash {
+  animation: beacon-flash 1.5s ease-in-out infinite;
+}
+
+/* --- Panning optimization: disable animations --- */
+[data-panning='true'] .beacon-pulse,
+[data-panning='true'] .beacon-flash {
+  animation: none;
+}
+
+/* --- Reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .beacon-pulse,
+  .beacon-flash {
+    animation: none !important;
+  }
+
+  .beacon-pulse {
+    box-shadow:
+      0 0 10px var(--beacon-glow-outer),
+      0 0 4px var(--beacon-glow-inner);
+  }
+}

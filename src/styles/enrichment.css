@@ -1,0 +1,245 @@
+/**
+ * Enrichment ambient animations.
+ *
+ * All enrichment-layer visual effects use pure CSS @keyframes
+ * (Tier 3 animation per the project animation strategy). They:
+ *
+ * 1. Pause during panning via `[data-panning='true']` ancestor.
+ * 2. Fully disable under `prefers-reduced-motion: reduce`.
+ * 3. Are removed from the DOM entirely when `effectsEnabled` is
+ *    toggled off in the settings store (handled by EnrichmentLayer).
+ *
+ * @see src/components/ambient/enrichment-layer.tsx
+ * @see src/components/ambient/halo-glow.tsx
+ * @see src/components/ambient/range-rings.tsx
+ */
+
+/* =========================================================================
+   Halo Glow -- 8s breathing opacity cycle
+   ========================================================================= */
+
+@keyframes enrichment-halo-breathe {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.enrichment-halo {
+  animation: enrichment-halo-breathe 8s ease-in-out infinite;
+}
+
+/* =========================================================================
+   Radar Sweep -- 24s full rotation
+   ========================================================================= */
+
+@keyframes enrichment-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.enrichment-sweep {
+  animation: enrichment-sweep 24s linear infinite;
+  /* SVG <g> elements need an explicit transform-origin at the SVG center.
+     The SVG viewBox is 12000x12000 so center = 6000,6000. */
+  transform-origin: 6000px 6000px;
+}
+
+/* =========================================================================
+   Orbital Readouts -- flicker effect for telemetry values
+   ========================================================================= */
+
+@keyframes enrichment-flicker {
+  0%,
+  90%,
+  100% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 0.3;
+  }
+  94% {
+    opacity: 0.8;
+  }
+  96% {
+    opacity: 0.2;
+  }
+  98% {
+    opacity: 0.7;
+  }
+}
+
+.enrichment-flicker {
+  animation: enrichment-flicker 10s ease-in-out infinite;
+}
+
+/* =========================================================================
+   Connection Paths -- flowing dash animation
+   ========================================================================= */
+
+@keyframes enrichment-flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+.enrichment-flow {
+  animation: enrichment-flow 3s linear infinite;
+}
+
+/* =========================================================================
+   Activity Ticker -- slow upward scroll, 60s full cycle
+   ========================================================================= */
+
+@keyframes enrichment-ticker-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+.enrichment-ticker-scroll {
+  animation: enrichment-ticker-scroll 60s linear infinite;
+}
+
+/* =========================================================================
+   Circuit Diagram -- pulsing teal dot, 4s cycle
+   ========================================================================= */
+
+@keyframes enrichment-circuit-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.enrichment-circuit-pulse {
+  animation: enrichment-circuit-pulse 4s ease-in-out infinite;
+}
+
+/* =========================================================================
+   Horizon Scan Line -- 25s vertical sweep
+   ========================================================================= */
+
+@keyframes enrichment-horizon-sweep-vp {
+  from {
+    transform: translateY(-50px);
+  }
+  to {
+    transform: translateY(100vh);
+  }
+}
+
+.enrichment-horizon-sweep-vp {
+  animation: enrichment-horizon-sweep-vp 25s linear infinite;
+  animation-delay: 8s;
+}
+
+/* =========================================================================
+   Capacitor Dot Pulse -- 4s opacity cycle for PCB solder points
+   ========================================================================= */
+
+@keyframes enrichment-capacitor-pulse {
+  0%,
+  100% {
+    opacity: 0.06;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+
+.enrichment-capacitor-pulse {
+  animation: enrichment-capacitor-pulse 4s ease-in-out infinite;
+}
+
+/* =========================================================================
+   Session Timecode REC Dot -- 2s pulsing teal indicator
+   ========================================================================= */
+
+@keyframes enrichment-rec-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.enrichment-rec-pulse {
+  animation: enrichment-rec-pulse 2s ease-in-out infinite;
+}
+
+/* =========================================================================
+   Micro Chronometer -- 60s fill cycle (stroke-dashoffset to 0)
+   The circumference is 2 * PI * 28 ≈ 175.93
+   ========================================================================= */
+
+@keyframes enrichment-chrono-fill {
+  from {
+    stroke-dashoffset: 175.93;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.enrichment-chrono-fill {
+  animation: enrichment-chrono-fill 60s linear infinite;
+}
+
+/* =========================================================================
+   Panning: pause all enrichment animations
+   ========================================================================= */
+
+[data-panning='true'] .enrichment-halo,
+[data-panning='true'] .enrichment-sweep,
+[data-panning='true'] .enrichment-flicker,
+[data-panning='true'] .enrichment-flow,
+[data-panning='true'] .enrichment-ticker-scroll,
+[data-panning='true'] .enrichment-circuit-pulse,
+[data-panning='true'] .enrichment-horizon-sweep-vp,
+[data-panning='true'] .enrichment-capacitor-pulse,
+[data-panning='true'] .enrichment-rec-pulse,
+[data-panning='true'] .enrichment-chrono-fill {
+  animation-play-state: paused;
+}
+
+/* =========================================================================
+   Reduced motion: disable animations, set static fallback opacity
+   ========================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .enrichment-halo,
+  .enrichment-sweep,
+  .enrichment-flicker,
+  .enrichment-flow,
+  .enrichment-ticker-scroll,
+  .enrichment-circuit-pulse,
+  .enrichment-horizon-sweep-vp,
+  .enrichment-capacitor-pulse,
+  .enrichment-rec-pulse,
+  .enrichment-chrono-fill {
+    animation: none !important;
+  }
+
+  .enrichment-halo {
+    opacity: 0.4;
+  }
+}

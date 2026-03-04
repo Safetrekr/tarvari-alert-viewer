@@ -1,0 +1,3 @@
+packages:
+  - '.'
+  - '../../tarva-ui-library'

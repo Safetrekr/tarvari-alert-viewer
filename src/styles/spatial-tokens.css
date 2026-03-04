@@ -1,0 +1,363 @@
+/* =================================================================
+   Tarva Launch -- Spatial Design Tokens
+   =================================================================
+   Source of truth: VISUAL-DESIGN-SPEC.md Section 6.1
+
+   These tokens extend @tarva/ui's tarva-core dark scheme with
+   Launch-specific values for the spatial ZUI engine: background
+   depth stops, accent luminous scales, glow shadow recipes, capsule
+   dimensions, ambient animation timings, and glass effect parameters.
+
+   @tarva/ui already defines: --background, --foreground, --primary,
+   --accent, --border, --card, --muted, --ring, --status-success,
+   --status-warning, --status-danger, --status-neutral, etc.
+
+   The tokens below alias and extend those into the spatial vocabulary.
+   ================================================================= */
+
+:root {
+  /* ============================================================
+     BACKGROUND SCALE (from @tarva/ui tarva-core dark mode)
+     ============================================================ */
+  --color-void: #050911; /* @tarva/ui --background */
+  --color-abyss: #0a0f18;
+  --color-deep: #0f161f; /* @tarva/ui --card */
+  --color-surface: #121720; /* @tarva/ui --popover */
+  --color-raised: #1c222b; /* @tarva/ui --muted */
+  --color-overlay: #28313e; /* @tarva/ui --secondary */
+
+  /* ============================================================
+     BORDER SCALE (from @tarva/ui --border: #232933)
+     ============================================================ */
+  --color-border-faint: rgba(255, 255, 255, 0.03);
+  --color-border-subtle: rgba(255, 255, 255, 0.06);
+  --color-border-default: #232933; /* @tarva/ui --border */
+  --color-border-strong: rgba(255, 255, 255, 0.12);
+  --color-border-bright: rgba(255, 255, 255, 0.18);
+
+  /* ============================================================
+     TEXT SCALE (from @tarva/ui tarva-core dark mode)
+     ============================================================ */
+  --color-text-primary: #def6ff; /* @tarva/ui --foreground */
+  --color-text-secondary: #92a9b4; /* @tarva/ui --muted-foreground */
+  --color-text-tertiary: #55667a;
+  --color-text-ghost: #33445a;
+
+  /* ============================================================
+     ACCENT: EMBER (Primary -- from @tarva/ui --primary: #e05200)
+     ============================================================ */
+  --color-ember-dim: #3a1800;
+  --color-ember-muted: #7a3000;
+  --color-ember: #e05200; /* @tarva/ui --primary */
+  --color-ember-bright: #ff773c; /* @tarva/ui --ring */
+  --color-ember-glow: #ffaa70;
+  --color-ember-white: #ffd4b8;
+
+  /* ============================================================
+     ACCENT: TEAL (Secondary -- from @tarva/ui --accent: #277389)
+     ============================================================ */
+  --color-teal-dim: #0f2a35;
+  --color-teal-muted: #1a4d5e;
+  --color-teal: #277389; /* @tarva/ui --accent */
+  --color-teal-bright: #3a9ab5;
+  --color-teal-glow: #5ec4de;
+  --color-teal-white: #a8e0ef;
+
+  /* ============================================================
+     STATUS: HEALTHY (from @tarva/ui --status-success: #22c55e)
+     ============================================================ */
+  --color-healthy-dim: #0a2e18;
+  --color-healthy: #22c55e; /* @tarva/ui --status-success */
+  --color-healthy-glow: #4ade80;
+
+  /* ============================================================
+     STATUS: WARNING (from @tarva/ui --status-warning: #eab308)
+     ============================================================ */
+  --color-warning-dim: #3a2d06;
+  --color-warning: #eab308; /* @tarva/ui --status-warning */
+  --color-warning-glow: #facc15;
+
+  /* ============================================================
+     STATUS: ERROR (from @tarva/ui --status-danger: #ef4444)
+     ============================================================ */
+  --color-error-dim: #3a1212;
+  --color-error: #ef4444; /* @tarva/ui --status-danger */
+  --color-error-glow: #f87171;
+
+  /* ============================================================
+     STATUS: OFFLINE (from @tarva/ui --status-neutral: #6b7280)
+     ============================================================ */
+  --color-offline-dim: #1a1d24;
+  --color-offline: #6b7280; /* @tarva/ui --status-neutral */
+  --color-offline-glow: #9ca3af;
+
+  /* ============================================================
+     SPACING: SPATIAL ENGINE
+     ============================================================ */
+  --space-capsule-padding: 20px;
+  --space-capsule-gap: 48px;
+  --space-ring-radius: 300px;
+  --space-district-padding: 64px;
+  --space-station-margin: 32px;
+  --space-station-gap: 24px;
+  --space-hud-inset: 16px;
+  --space-hud-inset-lg: 24px;
+
+  /* ============================================================
+     DIMENSIONS: CAPSULE
+     ============================================================ */
+  --capsule-width: 192px;
+  --capsule-height: 228px;
+  --capsule-radius: 28px;
+  --capsule-hover-scale: 1.12;
+  --capsule-select-scale: 1.05;
+  --capsule-morph-scale: 2;
+
+  /* ============================================================
+     ANIMATION: DURATIONS
+     ============================================================ */
+  --duration-instant: 100ms;
+  --duration-fast: 150ms;
+  --duration-hover: 200ms;
+  --duration-transition: 300ms;
+  --duration-scanline: 350ms;
+  --duration-morph: 600ms;
+  --duration-morph-complex: 900ms;
+  --duration-ambient-breathe: 5000ms;
+  --duration-ambient-heart: 7000ms;
+  --duration-ambient-grid: 12000ms;
+  --duration-ambient-drift: 45000ms;
+
+  /* ============================================================
+     ANIMATION: EASING CURVES
+     ============================================================ */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-hover: cubic-bezier(0, 0, 0.2, 1);
+  --ease-morph: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-glow: cubic-bezier(0.4, 0, 0.6, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ============================================================
+     GLOW: EMBER (Primary accent glow)
+     ============================================================ */
+  --glow-ember-subtle: 0 0 12px rgba(224, 82, 0, 0.08), 0 0 4px rgba(224, 82, 0, 0.12);
+  --glow-ember-medium:
+    0 0 20px rgba(224, 82, 0, 0.12), 0 0 8px rgba(224, 82, 0, 0.22),
+    0 0 2px rgba(255, 170, 112, 0.35);
+  --glow-ember-bright:
+    0 0 40px rgba(224, 82, 0, 0.18), 0 0 16px rgba(224, 82, 0, 0.3),
+    0 0 4px rgba(255, 170, 112, 0.5);
+
+  /* ============================================================
+     GLOW: TEAL (Secondary accent glow -- telemetry, data)
+     ============================================================ */
+  --glow-teal-subtle: 0 0 12px rgba(39, 115, 137, 0.08), 0 0 4px rgba(39, 115, 137, 0.12);
+  --glow-teal-medium:
+    0 0 20px rgba(39, 115, 137, 0.12), 0 0 8px rgba(39, 115, 137, 0.22),
+    0 0 2px rgba(94, 196, 222, 0.35);
+
+  /* ============================================================
+     GLOW: STATUS
+     ============================================================ */
+  --glow-healthy: 0 0 16px rgba(34, 197, 94, 0.12), 0 0 4px rgba(74, 222, 128, 0.25);
+  --glow-warning: 0 0 16px rgba(234, 179, 8, 0.12), 0 0 4px rgba(250, 204, 21, 0.25);
+  --glow-error: 0 0 16px rgba(239, 68, 68, 0.12), 0 0 4px rgba(248, 113, 113, 0.25);
+
+  /* ============================================================
+     OPACITY LEVELS
+     ============================================================ */
+  --opacity-ambient-particle: 0.05;
+  --opacity-ambient-grid: 0.006;
+  --opacity-ambient-grid-peak: 0.015;
+  --opacity-ambient-grain: 0.012;
+  --opacity-dim-offline: 0.4;
+  --opacity-glass-rest: 0.03;
+  --opacity-glass-hover: 0.06;
+  --opacity-glass-active: 0.08;
+  --opacity-glass-overlay: 0.8;
+  --opacity-text-ambient: 0.5;
+  --opacity-text-ghost: 0.2;
+
+  /* ============================================================
+     GLASS: BACKDROP BLUR
+     ============================================================ */
+  --blur-ambient: 8px;
+  --blur-standard: 12px;
+  --blur-active: 16px;
+  --blur-heavy: 24px;
+
+  /* ============================================================
+     TYPOGRAPHY
+     ============================================================ */
+  --font-sans: 'Geist Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  --tracking-tight: 0.01em;
+  --tracking-normal: 0.02em;
+  --tracking-wide: 0.04em;
+  --tracking-wider: 0.08em;
+  --tracking-widest: 0.12em;
+
+  /* ============================================================
+     RGB COMPONENTS (for rgba() interpolation in inline styles)
+     Usage: rgba(var(--ember-rgb), 0.12)
+     ============================================================ */
+  --ember-rgb: 224, 82, 0;
+  --ember-bright-rgb: 255, 119, 60;
+  --ember-glow-rgb: 255, 170, 112;
+  --teal-rgb: 39, 115, 137;
+  --teal-bright-rgb: 58, 154, 181;
+  --teal-glow-rgb: 94, 196, 222;
+  --healthy-rgb: 34, 197, 94;
+  --healthy-glow-rgb: 74, 222, 128;
+  --text-primary-rgb: 222, 246, 255;
+  --text-secondary-rgb: 146, 169, 180;
+
+  /* Ambient ink: base color for decorative overlays (scanlines, grids, readouts).
+     White in dark mode, black in light mode. Usage: rgba(var(--ambient-ink-rgb), 0.1) */
+  --ambient-ink-rgb: 255, 255, 255;
+}
+
+/* ===================================================================
+   SAFETREKR COLOR SCHEME OVERRIDES
+   When data-color-scheme="safetrekr", the spatial tokens shift to
+   the safetrekr brand identity (muted green primary, teal-slate
+   secondary). Shared tokens (accents, status, glows) are defined
+   once on the base selector. Background, text, and border tokens
+   are split between dark (.dark) and light (:not(.dark)) modes.
+
+   @tarva/ui safetrekr --primary: rgb(75, 164, 103)
+   =================================================================== */
+
+/* -- Shared safetrekr tokens (both light and dark) --------------- */
+[data-color-scheme='safetrekr'] {
+  /* ============================================================
+     ACCENT: PRIMARY (Muted green, from @tarva/ui --primary)
+     ============================================================ */
+  --color-ember-dim: #0a3018;
+  --color-ember-muted: #1e5e34;
+  --color-ember: #4ba467;
+  --color-ember-bright: #6abf84;
+  --color-ember-glow: #92d4a6;
+  --color-ember-white: #c1e8ce;
+
+  /* ============================================================
+     ACCENT: SECONDARY (Teal-slate)
+     ============================================================ */
+  --color-teal-dim: #081e28;
+  --color-teal-muted: #123646;
+  --color-teal: #365462;
+  --color-teal-bright: #59727e;
+  --color-teal-glow: #7a9aa8;
+  --color-teal-white: #b0ccd6;
+
+  /* ============================================================
+     STATUS: HEALTHY (emerald, distinct from muted green primary)
+     ============================================================ */
+  --color-healthy-dim: #062e22;
+  --color-healthy: #10b981;
+  --color-healthy-glow: #34d399;
+
+  /* ============================================================
+     GLOW: PRIMARY (Muted green glow)
+     ============================================================ */
+  --glow-ember-subtle: 0 0 12px rgba(75, 164, 103, 0.08), 0 0 4px rgba(75, 164, 103, 0.12);
+  --glow-ember-medium:
+    0 0 20px rgba(75, 164, 103, 0.12), 0 0 8px rgba(75, 164, 103, 0.22),
+    0 0 2px rgba(146, 212, 166, 0.35);
+  --glow-ember-bright:
+    0 0 40px rgba(75, 164, 103, 0.18), 0 0 16px rgba(75, 164, 103, 0.3),
+    0 0 4px rgba(146, 212, 166, 0.5);
+
+  /* ============================================================
+     GLOW: SECONDARY (Teal-slate glow)
+     ============================================================ */
+  --glow-teal-subtle: 0 0 12px rgba(54, 84, 98, 0.08), 0 0 4px rgba(54, 84, 98, 0.12);
+  --glow-teal-medium:
+    0 0 20px rgba(54, 84, 98, 0.12), 0 0 8px rgba(54, 84, 98, 0.22),
+    0 0 2px rgba(122, 154, 168, 0.35);
+
+  /* ============================================================
+     GLOW: STATUS (healthy = emerald)
+     ============================================================ */
+  --glow-healthy: 0 0 16px rgba(16, 185, 129, 0.12), 0 0 4px rgba(52, 211, 153, 0.25);
+
+  /* ============================================================
+     RGB: PRIMARY ACCENT
+     ============================================================ */
+  --ember-rgb: 75, 164, 103;
+  --ember-bright-rgb: 106, 191, 132;
+  --ember-glow-rgb: 146, 212, 166;
+  --healthy-rgb: 16, 185, 129;
+  --healthy-glow-rgb: 52, 211, 153;
+}
+
+/* -- Safetrekr DARK mode ----------------------------------------- */
+[data-color-scheme='safetrekr'].dark {
+  --color-void: #061a23;
+  --color-abyss: #08202b;
+  --color-deep: #0a2733;
+  --color-surface: #123646;
+  --color-raised: #2a4a59;
+  --color-overlay: #365462;
+
+  --color-text-primary: #e8f0f4;
+  --color-text-secondary: #929899;
+  --color-text-tertiary: #7a9aa8;
+  --color-text-ghost: #33505e;
+
+  --color-border-default: #365462;
+  --color-offline-dim: #1a2830;
+
+  --teal-rgb: 54, 84, 98;
+  --teal-bright-rgb: 89, 114, 126;
+  --teal-glow-rgb: 122, 154, 168;
+  --text-primary-rgb: 232, 240, 244;
+  --text-secondary-rgb: 146, 152, 153;
+}
+
+/* -- Safetrekr LIGHT mode ---------------------------------------- */
+[data-color-scheme='safetrekr']:not(.dark) {
+  --color-void: #e7ecee;
+  --color-abyss: #dde3e5;
+  --color-deep: #f7f8f8;
+  --color-surface: #e7ebec;
+  --color-raised: #d4dadc;
+  --color-overlay: #c8d0d3;
+
+  --color-text-primary: #123646;
+  --color-text-secondary: #616567;
+  --color-text-tertiary: #8a9599;
+  --color-text-ghost: #b8c3c7;
+
+  --color-border-default: #8a9599;
+  --color-offline-dim: #d4dadc;
+
+  /* Light mode overrides for accent dims (visible on light bg) */
+  --color-ember-dim: #c1e8ce;
+  --color-ember-muted: #3a8a54;
+  --color-teal-dim: #b0ccd6;
+  --color-teal-muted: #59727e;
+
+  /* Light-mode glows: use darker shadows for visibility */
+  --glow-ember-subtle: 0 0 12px rgba(75, 164, 103, 0.12), 0 0 4px rgba(75, 164, 103, 0.18);
+  --glow-ember-medium:
+    0 0 20px rgba(75, 164, 103, 0.16), 0 0 8px rgba(75, 164, 103, 0.28),
+    0 0 2px rgba(75, 164, 103, 0.40);
+  --glow-ember-bright:
+    0 0 40px rgba(75, 164, 103, 0.22), 0 0 16px rgba(75, 164, 103, 0.35),
+    0 0 4px rgba(75, 164, 103, 0.55);
+  --glow-teal-subtle: 0 0 12px rgba(54, 84, 98, 0.10), 0 0 4px rgba(54, 84, 98, 0.15);
+  --glow-teal-medium:
+    0 0 20px rgba(54, 84, 98, 0.14), 0 0 8px rgba(54, 84, 98, 0.26),
+    0 0 2px rgba(89, 114, 126, 0.38);
+  --glow-healthy: 0 0 16px rgba(16, 185, 129, 0.16), 0 0 4px rgba(52, 211, 153, 0.30);
+
+  --teal-rgb: 138, 149, 153;
+  --teal-bright-rgb: 89, 114, 126;
+  --teal-glow-rgb: 54, 84, 98;
+  --text-primary-rgb: 18, 54, 70;
+  --text-secondary-rgb: 97, 101, 103;
+  --ambient-ink-rgb: 0, 0, 0;
+}

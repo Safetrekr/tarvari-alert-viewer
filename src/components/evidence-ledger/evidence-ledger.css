@@ -1,0 +1,557 @@
+/* =================================================================
+   Evidence Ledger -- Timeline + Facets + Rehydration
+   Source: VISUAL-DESIGN-SPEC.md Sections 1.7, 3.2, 3.4, 4.1, 4.4
+   ================================================================= */
+
+/* -----------------------------------------------------------------
+   Z2 Timeline Strip: Compressed density bar
+   Horizontal bar where segment width = time, height/opacity = activity density,
+   color = actor type (teal = human, ember = AI).
+   ----------------------------------------------------------------- */
+.timeline-strip {
+  display: flex;
+  align-items: flex-end;
+  height: 48px;
+  gap: 1px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.timeline-strip-segment {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 2px 2px 0 0;
+  transition: opacity var(--duration-fast, 150ms) var(--ease-default, ease-out);
+  cursor: pointer;
+}
+
+.timeline-strip-segment:hover {
+  opacity: 1 !important;
+  filter: brightness(1.3);
+}
+
+.timeline-strip-segment--human {
+  background: var(--color-teal-bright, #3a99b8);
+}
+
+.timeline-strip-segment--ai {
+  background: var(--color-ember-glow, #ffaa70);
+}
+
+.timeline-strip-segment--system {
+  background: var(--color-text-tertiary, #55667a);
+}
+
+/* -----------------------------------------------------------------
+   Z2 District Label
+   VISUAL-DESIGN-SPEC.md Section 3.2 Z2 type scale.
+   ----------------------------------------------------------------- */
+.evidence-ledger-z2-label {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-primary, #def6ff);
+  opacity: 0.9;
+  line-height: 1.2;
+}
+
+.evidence-ledger-z2-subtitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary, #55667a);
+  opacity: 0.5;
+  line-height: 1;
+}
+
+/* -----------------------------------------------------------------
+   Z3 Timeline Panel
+   Uses station panel glass base from WS-2.6.
+   ----------------------------------------------------------------- */
+.timeline-panel {
+  display: flex;
+  flex-direction: column;
+  width: 420px;
+  max-height: 600px;
+  border-radius: 16px;
+  contain: layout style paint;
+  background: rgba(15, 22, 31, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.03),
+    0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.timeline-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 0;
+}
+
+.timeline-panel-title {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-primary, #def6ff);
+}
+
+.timeline-panel-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-tertiary, #55667a);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -----------------------------------------------------------------
+   Faceted Filter Bar
+   Horizontal chip rows with scrollable overflow.
+   ----------------------------------------------------------------- */
+.facet-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.facet-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.facet-label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary, #55667a);
+  opacity: 0.6;
+  min-width: 52px;
+  flex-shrink: 0;
+}
+
+/* -----------------------------------------------------------------
+   Facet Chip: Toggle button for a single filter value.
+   ----------------------------------------------------------------- */
+.facet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+  color: var(--color-text-secondary, #92a9b4);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast, 150ms) var(--ease-default, ease-out),
+    border-color var(--duration-fast, 150ms) var(--ease-default, ease-out),
+    color var(--duration-fast, 150ms) var(--ease-default, ease-out);
+  user-select: none;
+}
+
+.facet-chip:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-primary, #def6ff);
+}
+
+.facet-chip--active {
+  background: rgba(var(--ember-rgb), 0.12);
+  border-color: rgba(var(--ember-rgb), 0.3);
+  color: var(--color-ember-bright, #ff773c);
+}
+
+.facet-chip--active:hover {
+  background: rgba(var(--ember-rgb), 0.18);
+  border-color: rgba(var(--ember-rgb), 0.4);
+}
+
+/* -----------------------------------------------------------------
+   Timeline Item: Single receipt in the scrollable list.
+   Typography follows Z3 scale.
+   ----------------------------------------------------------------- */
+.timeline-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: background var(--duration-fast, 150ms) var(--ease-default, ease-out);
+}
+
+.timeline-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.timeline-item--expanded {
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.timeline-item-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.timeline-item-icon--navigation {
+  background: rgba(var(--teal-rgb), 0.15);
+  color: var(--color-teal-bright, #3a99b8);
+}
+.timeline-item-icon--action {
+  background: rgba(var(--ember-rgb), 0.12);
+  color: var(--color-ember-bright, #ff773c);
+}
+.timeline-item-icon--error {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-error, #ef4444);
+}
+.timeline-item-icon--approval {
+  background: rgba(var(--healthy-rgb), 0.12);
+  color: var(--color-healthy, #22c55e);
+}
+.timeline-item-icon--system {
+  background: rgba(107, 114, 128, 0.12);
+  color: var(--color-offline, #6b7280);
+}
+
+.timeline-item-summary {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-primary, #def6ff);
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+.timeline-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.timeline-item-timestamp {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--color-text-tertiary, #55667a);
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-item-source {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary, #92a9b4);
+}
+
+/* -----------------------------------------------------------------
+   Severity Indicators
+   Small dot or border accent per severity level.
+   ----------------------------------------------------------------- */
+.severity-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.severity-dot--info {
+  background: var(--color-teal, #277389);
+}
+.severity-dot--warning {
+  background: var(--color-warning, #eab308);
+}
+.severity-dot--error {
+  background: var(--color-error, #ef4444);
+}
+.severity-dot--critical {
+  background: var(--color-error, #ef4444);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+}
+
+/* -----------------------------------------------------------------
+   Actor Badge
+   ----------------------------------------------------------------- */
+.actor-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.actor-badge--human {
+  background: rgba(var(--teal-rgb), 0.15);
+  color: var(--color-teal-bright, #3a99b8);
+}
+.actor-badge--ai {
+  background: rgba(var(--ember-rgb), 0.12);
+  color: var(--color-ember-glow, #ffaa70);
+}
+.actor-badge--system {
+  background: rgba(107, 114, 128, 0.1);
+  color: var(--color-offline, #6b7280);
+}
+
+/* -----------------------------------------------------------------
+   Receipt Detail Panel (expanded view)
+   ----------------------------------------------------------------- */
+.receipt-detail {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 0 0 8px 8px;
+}
+
+.receipt-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 0;
+}
+
+.receipt-detail-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary, #55667a);
+  opacity: 0.6;
+}
+
+.receipt-detail-value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-primary, #def6ff);
+  opacity: 0.8;
+  text-align: right;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.receipt-detail-json {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-secondary, #92a9b4);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+  line-height: 1.5;
+}
+
+/* -----------------------------------------------------------------
+   Rehydration Highlight Pulse
+   Applied to the target district/station element after viewport restore.
+   ----------------------------------------------------------------- */
+.rehydration-highlight {
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px solid var(--color-ember-bright, #ff773c);
+  box-shadow:
+    0 0 20px rgba(var(--ember-bright-rgb), 0.25),
+    0 0 8px rgba(var(--ember-bright-rgb), 0.4),
+    inset 0 0 12px rgba(var(--ember-bright-rgb), 0.08);
+  pointer-events: none;
+  animation: rehydration-pulse 2s ease-out forwards;
+}
+
+@keyframes rehydration-pulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+
+/* -----------------------------------------------------------------
+   Empty State
+   ----------------------------------------------------------------- */
+.timeline-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.timeline-empty-icon {
+  font-size: 32px;
+  opacity: 0.15;
+  margin-bottom: 12px;
+}
+
+.timeline-empty-text {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-tertiary, #55667a);
+  opacity: 0.6;
+  line-height: 1.5;
+}
+
+/* -----------------------------------------------------------------
+   Loading skeleton
+   ----------------------------------------------------------------- */
+.timeline-skeleton-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.timeline-skeleton-bar {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* -----------------------------------------------------------------
+   Rehydrate button
+   ----------------------------------------------------------------- */
+.rehydrate-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(var(--ember-rgb), 0.3);
+  background: rgba(var(--ember-rgb), 0.1);
+  color: var(--color-ember-bright, #ff773c);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast, 150ms) var(--ease-default, ease-out),
+    border-color var(--duration-fast, 150ms) var(--ease-default, ease-out);
+}
+
+.rehydrate-button:hover {
+  background: rgba(var(--ember-rgb), 0.18);
+  border-color: rgba(var(--ember-rgb), 0.4);
+}
+
+.rehydrate-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* -----------------------------------------------------------------
+   Load More button
+   ----------------------------------------------------------------- */
+.timeline-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* -----------------------------------------------------------------
+   Pan/Zoom Performance Fallback
+   ----------------------------------------------------------------- */
+[data-panning='true'] .timeline-panel {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--color-deep, #0f161f);
+}
+
+/* -----------------------------------------------------------------
+   Evidence Ledger District wrapper
+   ----------------------------------------------------------------- */
+.evidence-ledger-district {
+  position: absolute;
+  pointer-events: auto;
+}
+
+/* -----------------------------------------------------------------
+   Reduced Motion
+   ----------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .rehydration-highlight {
+    animation: none;
+    opacity: 1;
+  }
+
+  .timeline-strip-segment {
+    transition: none;
+  }
+
+  .timeline-item {
+    transition: none;
+  }
+
+  .facet-chip {
+    transition: none;
+  }
+
+  .rehydrate-button {
+    transition: none;
+  }
+
+  .timeline-skeleton-bar {
+    animation: none;
+    opacity: 0.6;
+  }
+}

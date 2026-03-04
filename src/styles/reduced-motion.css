@@ -1,0 +1,110 @@
+/* =================================================================
+   Tarva Launch -- Comprehensive Reduced Motion Overrides
+   =================================================================
+   Source: WS-4.4 D-POLISH-7 (Reduced Motion Pass)
+   Reference: VISUAL-DESIGN-SPEC.md (all animation sections), AD-3
+
+   This stylesheet is the LAST-RESORT safety net. Individual components
+   should already handle reduced motion via useReducedMotion() from
+   @tarva/ui/motion. This file catches anything they miss.
+
+   Load order: LAST (after visual-polish-overrides.css)
+   ================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  /* ---------------------------------------------------------------
+     TIER 1: Ambient CSS Animations (WS-1.6)
+     All CSS @keyframes animations are disabled.
+     --------------------------------------------------------------- */
+  .ambient-heartbeat,
+  .ambient-breathe,
+  .ambient-grid-pulse,
+  .ambient-scanline,
+  .ambient-shimmer,
+  .ambient-attention-dampen,
+  .health-bar,
+  .hub-center,
+  .grid-pulse-overlay,
+  .scanline,
+  .scanline-ghost-1,
+  .scanline-ghost-2 {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* ---------------------------------------------------------------
+     TIER 2: Choreography Transitions (WS-2.1, WS-2.6)
+     All motion/react animated elements get instant transitions.
+     --------------------------------------------------------------- */
+  .capsule,
+  [data-capsule],
+  [data-morph-container],
+  [data-station-entrance],
+  [data-district-shell],
+  .station-panel,
+  [data-station-panel] {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* ---------------------------------------------------------------
+     TIER 3: Hover and interaction micro-transitions
+     Preserve color/opacity changes (informational) but remove
+     transforms and motion.
+     --------------------------------------------------------------- */
+  .capsule:hover,
+  [data-capsule]:hover {
+    transform: none !important;
+    /* Allow background-color and border-color changes (static) */
+  }
+
+  /* ---------------------------------------------------------------
+     TIER 4: Receipt stamp animation (WS-2.6)
+     Show receipt information instantly, no fade/slide.
+     --------------------------------------------------------------- */
+  [data-receipt-stamp] {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+  }
+
+  /* ---------------------------------------------------------------
+     TIER 5: Narration panel entrance (WS-3.6)
+     --------------------------------------------------------------- */
+  [data-narration-panel] {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* ---------------------------------------------------------------
+     TIER 6: Next-best-actions chips (WS-3.7)
+     --------------------------------------------------------------- */
+  [data-next-best-actions] {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* ---------------------------------------------------------------
+     TIER 7: Global catch-all for any CSS transition or animation
+     that was missed by the above specific rules.
+     Uses a low-specificity selector so component-level rules
+     can override if they intentionally allow certain transitions.
+     --------------------------------------------------------------- */
+  *:not(.reduced-motion-exempt) {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  /* ---------------------------------------------------------------
+     EXCEPTIONS: Elements that remain unaffected by reduced motion.
+     Film grain is already static (SVG filter, no animation).
+     Color changes are informational and non-motion.
+     --------------------------------------------------------------- */
+  .noise-overlay,
+  .film-grain-overlay {
+    /* Static SVG filter -- no animation to disable */
+  }
+}
