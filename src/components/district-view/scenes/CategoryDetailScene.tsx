@@ -5,7 +5,7 @@
  *   A (top-left):     Filtered alert list (scrollable, sorted by ingestedAt desc)
  *   B (top-right):    Severity breakdown horizontal stacked bar + legend
  *   C (bottom-left):  Source health table
- *   D (bottom-right): Map placeholder (reserved for WS-4.1)
+ *   D (bottom-right): Interactive MapLibre coverage map (WS-4.1)
  *
  * Data comes from `useCoverageMapData` (alerts/markers) and `useCoverageMetrics`
  * (source health), both filtered to the given `categoryId`.
@@ -19,6 +19,7 @@
 'use client'
 
 import { memo, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 
 import { cn } from '@/lib/utils'
 import {
@@ -31,6 +32,45 @@ import { useCoverageMetrics } from '@/hooks/use-coverage-metrics'
 import { useCoverageMapData } from '@/hooks/use-coverage-map-data'
 import type { MapMarker } from '@/lib/coverage-utils'
 import type { PanelSide } from '@/lib/morph-types'
+
+// ---------------------------------------------------------------------------
+// Dynamic map import (SSR disabled -- WebGL requires a browser)
+// ---------------------------------------------------------------------------
+
+function MapLoadingPlaceholder() {
+  return (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        minHeight: 200,
+        borderRadius: 8,
+        border: '1px dashed rgba(255, 255, 255, 0.06)',
+        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <span
+        style={{
+          fontFamily: 'var(--font-mono, monospace)',
+          fontSize: 11,
+          color: 'rgba(255, 255, 255, 0.15)',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+        }}
+      >
+        Loading map...
+      </span>
+    </div>
+  )
+}
+
+const CoverageMap = dynamic(
+  () => import('@/components/coverage/CoverageMap').then((mod) => mod.CoverageMap),
+  { ssr: false, loading: () => <MapLoadingPlaceholder /> },
+)
 
 // ---------------------------------------------------------------------------
 // Status color map
@@ -452,42 +492,6 @@ function SourceHealthTable({
 }
 
 // ---------------------------------------------------------------------------
-// Section D: Map Placeholder
-// ---------------------------------------------------------------------------
-
-function MapPlaceholder() {
-  return (
-    <div
-      role="img"
-      aria-label="Map placeholder, coming soon"
-      style={{
-        width: '100%',
-        height: '100%',
-        minHeight: 200,
-        borderRadius: 8,
-        border: '1px dashed rgba(255, 255, 255, 0.06)',
-        backgroundColor: 'rgba(255, 255, 255, 0.02)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <span
-        style={{
-          fontFamily: 'var(--font-mono, monospace)',
-          fontSize: 11,
-          color: 'rgba(255, 255, 255, 0.15)',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-        }}
-      >
-        Map -- WS-4.1
-      </span>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
@@ -562,9 +566,16 @@ export const CategoryDetailScene = memo(function CategoryDetailScene({
           />
         </div>
 
-        {/* Section D: Map Placeholder (bottom-right) */}
+        {/* Section D: Coverage Map (bottom-right) */}
         <div className="min-h-0 overflow-hidden">
-          <MapPlaceholder />
+          <div style={{ minHeight: 280, height: '100%', position: 'relative' }}>
+            <CoverageMap
+              categoryId={categoryId}
+              categoryName={meta.displayName}
+              markers={markers ?? []}
+              isLoading={markersLoading}
+            />
+          </div>
         </div>
       </div>
     </div>

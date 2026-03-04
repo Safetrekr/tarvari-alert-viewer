@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
 import './globals.css'
+import '@/styles/maplibre-overrides.css'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
