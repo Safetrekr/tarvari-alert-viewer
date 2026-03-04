@@ -1,32 +1,46 @@
-# New Launch Page — Coverage Viewer
+# New Launch Page — Coverage Grid Dashboard
 
-Plan docs for adding a Coverage Viewer page to tarvari-alert-viewer that mirrors the TarvaRI console's coverage screen.
+Plan docs for rebuilding the tarvari-alert-viewer launch page. Replaces
+the old tarva-launch capsule ring with a coverage-category card grid
+backed by live TarvaRI intel data.
 
-## What This Page Shows
+**Tracking:** Markdown files only (no Jira).
 
-A spatial dashboard of all ~38 TarvaRI intelligence sources — their categories, geographic coverage, health status, and a map of recent intel locations.
+## Core Concept
+
+**Launch → District** paradigm (same as the old capsule ring, but with real data):
+
+```
+Launch Page (coverage card grid) → click category → District View (deep detail)
+```
 
 ## Files in This Plan
 
 | File | What It Covers |
 |------|---------------|
-| `COVERAGE-DATA-SPEC.md` | Supabase tables, columns, queries, and raw data shapes |
-| `DERIVED-METRICS.md` | How to compute the stats, category rollups, and map markers client-side |
-| `TYPESCRIPT-TYPES.md` | Copy-paste ready types, constants, severity/category enums |
-| `HOOKS-SPEC.md` | Complete TanStack Query hooks with Supabase queries |
-| `PAGE-LAYOUT.md` | Section-by-section layout, interaction flow, and UI states |
+| `DISCOVERY-PROMPT.md` | **Discovery prompt** — 7-phase discovery protocol (filled in) |
+| `DISCOVERY-LOG.md` | **Discovery log** — running log of all 7 discovery phases |
+| `combined-recommendations.md` | **Discovery output** — 7 decisions, 8 work areas, risk mitigation |
+| `agent-roster.md` | **Discovery output** — agent assignments per work area |
+| `PLANNING-PROMPT.md` | **Planning prompt** — SOW generation pipeline (filled in) |
+| `COVERAGE-DATA-SPEC.md` | Supabase tables, columns, queries, raw data shapes |
+| `DERIVED-METRICS.md` | Client-side aggregation, category rollups, map markers |
+| `TYPESCRIPT-TYPES.md` | Copy-paste types, constants, severity/category enums |
+| `HOOKS-SPEC.md` | TanStack Query hooks with Supabase queries |
+| `PAGE-LAYOUT.md` | Section-by-section layout from TarvaRI console (reference) |
 
 ## Key Decisions
 
-- **Direct Supabase queries** (not TarvaRI API) — the app already has a Supabase client and shares the same instance
-- **Client-side aggregation** — the `intel_sources` table is ~38 rows, no need for server-side rollups
-- **Two queries total** — one for source metadata, one for map pins
-- **Category filter** — clicking a category card filters both the map and the source table
+- **Keep the spatial ZUI, ambient effects, header/footer** — the visual design is staying
+- **Keep Launch → District drill-down** — clicking a category card opens a district
+- **Direct Supabase queries** (not TarvaRI API) — client-side only, static export target
+- **Client-side aggregation** — `intel_sources` is ~38 rows, no server rollups needed
+- **Two queries total** — `useCoverageMetrics()` + `useCoverageMapData()`
+- **Push data panels outward** — SystemStatusPanel, FeedPanel, etc. move further left/right
+- **Archive old page** — `src/app/(launch)/page.archived.tsx` for reference
 
 ## Data Dependencies
 
-Only two Supabase tables:
+Two Supabase tables (read-only, populated by TarvaRI workers):
 1. `intel_sources` — source registry (~38 rows)
 2. `intel_normalized` — parsed intel with geo data (up to 1000 rows for map)
-
-Both are populated by TarvaRI backend workers. This app is read-only.

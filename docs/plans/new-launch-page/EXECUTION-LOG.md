@@ -3,17 +3,17 @@
 > **Project:** Coverage Grid Launch Page
 > **Started:** 2026-03-04
 > **Last Updated:** 2026-03-04
-> **Current Phase:** 1 — Foundation (COMPLETE)
-> **Current Workstream:** —
+> **Current Phase:** 4 — Map (COMPLETE)
+> **Current Workstream:** — (ALL PHASES COMPLETE)
 
 ## Status Summary
 
 | Phase | Status | WS Complete | WS Total | Blocking Issues |
 |-------|--------|-------------|----------|-----------------|
 | 1 — Foundation | COMPLETE | 3 | 3 | |
-| 2 — Core UI | IN PROGRESS | 1 | 2 | |
-| 3 — Detail + Chrome | NOT STARTED | 0 | 2 | |
-| 4 — Map | NOT STARTED | 0 | 1 | |
+| 2 — Core UI | COMPLETE | 2 | 2 | |
+| 3 — Detail + Chrome | COMPLETE | 2 | 2 | |
+| 4 — Map | COMPLETE | 1 | 1 | |
 
 ## Workstream Checklist
 
@@ -24,14 +24,14 @@
 
 ### Phase 2: Core UI
 - [x] WS-2.1: Coverage Grid — `react-developer` — CODE — COMPLETE
-- [ ] WS-2.2: Morph Adaptation — `react-developer` — CODE — NOT STARTED
+- [x] WS-2.2: Morph Adaptation — `react-developer` — CODE — COMPLETE
 
 ### Phase 3: Detail + Chrome
-- [ ] WS-3.1: District View Adaptation — `react-developer` — CODE — NOT STARTED
-- [ ] WS-3.2: Chrome & Panels — `react-developer` — CODE — NOT STARTED
+- [x] WS-3.1: District View Adaptation — `react-developer` — CODE — COMPLETE
+- [x] WS-3.2: Chrome & Panels — `react-developer` — CODE — COMPLETE
 
 ### Phase 4: Map
-- [ ] WS-4.1: Map Feature — `react-developer` — CODE — NOT STARTED
+- [x] WS-4.1: Map Feature — `react-developer` — CODE — COMPLETE
 
 ## Pre-Implementation Blockers
 
@@ -51,6 +51,10 @@
 | WS-1.2 | Type Foundation | 4884242 | 2026-03-04 | 1 new + 16 modified files, NodeId=string, coverage.ts with 15 categories, 11/11 ACs pass |
 | WS-1.3 | Data Layer | fb1c336 | 2026-03-04 | 4 new + 1 modified files, TanStack Query hooks, coverage store, utils, Supabase types, 15/15 ACs pass |
 | WS-2.1 | Coverage Grid | 14587bd | 2026-03-04 | 6 new + 4 modified files, CoverageGrid/CategoryCard/CategoryIconGrid/CoverageOverviewStats, Z0/Z1+ switching, live data wired, 19/19 ACs pass |
+| WS-2.2 | Morph Adaptation | e9c7852 | 2026-03-04 | 10 modified + 9 archived files, ring geometry removed, morph rewired for grid, ?category URL param, Decision 3 variants, 20/20 ACs pass |
+| WS-3.1 | District View Adaptation | 79d6fdc | 2026-03-04 | 1 new + 7 modified + 6 archived files, CategoryDetailScene (4-section layout), district-view chrome rewired to getCategoryMeta, H-1 detail-panel fix |
+| WS-3.2 | Chrome & Panels | de271ac | 2026-03-04 | 8 modified files, TARVARI branding, intel pipeline health labels, Minimap grid dots, panel positions pushed outward, feed panel resolveTargetName |
+| WS-4.1 | Map Feature | a0c147e | 2026-03-04 | 5 new + 3 modified files, MapLibre GL JS + react-map-gl, CoverageMap with CARTO dark-matter, severity markers, clustering, popup, auto-bounds |
 
 ## Issues Encountered
 
