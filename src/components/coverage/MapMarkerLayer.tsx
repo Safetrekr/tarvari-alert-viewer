@@ -54,6 +54,8 @@ const clusterCountLayer: LayerProps = {
     'text-field': ['get', 'point_count_abbreviated'],
     'text-font': ['Noto Sans Regular'],
     'text-size': 11,
+    'text-anchor': 'center',
+    'text-offset': [0, 0.05],
   },
   paint: {
     'text-color': 'rgba(255, 255, 255, 0.50)',

@@ -23,9 +23,9 @@ import type { MorphPhase } from '@/lib/morph-types'
 // ---------------------------------------------------------------------------
 
 /** Grid container dimensions in world-space pixels. */
-export const GRID_WIDTH = 1500
+export const GRID_WIDTH = 1600
 export const GRID_HEIGHT = 400
-export const GRID_COLUMNS = 8
+export const GRID_COLUMNS = 9
 export const GRID_GAP = 16
 
 /** Card dimensions within the grid. */

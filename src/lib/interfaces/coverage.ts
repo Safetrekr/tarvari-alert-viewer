@@ -167,3 +167,24 @@ export function buildGridItems(byCategory: CoverageByCategory[]): CategoryGridIt
     metrics: cat,
   }))
 }
+
+/**
+ * Build grid items for ALL 15 known categories, merging live metrics where
+ * available and filling zeroed metrics for categories with no sources.
+ * Ensures the grid always shows all categories so users can click into
+ * district view even before data is populated.
+ */
+export function buildAllGridItems(byCategory: CoverageByCategory[]): CategoryGridItem[] {
+  const liveMap = new Map(byCategory.map((c) => [c.category, c]))
+
+  return KNOWN_CATEGORIES.map((meta) => ({
+    id: meta.id,
+    meta,
+    metrics: liveMap.get(meta.id) ?? {
+      category: meta.id,
+      sourceCount: 0,
+      activeSources: 0,
+      geographicRegions: [],
+    },
+  }))
+}

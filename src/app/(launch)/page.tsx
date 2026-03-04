@@ -24,6 +24,12 @@
 'use client'
 
 import { useEffect, useMemo, useRef } from 'react'
+import dynamic from 'next/dynamic'
+
+const CoverageMapDynamic = dynamic(
+  () => import('@/components/coverage/CoverageMap').then((mod) => ({ default: mod.CoverageMap })),
+  { ssr: false },
+)
 
 import { SpatialViewport } from '@/components/spatial/SpatialViewport'
 import { SpatialCanvas } from '@/components/spatial/SpatialCanvas'
@@ -34,16 +40,13 @@ import { Minimap } from '@/components/spatial/Minimap'
 import { ZoomIndicator } from '@/components/spatial/ZoomIndicator'
 import { SpatialBreadcrumb } from '@/components/ui/SpatialBreadcrumb'
 import { CommandPalette } from '@/components/spatial/CommandPalette'
-import { EvidenceLedgerDistrict, EVIDENCE_LEDGER_POSITION } from '@/components/evidence-ledger/evidence-ledger-district'
+import { MapLedger } from '@/components/coverage/MapLedger'
 import {
   EnrichmentLayer,
   ZoomGate,
   HaloGlow,
   RangeRings,
   CoordinateOverlays,
-  ConnectionPaths,
-  OrbitalReadouts,
-  RadialGaugeCluster,
   SystemStatusPanel,
   FeedPanel,
   SignalPulseMonitor,
@@ -72,13 +75,13 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useSettingsStore } from '@/stores/settings.store'
 import { ColorSchemeSwitcher } from '@/components/ui/ColorSchemeSwitcher'
 import { returnToHub } from '@/lib/spatial-actions'
-import { DISTRICTS, type DistrictId } from '@/lib/interfaces/district'
-import { buildGridItems, type CategoryGridItem } from '@/lib/interfaces/coverage'
+import { KNOWN_CATEGORIES } from '@/lib/interfaces/coverage'
+import { buildAllGridItems, type CategoryGridItem } from '@/lib/interfaces/coverage'
 import { useCoverageMetrics } from '@/hooks/use-coverage-metrics'
+import { useCoverageMapData } from '@/hooks/use-coverage-map-data'
 import { syncCoverageFromUrl } from '@/stores/coverage.store'
 import { CoverageOverviewStats } from '@/components/coverage/CoverageOverviewStats'
-import { GRID_HEIGHT } from '@/components/coverage/CoverageGrid'
-import { InMemoryReceiptStore } from '@/lib/interfaces/receipt-store'
+import { GRID_WIDTH, GRID_HEIGHT } from '@/components/coverage/CoverageGrid'
 
 import '@/styles/atrium.css'
 import '@/styles/morph.css'
@@ -91,8 +94,6 @@ import '@/styles/coverage.css'
 // Phase 3 side-effect hooks (mounted once, no UI)
 // ---------------------------------------------------------------------------
 
-/** Singleton receipt store for Evidence Ledger (in-memory fallback when Supabase isn't running). */
-const receiptStore = new InMemoryReceiptStore()
 
 function Phase3Effects() {
   const effectsEnabled = useSettingsStore((s) => s.effectsEnabled)
@@ -133,13 +134,10 @@ function useInitialDistrictFromUrl(): void {
     if (
       districtParam &&
       phase === 'idle' &&
-      DISTRICTS.some((d) => d.id === districtParam)
+      KNOWN_CATEGORIES.some((c) => c.id === districtParam)
     ) {
-      const districtId = districtParam as DistrictId
-
       // Skip animation: start morph then immediately jump to settled
-      // No camera movement needed — panel appears alongside capsule ring
-      startMorph(districtId)
+      startMorph(districtParam)
       setMorphPhase('settled')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Run once on mount
@@ -160,10 +158,11 @@ export default function LaunchPage() {
 
   // Coverage data (WS-2.1)
   const { data: coverageMetrics, isLoading: isMetricsLoading } = useCoverageMetrics()
+  const { data: mapMarkers = [], isLoading: isMapLoading } = useCoverageMapData()
 
-  // Build grid items from live metrics (Decision 4: only categories with >= 1 source)
+  // Build grid items for all 15 categories, merging live metrics where available
   const gridItems: CategoryGridItem[] = useMemo(
-    () => (coverageMetrics ? buildGridItems(coverageMetrics.byCategory) : []),
+    () => buildAllGridItems(coverageMetrics?.byCategory ?? []),
     [coverageMetrics],
   )
 
@@ -257,21 +256,41 @@ export default function LaunchPage() {
               <ZoomGate show={['Z1', 'Z2']}>
                 <CoordinateOverlays />
               </ZoomGate>
-              <ZoomGate show={['Z1', 'Z2']}>
-                <ConnectionPaths />
-              </ZoomGate>
+              {/* ConnectionPaths removed (old ring layout) */}
             </div>
             {/* Horizon scan line moved to fixed viewport overlay below */}
           </EnrichmentLayer>
 
-          {/* Coverage overview stats -- positioned above the grid, Z1+ only */}
+          {/* Global coverage map -- spans from stats left edge to grid right edge, Z1+ only */}
           <ZoomGate show={['Z1', 'Z2', 'Z3']}>
             <div
               className="absolute"
               style={{
-                left: -(560 / 2),
-                top: -(GRID_HEIGHT / 2) - 100 - 60,
-                width: 560,
+                left: -(GRID_WIDTH / 2) - 230 + 125,
+                top: -(GRID_HEIGHT / 2) - 900 - 40 + 400,
+                width: GRID_WIDTH + 230,
+                height: 900,
+                pointerEvents: 'auto',
+              }}
+            >
+              <CoverageMapDynamic
+                categoryId="all"
+                categoryName="All Categories"
+                markers={mapMarkers}
+                isLoading={isMapLoading}
+                overview
+              />
+            </div>
+          </ZoomGate>
+
+          {/* Coverage overview stats -- positioned to the left of the grid, Z1+ only */}
+          <ZoomGate show={['Z1', 'Z2', 'Z3']}>
+            <div
+              className="absolute"
+              style={{
+                left: -(GRID_WIDTH / 2) - 230 + 125,
+                top: -(GRID_HEIGHT / 2) + 400,
+                width: 200,
                 pointerEvents: 'auto',
               }}
             >
@@ -287,30 +306,13 @@ export default function LaunchPage() {
           {/* Morph Orchestrator: manages coverage grid + category icon grid.
               Re-enable pointer-events here because SpatialCanvas disables them
               (per Q4: children re-enable individually). */}
-          <div data-panning={isPanActive ? 'true' : 'false'} style={{ pointerEvents: 'auto' }}>
+          <div data-panning={isPanActive ? 'true' : 'false'} style={{ pointerEvents: 'auto', transform: 'translate(125px, 400px)' }}>
             <MorphOrchestrator
               items={gridItems}
               metrics={coverageMetrics}
               prefersReducedMotion={prefersReducedMotion}
               isPanning={isPanActive}
             />
-          </div>
-
-          {/* Decorative overlays above capsules: readouts + gauge cluster.
-              Blur + fade during morph to focus on selected card. */}
-          <div
-            className="morph-ambient-fade"
-            style={{ pointerEvents: 'none' }}
-            aria-hidden="true"
-            data-panning={isPanActive ? 'true' : 'false'}
-            data-morph-active={isMorphActive ? 'true' : 'false'}
-          >
-            <ZoomGate show={['Z1', 'Z2']}>
-              <OrbitalReadouts />
-            </ZoomGate>
-            <ZoomGate show={['Z1', 'Z2']}>
-              <RadialGaugeCluster />
-            </ZoomGate>
           </div>
 
           {/* Phase C data panels: push outward + blur during morph. */}
@@ -347,19 +349,19 @@ export default function LaunchPage() {
             <EdgeFragments />
           </div>
 
-          {/* Evidence Ledger: NW quadrant, visible at Z2/Z3, hidden during morph */}
-          {!isMorphActive && (
+          {/* Map Ledger: positioned to the left of the map, top-aligned */}
+          <ZoomGate show={['Z1', 'Z2', 'Z3']}>
             <div
               className="absolute"
               style={{
-                left: EVIDENCE_LEDGER_POSITION.x,
-                top: EVIDENCE_LEDGER_POSITION.y,
+                left: -(GRID_WIDTH / 2) - 230 + 125 - 175,
+                top: -(GRID_HEIGHT / 2) - 900 - 40 + 400,
                 pointerEvents: 'auto',
               }}
             >
-              <EvidenceLedgerDistrict receiptStore={receiptStore} />
+              <MapLedger />
             </div>
-          )}
+          </ZoomGate>
         </SpatialCanvas>
       </SpatialViewport>
 

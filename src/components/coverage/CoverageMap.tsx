@@ -41,6 +41,11 @@ import {
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
 
+/** Tarva color tokens for map customization. */
+const TARVA_LAND = '#11151d'    // rgba(255,255,255,0.05) on --color-void #050911 — matches category card bg
+const TARVA_BORDER_BRIGHT = 'rgba(255, 255, 255, 0.18)' // bright country outlines
+const TARVA_BORDER_DIM = 'rgba(255, 255, 255, 0.08)'    // roads, minor lines
+
 const INITIAL_VIEW_STATE = {
   longitude: 0,
   latitude: 20,
@@ -74,6 +79,8 @@ interface CoverageMapProps {
   readonly markers: MapMarker[]
   /** Whether marker data is currently loading. */
   readonly isLoading?: boolean
+  /** If true, stay at global view — no auto-fit to markers. Markers pulse and fade. */
+  readonly overview?: boolean
 }
 
 // ============================================================================
@@ -101,6 +108,7 @@ export function CoverageMap({
   categoryName,
   markers,
   isLoading = false,
+  overview = false,
 }: CoverageMapProps) {
   const mapRef = useRef<MapRef>(null)
   const [popup, setPopup] = useState<PopupState | null>(null)
@@ -117,8 +125,9 @@ export function CoverageMap({
   // Convert markers to GeoJSON
   const geojson = useMemo(() => markersToGeoJSON(markers), [markers])
 
-  // Auto-fit bounds when markers change
+  // Auto-fit bounds when markers change (disabled in overview mode)
   useEffect(() => {
+    if (overview) return
     if (!mapLoaded || !mapRef.current || markers.length === 0) return
 
     const bounds = calculateBounds(markers)
@@ -136,7 +145,7 @@ export function CoverageMap({
         duration: 800,
       })
     }
-  }, [markers, mapLoaded])
+  }, [markers, mapLoaded, overview])
 
   // Handle cluster click -- expand cluster
   const handleClick = useCallback(
@@ -179,6 +188,65 @@ export function CoverageMap({
     },
     [],
   )
+
+  // Customize map colors on load: tarva gray land, transparent water
+  const handleLoad = useCallback(() => {
+    setMapLoaded(true)
+    const mapInstance = mapRef.current?.getMap()
+    if (!mapInstance) return
+
+    // Make the background a dark translucent teal (ocean base)
+    mapInstance.setPaintProperty('background', 'background-color', 'rgba(39, 115, 137, 0.08)')
+
+    // Recolor all layers to match tarva design system
+    const style = mapInstance.getStyle()
+    if (!style?.layers) return
+
+    const waterIds = ['water', 'ocean', 'sea', 'lake', 'river', 'waterway']
+    const labelIds = ['label', 'name', 'text', 'place', 'poi', 'housenumber', 'roadname']
+    const boundaryIds = ['boundary_country', 'boundary_state']
+
+    for (const layer of style.layers) {
+      const id = layer.id.toLowerCase()
+      const isWater = waterIds.some((w) => id.includes(w))
+      const isLabel = labelIds.some((l) => id.includes(l))
+      const isBoundary = boundaryIds.some((b) => id.includes(b))
+
+      // Water fills → dark translucent teal
+      if (isWater && layer.type === 'fill') {
+        mapInstance.setPaintProperty(layer.id, 'fill-color', 'rgba(39, 115, 137, 0.08)')
+        continue
+      }
+
+      // Water lines → hide
+      if (isWater && layer.type === 'line') {
+        mapInstance.setPaintProperty(layer.id, 'line-color', 'transparent')
+        continue
+      }
+
+      // Labels/symbols — leave as-is (CARTO style has good zoom ranges:
+      // continent 0-2, country 2-7, cities 4+, etc.)
+      if (isLabel || layer.type === 'symbol') continue
+
+      // Country/state boundaries → bright, visible outlines
+      if (isBoundary && layer.type === 'line') {
+        mapInstance.setPaintProperty(layer.id, 'line-color', TARVA_BORDER_BRIGHT)
+        mapInstance.setPaintProperty(layer.id, 'line-opacity', 1)
+        mapInstance.setPaintProperty(layer.id, 'line-width', 1)
+        continue
+      }
+
+      // All other fill layers (land, parks, buildings, etc.) → tarva gray
+      if (layer.type === 'fill') {
+        mapInstance.setPaintProperty(layer.id, 'fill-color', TARVA_LAND)
+      }
+
+      // All other line layers (roads, etc.) → dim
+      if (layer.type === 'line') {
+        mapInstance.setPaintProperty(layer.id, 'line-color', TARVA_BORDER_DIM)
+      }
+    }
+  }, [])
 
   // Cursor management
   const handleMouseEnter = useCallback(() => {
@@ -251,7 +319,7 @@ export function CoverageMap({
         ref={mapRef}
         initialViewState={INITIAL_VIEW_STATE}
         mapStyle={MAP_STYLE}
-        onLoad={() => setMapLoaded(true)}
+        onLoad={handleLoad}
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
