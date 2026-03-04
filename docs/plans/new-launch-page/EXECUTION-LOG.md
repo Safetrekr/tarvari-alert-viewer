@@ -3,14 +3,14 @@
 > **Project:** Coverage Grid Launch Page
 > **Started:** 2026-03-04
 > **Last Updated:** 2026-03-04
-> **Current Phase:** Pre-Implementation
-> **Current Workstream:** Resolving blockers
+> **Current Phase:** 1 — Foundation
+> **Current Workstream:** WS-1.3
 
 ## Status Summary
 
 | Phase | Status | WS Complete | WS Total | Blocking Issues |
 |-------|--------|-------------|----------|-----------------|
-| 1 — Foundation | NOT STARTED | 0 | 3 | |
+| 1 — Foundation | IN PROGRESS | 2 | 3 | |
 | 2 — Core UI | NOT STARTED | 0 | 2 | |
 | 3 — Detail + Chrome | NOT STARTED | 0 | 2 | |
 | 4 — Map | NOT STARTED | 0 | 1 | |
@@ -18,8 +18,8 @@
 ## Workstream Checklist
 
 ### Phase 1: Foundation
-- [ ] WS-1.1: Archive Current Page — `general-purpose` — SPEC — NOT STARTED
-- [ ] WS-1.2: Type Foundation — `react-developer` — CODE — NOT STARTED
+- [x] WS-1.1: Archive Current Page — `general-purpose` — SPEC — COMPLETE
+- [x] WS-1.2: Type Foundation — `react-developer` — CODE — COMPLETE
 - [ ] WS-1.3: Data Layer — `react-developer` — CODE — NOT STARTED
 
 ### Phase 2: Core UI
@@ -44,7 +44,11 @@
 (empty)
 
 ## Completed Work Log
-(empty)
+
+| WS | Title | Commit | Date | Notes |
+|----|-------|--------|------|-------|
+| WS-1.1 | Archive Current Page | 647e78b | 2026-03-04 | page.archived.tsx created, 4/4 ACs pass |
+| WS-1.2 | Type Foundation | 4884242 | 2026-03-04 | 1 new + 16 modified files, NodeId=string, coverage.ts with 15 categories, 11/11 ACs pass |
 
 ## Issues Encountered
 

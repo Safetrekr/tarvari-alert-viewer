@@ -30,6 +30,16 @@ export interface Database {
         Insert: LaunchSnapshotInsert
         Update: LaunchSnapshotUpdate
       }
+      intel_sources: {
+        Row: IntelSourceRow
+        Insert: Omit<IntelSourceRow, never>
+        Update: Partial<IntelSourceRow>
+      }
+      intel_normalized: {
+        Row: IntelNormalizedRow
+        Insert: Omit<IntelNormalizedRow, never>
+        Update: Partial<IntelNormalizedRow>
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -129,3 +139,59 @@ export interface LaunchSnapshotInsert {
 
 /** Update type: all fields optional. */
 export type LaunchSnapshotUpdate = Partial<LaunchSnapshotInsert>
+
+// ============================================================================
+// intel_sources
+// ============================================================================
+
+/**
+ * Row type for intel_sources table (SELECT result).
+ *
+ * Represents a single intelligence feed configured in TarvaRI.
+ * The `status` and `category` fields use `string` (not union types) to
+ * tolerate unexpected values from the database. Narrower types
+ * (`SourceStatus`, `CategoryId`) from `@/lib/interfaces/coverage` are
+ * used at the display layer.
+ *
+ * @see COVERAGE-DATA-SPEC.md
+ */
+export interface IntelSourceRow {
+  id: string // uuid, primary key
+  source_key: string // text, unique slug (e.g. 'nws-alerts')
+  name: string // text, display name
+  category: string // text, hazard category (e.g. 'weather', 'seismic')
+  status: string // text, 'active' | 'staging' | 'quarantine' | 'disabled'
+  coverage: {
+    // jsonb, nullable
+    geo?: string // geographic area: 'US', 'Global', 'EU', 'Asia-Pacific'
+    languages?: string[] // ISO 639-1 codes: ['en']
+    frequency?: string // polling cadence: '1min', '5min', '15min', '1hr'
+  } | null
+}
+
+// ============================================================================
+// intel_normalized
+// ============================================================================
+
+/**
+ * Row type for intel_normalized table (SELECT result).
+ *
+ * Represents a single parsed intel item ingested from a source.
+ * The `geo` field contains GeoJSON geometry (most commonly Point).
+ * Coordinates follow GeoJSON convention: [longitude, latitude].
+ *
+ * @see COVERAGE-DATA-SPEC.md
+ */
+export interface IntelNormalizedRow {
+  id: string // uuid, primary key
+  title: string // text, alert title
+  severity: string // text, 'Extreme' | 'Severe' | 'Moderate' | 'Minor' | 'Unknown'
+  category: string // text, same categories as intel_sources
+  source_id: string // uuid, FK to intel_sources.id
+  geo: {
+    // jsonb, nullable — GeoJSON geometry
+    type: string // 'Point' | 'LineString' | 'Polygon'
+    coordinates: number[] | number[][] | number[][][]
+  } | null
+  ingested_at: string // timestamptz, ISO 8601
+}
