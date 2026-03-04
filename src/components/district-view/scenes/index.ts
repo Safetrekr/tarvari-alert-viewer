@@ -1,6 +1,1 @@
-export { AgentBuilderScene } from './agent-builder-scene'
-export { TarvaChatScene } from './tarva-chat-scene'
-export { ProjectRoomScene } from './project-room-scene'
-export { TarvaCoreScene } from './tarva-core-scene'
-export { TarvaErpScene } from './tarva-erp-scene'
-export { TarvaCodeScene } from './tarva-code-scene'
+export { CategoryDetailScene } from './CategoryDetailScene'

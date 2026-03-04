@@ -3,11 +3,12 @@
  *
  * Positioned fixed to the right side of the viewport when non-promoted,
  * and viewport-centered when promoted (district view phase).
- * Contains category header, close button, and placeholder content
- * (WS-3.1 will add CategoryDetailScene).
+ * Contains category header, close button, and category content preview
+ * (description, source summary, region tags).
  *
  * @module detail-panel
  * @see WS-2.2 Section 4.3
+ * @see WS-3.1 Section 4.6 (H-1 fix)
  */
 
 'use client'
@@ -17,7 +18,54 @@ import { motion } from 'motion/react'
 import { cn } from '@/lib/utils'
 import type { NodeId } from '@/lib/interfaces/district'
 import { getCategoryMeta } from '@/lib/interfaces/coverage'
+import { useCoverageMetrics } from '@/hooks/use-coverage-metrics'
 import { DETAIL_PANEL_DIMENSIONS } from '@/lib/morph-types'
+
+// ---------------------------------------------------------------------------
+// Category panel content (H-1 fix -- replaces legacy DistrictContent)
+// ---------------------------------------------------------------------------
+
+function CategoryPanelContent({ categoryId }: { categoryId: string }) {
+  const meta = getCategoryMeta(categoryId)
+  const { data: metrics } = useCoverageMetrics()
+  const categoryData = metrics?.byCategory.find((c) => c.category === categoryId)
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Description */}
+      <p className="font-sans text-[24px] leading-relaxed text-[var(--color-text-secondary)]">
+        {meta.description}
+      </p>
+
+      {/* Source summary */}
+      {categoryData && (
+        <div className="flex items-center gap-3">
+          <span className="font-sans text-[20px] text-[var(--color-text-tertiary)]">
+            {categoryData.sourceCount} sources
+          </span>
+          <span className="font-sans text-[20px] text-[var(--color-text-ghost)]">
+            {categoryData.activeSources} active
+          </span>
+        </div>
+      )}
+
+      {/* Region tags */}
+      {categoryData && categoryData.geographicRegions.length > 0 && (
+        <div className="flex flex-wrap gap-3">
+          {categoryData.geographicRegions.map((region) => (
+            <span
+              key={region}
+              className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-1.5
+                         font-sans text-[20px] text-[var(--color-text-tertiary)]"
+            >
+              {region}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Props
@@ -130,9 +178,9 @@ export function DetailPanel({
           </button>
         </div>
 
-        {/* Category detail content (WS-3.1) */}
+        {/* Category detail content (H-1 fix) */}
         <div className="flex flex-1 flex-col gap-4 overflow-auto">
-          <div className="text-text-tertiary text-sm">Category detail content (WS-3.1)</div>
+          <CategoryPanelContent categoryId={categoryId} />
         </div>
       </div>
     </motion.div>

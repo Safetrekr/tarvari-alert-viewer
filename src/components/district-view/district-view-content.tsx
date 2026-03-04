@@ -1,43 +1,27 @@
 /**
- * DistrictViewContent -- routes to the correct ambient scene based
- * on districtId, passing `dockSide` so scenes know which side to
- * clear for the dock panel.
+ * DistrictViewContent -- renders the CategoryDetailScene for the
+ * selected category, passing `dockSide` so the scene knows which
+ * side to clear for the dock panel.
+ *
+ * Replaces the legacy SCENE_MAP (6 static entries) with a single
+ * data-driven component that works for any category ID.
  *
  * @module district-view-content
+ * @see WS-3.1 Section 4.2
  */
 
 'use client'
 
 import type { NodeId } from '@/lib/interfaces/district'
 import type { PanelSide } from '@/lib/morph-types'
-import {
-  AgentBuilderScene,
-  TarvaChatScene,
-  ProjectRoomScene,
-  TarvaCoreScene,
-  TarvaErpScene,
-  TarvaCodeScene,
-} from './scenes'
-
-// ---------------------------------------------------------------------------
-// Scene lookup
-// ---------------------------------------------------------------------------
-
-const SCENE_MAP: Partial<Record<string, React.ComponentType<{ dockSide: PanelSide }>>> = {
-  'agent-builder': AgentBuilderScene,
-  'tarva-chat': TarvaChatScene,
-  'project-room': ProjectRoomScene,
-  'tarva-core': TarvaCoreScene,
-  'tarva-erp': TarvaErpScene,
-  'tarva-code': TarvaCodeScene,
-}
+import { CategoryDetailScene } from './scenes'
 
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 
 interface DistrictViewContentProps {
-  readonly districtId: string
+  readonly districtId: NodeId
   readonly panelSide: PanelSide
 }
 
@@ -46,21 +30,15 @@ interface DistrictViewContentProps {
 // ---------------------------------------------------------------------------
 
 export function DistrictViewContent({ districtId, panelSide }: DistrictViewContentProps) {
-  const Scene = SCENE_MAP[districtId]
-
-  if (!Scene) return null
-
   return (
     <div
       style={{
         position: 'absolute',
         inset: 0,
-        pointerEvents: 'none',
         overflow: 'hidden',
       }}
-      aria-hidden="true"
     >
-      <Scene dockSide={panelSide} />
+      <CategoryDetailScene categoryId={districtId} dockSide={panelSide} />
     </div>
   )
 }

@@ -3,40 +3,46 @@
  * morph state machine reaches the `entering-district` phase.
  *
  * Viewport-fixed, fades in/out with AnimatePresence. Contains:
- * - Tinted radial gradient background (per-district color)
- * - DistrictViewContent (ambient scene)
- * - DistrictViewHeader (back button, name, health dot)
- * - DistrictViewDock (glass panel with controls)
+ * - Tinted radial gradient background (per-category color)
+ * - DistrictViewContent (CategoryDetailScene)
+ * - DistrictViewHeader (back button, name, category color dot)
+ * - DistrictViewDock (glass panel with category metadata)
  *
- * The layout mirrors based on `panelSide`: districts whose morph
- * panel opened on the right keep the dock on the right and back
- * button on the left. Districts that opened on the left get the
- * opposite — dock on the left, back button on the right — so the
- * spatial illusion of "moving toward" the clicked capsule is
- * preserved.
+ * The dock always appears on the right side (WS-2.2 Decision D-1).
  *
  * @module district-view-overlay
+ * @see WS-3.1 Section 4.3
  */
 
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
 import { useUIStore } from '@/stores/ui.store'
+import { getCategoryColor } from '@/lib/interfaces/coverage'
+import type { NodeId } from '@/lib/interfaces/district'
 import { DistrictViewHeader } from './district-view-header'
 import { DistrictViewDock } from './district-view-dock'
 import { DistrictViewContent } from './district-view-content'
 
 // ---------------------------------------------------------------------------
-// Per-district background tints
+// Category tint helper
 // ---------------------------------------------------------------------------
 
-const DISTRICT_TINTS: Record<string, string> = {
-  'agent-builder': 'rgba(var(--ember-rgb), 0.06)',
-  'tarva-chat': 'rgba(14, 165, 233, 0.06)',
-  'project-room': 'rgba(var(--healthy-rgb), 0.04)',
-  'tarva-core': 'rgba(168, 85, 247, 0.05)',
-  'tarva-erp': 'rgba(245, 158, 11, 0.04)',
-  'tarva-code': 'rgba(99, 102, 241, 0.04)',
+/**
+ * Compute a subtle radial gradient tint color from a category's display color.
+ * Extracts the hex fallback from the CSS var() string and converts to rgba at 0.05 opacity.
+ */
+function getCategoryTint(categoryId: string): string {
+  const color = getCategoryColor(categoryId)
+  // getCategoryColor returns e.g. 'var(--category-seismic, #ef4444)'
+  // Extract the hex fallback for inline style usage
+  const hexMatch = color.match(/#([0-9a-fA-F]{6})/)
+  if (!hexMatch) return 'rgba(255, 255, 255, 0.03)' // safe fallback
+  const hex = hexMatch[1]
+  const r = parseInt(hex.slice(0, 2), 16)
+  const g = parseInt(hex.slice(2, 4), 16)
+  const b = parseInt(hex.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, 0.05)`
 }
 
 // ---------------------------------------------------------------------------
@@ -53,7 +59,7 @@ export function DistrictViewOverlay() {
     phase === 'district' ||
     phase === 'leaving-district'
 
-  const districtId = targetId as string | null
+  const districtId = targetId as NodeId | null
 
   // Panel always docks to the right for the grid layout (WS-2.2 Decision D-1).
   const panelSide = 'right' as const
@@ -83,17 +89,17 @@ export function DistrictViewOverlay() {
             style={{
               position: 'absolute',
               inset: 0,
-              background: `radial-gradient(ellipse at ${gradientOrigin}, ${DISTRICT_TINTS[districtId] ?? 'rgba(255,255,255,0.04)'} 0%, transparent 70%)`,
+              background: `radial-gradient(ellipse at ${gradientOrigin}, ${getCategoryTint(districtId)} 0%, transparent 70%)`,
               backgroundColor: 'rgba(5, 9, 17, 0.95)',
               pointerEvents: 'none',
             }}
             aria-hidden="true"
           />
 
-          {/* Ambient scene content */}
+          {/* Category detail scene content */}
           <DistrictViewContent districtId={districtId} panelSide={panelSide} />
 
-          {/* Header (district name + back button) */}
+          {/* Header (category name + back button) */}
           <DistrictViewHeader
             districtId={districtId}
             panelSide={panelSide}

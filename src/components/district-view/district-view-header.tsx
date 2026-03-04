@@ -1,22 +1,24 @@
 /**
- * DistrictViewHeader -- district name label (top) + vertically-centered
+ * DistrictViewHeader -- category name label (top) + vertically-centered
  * animated back button.
  *
  * The back button is on the OPPOSITE side from the dock panel:
- *   - Dock on right → back button on left
- *   - Dock on left  → back button on right
+ *   - Dock on right -> back button on left
+ *   - Dock on left  -> back button on right
  *
  * This preserves the spatial illusion of "moving toward" the clicked
  * capsule and "returning" in the opposite direction.
  *
  * @module district-view-header
+ * @see WS-3.1 Section 4.5
  */
 
 'use client'
 
 import { useCallback, useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
-import { DISTRICTS, type NodeId } from '@/lib/interfaces/district'
+import { getCategoryMeta, getCategoryColor } from '@/lib/interfaces/coverage'
+import type { NodeId } from '@/lib/interfaces/district'
 import type { PanelSide } from '@/lib/morph-types'
 
 // ---------------------------------------------------------------------------
@@ -24,7 +26,7 @@ import type { PanelSide } from '@/lib/morph-types'
 // ---------------------------------------------------------------------------
 
 interface DistrictViewHeaderProps {
-  readonly districtId: string
+  readonly districtId: NodeId
   readonly panelSide: PanelSide
   readonly onBack: () => void
 }
@@ -34,7 +36,7 @@ interface DistrictViewHeaderProps {
 // ---------------------------------------------------------------------------
 
 function PulsingChevrons({ direction }: { direction: 'left' | 'right' }) {
-  const char = direction === 'left' ? '\u2039' : '\u203A' // ‹ or ›
+  const char = direction === 'left' ? '\u2039' : '\u203A' // < or >
   const indices = direction === 'left' ? [0, 1, 2] : [2, 1, 0]
 
   return (
@@ -106,8 +108,9 @@ export function DistrictViewHeader({
   panelSide,
   onBack,
 }: DistrictViewHeaderProps) {
-  const district = DISTRICTS.find((d) => d.id === districtId)
-  const displayName = district?.displayName ?? districtId
+  const meta = getCategoryMeta(districtId)
+  const displayName = meta.displayName
+  const categoryColor = getCategoryColor(districtId)
   const btnRef = useRef<HTMLButtonElement>(null)
 
   useBreathingGlow(btnRef)
@@ -129,7 +132,7 @@ export function DistrictViewHeader({
 
   return (
     <>
-      {/* District name + health dot -- top bar */}
+      {/* Category name + color dot -- top bar */}
       <div
         style={{
           position: 'fixed',
@@ -156,12 +159,12 @@ export function DistrictViewHeader({
           {displayName}
         </span>
         <div
-          className="district-health-dot-pulse"
           style={{
             width: 4,
             height: 4,
             borderRadius: '50%',
-            backgroundColor: 'var(--color-healthy, #22c55e)',
+            backgroundColor: categoryColor,
+            opacity: 0.6,
             flexShrink: 0,
           }}
           aria-hidden="true"
