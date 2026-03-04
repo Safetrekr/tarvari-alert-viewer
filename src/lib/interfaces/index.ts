@@ -15,6 +15,12 @@
  * Reference: AD-7 (AI Integration Architecture)
  */
 
+// Coverage types (TarvaRI Alert Viewer)
+export * from './coverage'
+
+// District types (NodeId is the primary identifier type)
+export type { NodeId, DistrictId, DistrictMeta, LegacyDistrictId } from './district'
+
 // Shared domain types
 export type {
   Actor,

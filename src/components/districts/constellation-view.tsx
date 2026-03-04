@@ -132,7 +132,7 @@ function deriveBeacons(apps: Record<string, AppTelemetry>): BeaconData[] {
     const app = apps[district.id]
     return {
       id: district.id,
-      code: DISTRICT_CODES[district.id],
+      code: DISTRICT_CODES[district.id] ?? 'AB',
       health: app ? (app.status as HealthState) : 'UNKNOWN',
       alerts: app ? app.alertCount : 0,
       ringIndex: district.ringIndex,

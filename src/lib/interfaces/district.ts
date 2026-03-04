@@ -12,14 +12,32 @@
 // District identity
 // ---------------------------------------------------------------------------
 
-/** Unique identifier for each Tarva district. */
-export type DistrictId =
-  | 'agent-builder'
-  | 'tarva-chat'
-  | 'project-room'
-  | 'tarva-core'
-  | 'tarva-erp'
-  | 'tarva-code'
+/**
+ * Generic node identifier for the spatial ZUI.
+ * Any string is valid -- the system is no longer constrained to 6 districts.
+ * Known IDs for original Tarva districts are preserved in LEGACY_DISTRICT_IDS.
+ * Coverage category IDs (e.g. 'seismic', 'weather') are defined in coverage.ts.
+ */
+export type NodeId = string
+
+/**
+ * @deprecated Use NodeId instead. This alias exists for transition compatibility
+ * and will be removed once all downstream workstreams (WS-2.x, WS-3.x) are complete.
+ */
+export type DistrictId = NodeId
+
+/** The 6 original Tarva district identifiers. Used by legacy components during transition. */
+export const LEGACY_DISTRICT_IDS = [
+  'agent-builder',
+  'tarva-chat',
+  'project-room',
+  'tarva-core',
+  'tarva-erp',
+  'tarva-code',
+] as const
+
+/** Type for the 6 original district IDs (narrower than NodeId). */
+export type LegacyDistrictId = (typeof LEGACY_DISTRICT_IDS)[number]
 
 /** Operational health state of a district. */
 export type HealthState =
@@ -53,8 +71,8 @@ export interface CapsuleTelemetry {
 
 /** Static metadata for a single district. */
 export interface DistrictMeta {
-  /** Unique district identifier. */
-  id: DistrictId
+  /** Node identifier (district ID or category ID). */
+  id: NodeId
   /** Full display name (e.g. "Agent Builder"). */
   displayName: string
   /** Abbreviated name for tight spaces (e.g. "BUILDER"). */
@@ -192,8 +210,11 @@ export const HEALTH_STATE_MAP: Record<
 /** Two-letter compact codes for Z0 beacon labels. */
 export type DistrictCode = 'AB' | 'CH' | 'PR' | 'CO' | 'ER' | 'CD'
 
-/** Maps DistrictId to its compact code for Z0 display. */
-export const DISTRICT_CODES: Record<DistrictId, DistrictCode> = {
+/**
+ * Maps legacy district IDs to their compact two-letter codes for Z0 display.
+ * @deprecated Legacy mapping. Coverage categories use shortName from CategoryMeta.
+ */
+export const DISTRICT_CODES: Partial<Record<NodeId, DistrictCode>> = {
   'agent-builder': 'AB',
   'tarva-chat': 'CH',
   'project-room': 'PR',
@@ -204,8 +225,8 @@ export const DISTRICT_CODES: Record<DistrictId, DistrictCode> = {
 
 /** Data shape for a single beacon at Z0. */
 export interface BeaconData {
-  /** District identifier. */
-  id: DistrictId
+  /** Node identifier (district or category). */
+  id: NodeId
   /** Compact two-letter code. */
   code: DistrictCode
   /** Current health state (drives color + glow). */

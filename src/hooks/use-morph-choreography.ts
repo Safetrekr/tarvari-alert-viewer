@@ -37,7 +37,7 @@
 
 import { useEffect, useRef, useCallback } from 'react'
 import { useUIStore, uiSelectors } from '@/stores/ui.store'
-import type { DistrictId } from '@/lib/interfaces/district'
+import type { NodeId } from '@/lib/interfaces/district'
 import type { MorphPhase, MorphDirection } from '@/lib/morph-types'
 import { MORPH_TIMING, MORPH_TIMING_REDUCED } from '@/lib/morph-types'
 
@@ -51,12 +51,12 @@ interface UseMorphChoreographyReturn {
   phase: MorphPhase
   /** Current morph direction (forward or reverse). */
   direction: MorphDirection
-  /** The district being expanded/collapsed. */
-  targetId: DistrictId | null
+  /** The node being expanded/collapsed. */
+  targetId: NodeId | null
   /** Whether the morph is actively animating. */
   isMorphing: boolean
-  /** Start a forward morph to the specified district. */
-  startMorph: (districtId: DistrictId) => void
+  /** Start a forward morph to the specified node. */
+  startMorph: (nodeId: NodeId) => void
   /** Start a reverse morph back to the atrium. */
   reverseMorph: () => void
 }
@@ -173,9 +173,9 @@ export function useMorphChoreography(
   // Public API
   // ----------------------------------------------------------------
   const startMorph = useCallback(
-    (districtId: DistrictId) => {
+    (nodeId: NodeId) => {
       if (phase !== 'idle') return
-      startMorphAction(districtId)
+      startMorphAction(nodeId)
     },
     [phase, startMorphAction],
   )
@@ -203,7 +203,7 @@ export function useMorphChoreography(
  * Update the URL search params with the current district selection.
  * Uses history.replaceState to avoid Next.js router re-renders.
  */
-function syncUrlDistrict(districtId: DistrictId | null): void {
+function syncUrlDistrict(districtId: NodeId | null): void {
   if (typeof window === 'undefined') return
   const url = new URL(window.location.href)
   if (districtId) {

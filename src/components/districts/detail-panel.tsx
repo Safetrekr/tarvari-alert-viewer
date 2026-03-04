@@ -14,7 +14,7 @@
 import { motion } from 'motion/react'
 
 import { cn } from '@/lib/utils'
-import type { DistrictId } from '@/lib/interfaces/district'
+import type { NodeId } from '@/lib/interfaces/district'
 import { getDistrictById } from '@/lib/spatial-actions'
 import {
   DETAIL_PANEL_DIMENSIONS,
@@ -29,7 +29,7 @@ import { DistrictContent } from './district-content'
 // ---------------------------------------------------------------------------
 
 interface DetailPanelProps {
-  districtId: DistrictId
+  districtId: NodeId
   ringIndex: number
   onClose: () => void
   /** When true, the panel is promoted to a fixed viewport-centered overlay

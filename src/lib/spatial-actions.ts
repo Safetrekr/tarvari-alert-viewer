@@ -15,7 +15,7 @@ import {
   CAPSULE_ANGULAR_SPACING,
   ZOOM_DEFAULT,
 } from '@/lib/constants'
-import { DISTRICTS, type DistrictId, type DistrictMeta } from '@/lib/interfaces/district'
+import { DISTRICTS, type NodeId, type DistrictMeta } from '@/lib/interfaces/district'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -55,7 +55,7 @@ export function getDistrictWorldPosition(ringIndex: number): {
 /**
  * Get district metadata by ID.
  */
-export function getDistrictById(id: DistrictId): DistrictMeta | undefined {
+export function getDistrictById(id: NodeId): DistrictMeta | undefined {
   return DISTRICTS.find((d) => d.id === id)
 }
 
@@ -94,8 +94,8 @@ export function returnToHub(): void {
 /**
  * Fly to a specific district by its ID.
  */
-export function flyToDistrict(districtId: DistrictId): void {
-  const district = getDistrictById(districtId)
+export function flyToDistrict(nodeId: NodeId): void {
+  const district = getDistrictById(nodeId)
   if (!district) return
 
   const pos = getDistrictWorldPosition(district.ringIndex)

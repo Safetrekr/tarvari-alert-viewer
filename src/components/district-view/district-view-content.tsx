@@ -8,7 +8,7 @@
 
 'use client'
 
-import type { DistrictId } from '@/lib/interfaces/district'
+import type { NodeId } from '@/lib/interfaces/district'
 import type { PanelSide } from '@/lib/morph-types'
 import {
   AgentBuilderScene,
@@ -23,7 +23,7 @@ import {
 // Scene lookup
 // ---------------------------------------------------------------------------
 
-const SCENE_MAP: Record<DistrictId, React.ComponentType<{ dockSide: PanelSide }>> = {
+const SCENE_MAP: Partial<Record<string, React.ComponentType<{ dockSide: PanelSide }>>> = {
   'agent-builder': AgentBuilderScene,
   'tarva-chat': TarvaChatScene,
   'project-room': ProjectRoomScene,
@@ -37,7 +37,7 @@ const SCENE_MAP: Record<DistrictId, React.ComponentType<{ dockSide: PanelSide }>
 // ---------------------------------------------------------------------------
 
 interface DistrictViewContentProps {
-  readonly districtId: DistrictId
+  readonly districtId: string
   readonly panelSide: PanelSide
 }
 
@@ -47,6 +47,8 @@ interface DistrictViewContentProps {
 
 export function DistrictViewContent({ districtId, panelSide }: DistrictViewContentProps) {
   const Scene = SCENE_MAP[districtId]
+
+  if (!Scene) return null
 
   return (
     <div

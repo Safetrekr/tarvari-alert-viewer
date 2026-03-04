@@ -19,7 +19,7 @@ import { createRef, useMemo, type RefObject } from 'react'
 import { motion } from 'motion/react'
 
 import { CAPSULE_RING_RADIUS, CAPSULE_ANGULAR_SPACING } from '@/lib/constants'
-import type { CapsuleData, DistrictId } from '@/lib/interfaces/district'
+import type { CapsuleData, NodeId } from '@/lib/interfaces/district'
 import type { MorphPhase, PanelSide } from '@/lib/morph-types'
 import { RING_SHIFT } from '@/lib/morph-types'
 import { resolveMorphVariant } from '@/hooks/use-morph-variants'
@@ -75,8 +75,8 @@ export function computeCapsuleCenter(ringIndex: number): { x: number; y: number 
 
 export interface CapsuleRingProps {
   data: CapsuleData[]
-  selectedId: DistrictId | null
-  onSelect: (id: DistrictId) => void
+  selectedId: NodeId | null
+  onSelect: (id: NodeId) => void
   morphPhase?: MorphPhase
   /** Which side the detail panel is on. Null when no panel is visible. */
   panelSide?: PanelSide | null
@@ -111,7 +111,7 @@ export function CapsuleRing({
     for (const capsule of data) {
       refs[capsule.district.id] = createRef<HTMLDivElement>()
     }
-    return refs as Record<DistrictId, RefObject<HTMLDivElement | null>>
+    return refs as Record<NodeId, RefObject<HTMLDivElement | null>>
   }, [data])
 
   const hasSelection = selectedId !== null

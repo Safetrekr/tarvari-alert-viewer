@@ -52,7 +52,7 @@ function seedDistrict(id: DistrictId): DistrictEnrichment {
   return {
     id,
     displayName: meta?.displayName ?? id,
-    shortCode: DISTRICT_CODES[id],
+    shortCode: DISTRICT_CODES[id] ?? '',
     health: 'OPERATIONAL' as HealthState,
     uptime: randInt(1000, 50000),
     responseTimeMs: randInt(20, 80),

@@ -23,7 +23,7 @@
 import { useMemo } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useUIStore } from '@/stores/ui.store'
-import { DISTRICTS, type DistrictId } from '@/lib/interfaces/district'
+import { DISTRICTS, type NodeId } from '@/lib/interfaces/district'
 import { computeRingRotation, type PanelSide } from '@/lib/morph-types'
 import { DistrictViewHeader } from './district-view-header'
 import { DistrictViewDock } from './district-view-dock'
@@ -33,7 +33,7 @@ import { DistrictViewContent } from './district-view-content'
 // Per-district background tints
 // ---------------------------------------------------------------------------
 
-const DISTRICT_TINTS: Record<DistrictId, string> = {
+const DISTRICT_TINTS: Record<string, string> = {
   'agent-builder': 'rgba(var(--ember-rgb), 0.06)',
   'tarva-chat': 'rgba(14, 165, 233, 0.06)',
   'project-room': 'rgba(var(--healthy-rgb), 0.04)',
@@ -46,7 +46,7 @@ const DISTRICT_TINTS: Record<DistrictId, string> = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getPanelSideForDistrict(districtId: DistrictId): PanelSide {
+function getPanelSideForDistrict(districtId: string): PanelSide {
   const district = DISTRICTS.find((d) => d.id === districtId)
   if (!district) return 'right'
   return computeRingRotation(district.ringIndex).panelSide
@@ -66,7 +66,7 @@ export function DistrictViewOverlay() {
     phase === 'district' ||
     phase === 'leaving-district'
 
-  const districtId = targetId as DistrictId | null
+  const districtId = targetId as string | null
 
   const panelSide = useMemo(
     () => (districtId ? getPanelSideForDistrict(districtId) : 'right'),
@@ -98,7 +98,7 @@ export function DistrictViewOverlay() {
             style={{
               position: 'absolute',
               inset: 0,
-              background: `radial-gradient(ellipse at ${gradientOrigin}, ${DISTRICT_TINTS[districtId]} 0%, transparent 70%)`,
+              background: `radial-gradient(ellipse at ${gradientOrigin}, ${DISTRICT_TINTS[districtId] ?? 'rgba(255,255,255,0.04)'} 0%, transparent 70%)`,
               backgroundColor: 'rgba(5, 9, 17, 0.95)',
               pointerEvents: 'none',
             }}

@@ -16,7 +16,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
-import { DISTRICTS, type DistrictId } from '@/lib/interfaces/district'
+import { DISTRICTS, type NodeId } from '@/lib/interfaces/district'
 import type { PanelSide } from '@/lib/morph-types'
 
 // ---------------------------------------------------------------------------
@@ -24,7 +24,7 @@ import type { PanelSide } from '@/lib/morph-types'
 // ---------------------------------------------------------------------------
 
 interface DistrictViewHeaderProps {
-  readonly districtId: DistrictId
+  readonly districtId: string
   readonly panelSide: PanelSide
   readonly onBack: () => void
 }

@@ -8,7 +8,7 @@
  * @see WS-2.1 Section 4.2
  */
 
-import type { DistrictId } from '@/lib/interfaces/district'
+import type { NodeId } from '@/lib/interfaces/district'
 
 // ============================================================
 // MORPH STATE MACHINE
@@ -78,8 +78,8 @@ export interface MorphState {
   phase: MorphPhase
   /** Direction of the current morph (forward or reverse). */
   direction: MorphDirection
-  /** District being expanded (forward) or collapsed (reverse). Null when idle. */
-  targetId: DistrictId | null
+  /** Node being expanded (forward) or collapsed (reverse). Null when idle. */
+  targetId: NodeId | null
   /**
    * Timestamp (performance.now()) when the current phase started.
    * Used for phase timing coordination.
@@ -95,7 +95,7 @@ export interface MorphActions {
    * Begin forward morph to a district.
    * Sets phase to 'expanding', direction to 'forward', targetId to the district.
    */
-  startMorph: (districtId: DistrictId) => void
+  startMorph: (nodeId: NodeId) => void
   /**
    * Begin reverse morph back to the atrium.
    * Sets phase to 'expanding', direction to 'reverse'.

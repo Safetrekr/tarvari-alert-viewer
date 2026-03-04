@@ -28,7 +28,7 @@ import { CapsuleRing, computeCapsuleCenter, RING_CENTER } from './capsule-ring'
 import { ConstellationView } from './constellation-view'
 import { DetailPanel } from './detail-panel'
 import { ConnectorLines } from './connector-lines'
-import type { CapsuleData, DistrictId } from '@/lib/interfaces/district'
+import type { CapsuleData, NodeId } from '@/lib/interfaces/district'
 
 interface MorphOrchestratorProps {
   /** Capsule data from the telemetry system. */
@@ -51,7 +51,7 @@ export function MorphOrchestrator({
 
   // Handle capsule selection (Z1+ click)
   const handleCapsuleSelect = useCallback(
-    (id: DistrictId) => {
+    (id: NodeId) => {
       if (phase === 'idle') {
         startMorph(id)
       }
@@ -61,7 +61,7 @@ export function MorphOrchestrator({
 
   // Handle beacon selection (Z0 click): zoom in to district, then morph.
   const handleBeaconSelect = useCallback(
-    (id: DistrictId) => {
+    (id: NodeId) => {
       if (phase !== 'idle') return
 
       const district = getDistrictById(id)

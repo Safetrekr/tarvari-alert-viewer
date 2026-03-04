@@ -12,7 +12,7 @@
 import { useCallback } from 'react'
 import { motion } from 'motion/react'
 import { cn } from '@/lib/utils'
-import { DISTRICTS, type DistrictId } from '@/lib/interfaces/district'
+import { DISTRICTS, type NodeId } from '@/lib/interfaces/district'
 import type { PanelSide } from '@/lib/morph-types'
 
 // ---------------------------------------------------------------------------
@@ -25,7 +25,7 @@ interface StationConfig {
   readonly stations: readonly string[]
 }
 
-const STATION_CONFIG: Record<DistrictId, StationConfig> = {
+const STATION_CONFIG: Record<string, StationConfig> = {
   'agent-builder': {
     description: 'Web IDE for creating and managing AI agents',
     url: 'http://localhost:3000',
@@ -63,7 +63,7 @@ const STATION_CONFIG: Record<DistrictId, StationConfig> = {
 // ---------------------------------------------------------------------------
 
 interface DistrictViewDockProps {
-  readonly districtId: DistrictId
+  readonly districtId: string
   readonly panelSide: PanelSide
 }
 
@@ -81,10 +81,10 @@ export function DistrictViewDock({ districtId, panelSide }: DistrictViewDockProp
   const slideFrom = isRight ? 40 : -40
 
   const handleOpenApp = useCallback(() => {
-    if (config.url) {
+    if (config?.url) {
       window.open(config.url, '_blank', 'noopener,noreferrer')
     }
-  }, [config.url])
+  }, [config?.url])
 
   return (
     <motion.div
@@ -133,11 +133,11 @@ export function DistrictViewDock({ districtId, panelSide }: DistrictViewDockProp
           className="mt-4 font-mono text-[11px] leading-[1.5]"
           style={{ color: 'rgba(255, 255, 255, 0.25)' }}
         >
-          {config.description}
+          {config?.description}
         </p>
 
         {/* Open button (if URL exists) */}
-        {config.url && (
+        {config?.url && (
           <button
             onClick={handleOpenApp}
             className={cn(
@@ -214,7 +214,7 @@ export function DistrictViewDock({ districtId, panelSide }: DistrictViewDockProp
             STATIONS
           </span>
           <div className="flex flex-wrap gap-2">
-            {config.stations.map((station) => (
+            {config?.stations.map((station) => (
               <span
                 key={station}
                 className={cn(

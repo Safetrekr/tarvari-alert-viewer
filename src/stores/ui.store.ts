@@ -10,7 +10,7 @@
 
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import type { DistrictId } from '@/lib/interfaces/district'
+import type { NodeId } from '@/lib/interfaces/district'
 import type { MorphPhase, MorphDirection, MorphState } from '@/lib/morph-types'
 
 // ============================================================
@@ -19,7 +19,7 @@ import type { MorphPhase, MorphDirection, MorphState } from '@/lib/morph-types'
 
 interface UIState {
   // --- Selection ---
-  selectedDistrictId: DistrictId | null
+  selectedDistrictId: NodeId | null
 
   // --- Morph State Machine ---
   morph: MorphState
@@ -38,14 +38,14 @@ interface UIActions {
    * the selection target. The morph orchestrator listens for this
    * change and calls startMorph() if appropriate.
    */
-  selectDistrict: (id: DistrictId | null) => void
+  selectDistrict: (id: NodeId | null) => void
 
   /**
    * Begin forward morph: idle -> expanding -> settled.
    * Only valid when morph.phase === 'idle'.
    * Sets selectedDistrictId, morph.phase, morph.direction, morph.targetId.
    */
-  startMorph: (districtId: DistrictId) => void
+  startMorph: (nodeId: NodeId) => void
 
   /**
    * Begin reverse morph back to the atrium.
@@ -177,5 +177,5 @@ export const uiSelectors = {
   isReversing: (state: UIStore): boolean => state.morph.direction === 'reverse',
 
   /** The district being morphed to/from, or null. */
-  morphTargetId: (state: UIStore): DistrictId | null => state.morph.targetId,
+  morphTargetId: (state: UIStore): NodeId | null => state.morph.targetId,
 }
