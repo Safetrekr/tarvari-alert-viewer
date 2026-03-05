@@ -40,6 +40,21 @@ export interface Database {
         Insert: Omit<IntelNormalizedRow, never>
         Update: Partial<IntelNormalizedRow>
       }
+      intel_bundles: {
+        Row: IntelBundleRow
+        Insert: Omit<IntelBundleRow, never>
+        Update: Partial<IntelBundleRow>
+      }
+      triage_decisions: {
+        Row: TriageDecisionRow
+        Insert: Omit<TriageDecisionRow, never>
+        Update: Partial<TriageDecisionRow>
+      }
+      trip_alerts: {
+        Row: TripAlertRow
+        Insert: Omit<TripAlertRow, never>
+        Update: Partial<TripAlertRow>
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -139,6 +154,119 @@ export interface LaunchSnapshotInsert {
 
 /** Update type: all fields optional. */
 export type LaunchSnapshotUpdate = Partial<LaunchSnapshotInsert>
+
+// ============================================================================
+// intel_bundles
+// ============================================================================
+
+/**
+ * Row type for intel_bundles table (SELECT result).
+ *
+ * Represents a clustered group of related intel items that have been
+ * scored and optionally triaged. The `member_intel_ids` array references
+ * rows in `intel_normalized`. The `primary_intel_id` is the FK to the
+ * most representative member.
+ *
+ * Note: `categories` and `member_intel_ids` are Postgres arrays, which
+ * Supabase returns as JavaScript arrays.
+ */
+export interface IntelBundleRow {
+  id: string                          // uuid, PK
+  title: string | null                // text, nullable
+  summary: string | null              // text, nullable
+  status: string                      // text, 'pending' | 'approved' | 'rejected'
+  final_severity: string              // text, 'Extreme' | 'Severe' | 'Moderate' | 'Minor'
+  categories: string[] | null         // text[], nullable
+  confidence_aggregate: string | null // numeric (Supabase returns as string), nullable
+  risk_score: string | null           // numeric (Supabase returns as string), nullable
+  source_count: number                // integer
+  intel_count: number | null          // integer, nullable
+  member_intel_ids: string[]          // uuid[], NOT NULL
+  primary_intel_id: string            // uuid, NOT NULL, FK to intel_normalized.id
+  dedup_hash: string                  // text, NOT NULL
+  representative_coordinates: {       // jsonb, nullable
+    lat: number | null
+    lon: number | null
+  } | null
+  geographic_scope: {                 // jsonb, nullable
+    type: string
+    radius_km?: number
+    coordinates?: { lat: number | null; lon: number | null }
+  } | null
+  temporal_scope: {                   // jsonb, nullable
+    start: string
+    end: string
+  } | null
+  risk_details: Record<string, unknown> | null  // jsonb, nullable
+  source_breakdown: Record<string, unknown> | null  // jsonb, nullable
+  analyst_notes: string | null        // text, nullable
+  routed_at: string | null            // timestamptz, nullable
+  routed_alert_count: number | null   // integer, nullable
+  created_at: string                  // timestamptz
+  updated_at: string                  // timestamptz
+}
+
+// ============================================================================
+// triage_decisions
+// ============================================================================
+
+/**
+ * Row type for triage_decisions table (SELECT result).
+ *
+ * Represents an LLM or analyst verdict on an intel bundle.
+ * One bundle can have multiple decisions (versioned), but typically
+ * only the latest version matters.
+ */
+export interface TriageDecisionRow {
+  id: string                           // uuid, PK
+  bundle_id: string                    // uuid, FK to intel_bundles.id
+  version: number                      // integer, default 1
+  decision: string                     // text, 'approve' | 'reject'
+  bucket: string | null                // text, nullable
+  delivery_bucket: string | null       // text, nullable
+  reviewer_id: string                  // uuid, FK to users.id
+  note: string | null                  // text, nullable -- LLM rationale
+  decided_at: string                   // timestamptz
+  edited_title: string | null          // text, nullable
+  edited_summary: string | null        // text, nullable
+  edited_severity: string | null       // text, nullable
+  edited_geo: Record<string, unknown> | null  // jsonb, nullable
+  suggested_trip_ids: string[] | null  // uuid[], nullable
+  selected_trip_ids: string[] | null   // uuid[], nullable
+  selected_trips: string[] | null      // text[], nullable
+  excluded_trips: string[] | null      // text[], nullable
+  impacted_orgs: string[] | null       // text[], nullable
+  diff: Record<string, unknown> | null // jsonb, nullable
+}
+
+// ============================================================================
+// trip_alerts
+// ============================================================================
+
+/**
+ * Row type for trip_alerts table (SELECT result).
+ * Currently 0 rows in production — included for completeness.
+ */
+export interface TripAlertRow {
+  id: string                           // uuid, PK
+  bundle_id: string | null             // uuid, nullable, FK to intel_bundles.id
+  trip_id: string                      // text, NOT NULL
+  org_id: string                       // text, NOT NULL
+  delivery_bucket: string | null       // text, nullable
+  routed_by: string | null             // text, nullable
+  routed_at: string | null             // timestamptz, nullable
+  requires_acknowledgment: boolean | null
+  priority: string | null              // text, nullable
+  status: string | null                // text, nullable
+  relevance_score: string | null       // numeric (returned as string), nullable
+  severity: string | null              // text, nullable
+  category: string | null              // text, nullable
+  full_summary: string | null          // text, nullable
+  scoring_details: Record<string, unknown> | null
+  copy_variants: Record<string, unknown> | null
+  created_at: string | null            // timestamptz
+  updated_at: string | null            // timestamptz
+}
 
 // ============================================================================
 // intel_sources
