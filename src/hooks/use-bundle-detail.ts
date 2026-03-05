@@ -1,86 +1,82 @@
 'use client'
 
 /**
- * TanStack Query hook for a single bundle with resolved member intel items.
+ * TanStack Query hook for a single bundle detail.
  *
+ * Fetches a bundle from the TarvaRI backend API (`/console/bundles/:id`).
  * This is a dependent query -- it only runs when bundleId is non-null.
- * Used for the bundle drill-down / detail view.
  *
  * @module use-bundle-detail
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
-import type { IntelBundleRow, TriageDecisionRow, IntelNormalizedRow } from '@/lib/supabase/types'
+import { tarvariGet } from '@/lib/tarvari-api'
+import type { IntelBundleRow } from '@/lib/supabase/types'
 import type { BundleWithMembers } from '@/lib/interfaces/intel-bundles'
+
+// ============================================================================
+// API response type
+// ============================================================================
+
+interface ApiBundleDetail {
+  id: string
+  title: string | null
+  summary: string | null
+  status: string
+  final_severity: string | null
+  intel_count: number
+  source_count: number
+  confidence_aggregate: number | null
+  risk_score: number | null
+  risk_details: Record<string, unknown> | null
+  created_at: string
+  updated_at: string | null
+  routed_at: string | null
+  routed_alert_count: number | null
+  representative_coordinates: Record<string, unknown> | null
+  geographic_scope: Record<string, unknown> | null
+  temporal_scope: Record<string, unknown> | null
+  analyst_notes: string | null
+}
 
 // ============================================================================
 // Query function
 // ============================================================================
 
 async function fetchBundleDetail(bundleId: string): Promise<BundleWithMembers | null> {
-  const supabase = getSupabaseBrowserClient()
+  const data = await tarvariGet<ApiBundleDetail>(`/console/bundles/${bundleId}`)
 
-  // Step 1: Fetch bundle with embedded triage decisions
-  const { data: bundleData, error: bundleError } = await supabase
-    .from('intel_bundles')
-    .select(`
-      id, title, summary, status, final_severity, categories,
-      confidence_aggregate, risk_score, source_count, intel_count,
-      member_intel_ids, primary_intel_id,
-      representative_coordinates, geographic_scope, temporal_scope,
-      risk_details, source_breakdown, analyst_notes,
-      routed_at, routed_alert_count,
-      created_at, updated_at,
-      triage_decisions (
-        id, bundle_id, version, decision, bucket, delivery_bucket,
-        reviewer_id, note, decided_at,
-        edited_title, edited_summary, edited_severity, edited_geo,
-        suggested_trip_ids, selected_trip_ids, selected_trips,
-        excluded_trips, impacted_orgs, diff
-      )
-    `)
-    .eq('id', bundleId)
-    .single()
-
-  if (bundleError) throw bundleError
-  if (!bundleData) return null
-
-  const bundle = bundleData as unknown as IntelBundleRow & {
-    triage_decisions: TriageDecisionRow[]
+  const bundle: IntelBundleRow = {
+    id: data.id,
+    title: data.title,
+    summary: data.summary,
+    status: data.status,
+    final_severity: data.final_severity ?? 'Unknown',
+    categories: null,
+    confidence_aggregate: data.confidence_aggregate != null ? String(data.confidence_aggregate) : null,
+    risk_score: data.risk_score != null ? String(data.risk_score) : null,
+    source_count: data.source_count,
+    intel_count: data.intel_count,
+    member_intel_ids: [],
+    primary_intel_id: '',
+    dedup_hash: '',
+    representative_coordinates: data.representative_coordinates as IntelBundleRow['representative_coordinates'],
+    geographic_scope: data.geographic_scope as IntelBundleRow['geographic_scope'],
+    temporal_scope: data.temporal_scope as IntelBundleRow['temporal_scope'],
+    risk_details: data.risk_details as IntelBundleRow['risk_details'],
+    source_breakdown: null,
+    analyst_notes: data.analyst_notes,
+    routed_at: data.routed_at,
+    routed_alert_count: data.routed_alert_count ?? 0,
+    created_at: data.created_at,
+    updated_at: data.updated_at ?? '',
   }
-
-  // Step 2: Resolve member intel items
-  const memberIds = bundle.member_intel_ids ?? []
-
-  let members: IntelNormalizedRow[] = []
-  if (memberIds.length > 0) {
-    const { data: memberData, error: memberError } = await supabase
-      .from('intel_normalized')
-      .select('id, title, severity, category, source_id, geo, ingested_at')
-      .in('id', memberIds)
-
-    if (memberError) throw memberError
-    members = (memberData as unknown as IntelNormalizedRow[]) ?? []
-  }
-
-  // Extract latest triage decision (highest version)
-  const decisions = bundle.triage_decisions ?? []
-  const latestDecision = decisions.length > 0
-    ? decisions.reduce((latest, d) => d.version > latest.version ? d : latest)
-    : null
-
-  // Resolve primary intel item
-  const primaryIntel = members.find((m) => m.id === bundle.primary_intel_id) ?? null
-
-  // Strip embedded triage_decisions to match IntelBundleRow shape
-  const { triage_decisions: _, ...bundleRow } = bundle
 
   return {
-    bundle: bundleRow as IntelBundleRow,
-    decision: latestDecision,
-    members,
-    primaryIntel,
+    bundle,
+    decision: null, // Detail endpoint doesn't include triage decisions yet
+    members: [],
+    primaryIntel: null,
   }
 }
 
@@ -89,10 +85,10 @@ async function fetchBundleDetail(bundleId: string): Promise<BundleWithMembers | 
 // ============================================================================
 
 /**
- * Fetches a single bundle with its triage decision and resolved members.
+ * Fetches a single bundle detail from the TarvaRI API.
  *
  * Dependent query: only runs when bundleId is non-null.
- * staleTime: 60s (detail view is less frequently changing)
+ * staleTime: 60s
  */
 export function useBundleDetail(bundleId: string | null) {
   return useQuery<BundleWithMembers | null>({

@@ -3,15 +3,15 @@
 /**
  * TanStack Query hook for the live intel feed.
  *
- * Fetches the most recent `intel_normalized` rows (newest first)
- * for display in the FeedPanel and ActivityTicker. Polls every 30s.
+ * Fetches the most recent normalized intel items from the
+ * TarvaRI backend API (`/console/intel`) for display in the
+ * FeedPanel and ActivityTicker. Polls every 30s.
  *
  * @module use-intel-feed
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
-import type { IntelNormalizedRow } from '@/lib/supabase/types'
+import { tarvariGet } from '@/lib/tarvari-api'
 
 // ============================================================================
 // Types
@@ -27,29 +27,41 @@ export interface IntelFeedItem {
 }
 
 // ============================================================================
+// API response type
+// ============================================================================
+
+interface ApiIntelItem {
+  id: string
+  title: string
+  severity: string
+  category: string
+  event_type: string | null
+  source_key: string | null
+  confidence: number | null
+  geo_scope: string[] | null
+  short_summary: string | null
+  ingested_at: string
+  sent_at: string | null
+}
+
+interface ApiIntelFeedResponse {
+  items: ApiIntelItem[]
+  total_count: number
+}
+
+// ============================================================================
 // Query function
 // ============================================================================
 
 async function fetchIntelFeed(): Promise<IntelFeedItem[]> {
-  const supabase = getSupabaseBrowserClient()
+  const data = await tarvariGet<ApiIntelFeedResponse>('/console/intel', { limit: 50 })
 
-  const { data, error } = await supabase
-    .from('intel_normalized')
-    .select('id, title, severity, category, source_id, ingested_at')
-    .order('ingested_at', { ascending: false })
-    .limit(50)
-
-  if (error) throw error
-  if (!data) return []
-
-  const rows = data as unknown as IntelNormalizedRow[]
-
-  return rows.map((r) => ({
+  return data.items.map((r) => ({
     id: r.id,
     title: r.title,
     severity: r.severity,
     category: r.category,
-    sourceId: r.source_id,
+    sourceId: r.source_key ?? '',
     ingestedAt: r.ingested_at,
   }))
 }

@@ -3,60 +3,77 @@
 /**
  * TanStack Query hook for coverage metrics.
  *
- * Fetches all rows from `intel_sources` via the Supabase browser client
- * and computes aggregate metrics client-side. The query is lightweight
- * (~38 rows) so no pagination is needed.
+ * Fetches aggregate source/category metrics from the TarvaRI
+ * backend API (`/console/coverage`).
  *
  * @module use-coverage-metrics
  * @see WS-1.3 Section 4.3
- * @see HOOKS-SPEC.md
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { tarvariGet } from '@/lib/tarvari-api'
 import {
-  buildCategoryMetrics,
   emptyMetrics,
   type CoverageMetrics,
+  type CoverageByCategory,
   type SourceCoverage,
 } from '@/lib/coverage-utils'
-import type { IntelSourceRow } from '@/lib/supabase/types'
+
+// ============================================================================
+// API response types
+// ============================================================================
+
+interface ApiSourceCoverage {
+  source_key: string
+  name: string
+  category: string
+  status: string
+  geographic_coverage: string | null
+  update_frequency: string | null
+}
+
+interface ApiCategoryMetric {
+  category: string
+  source_count: number
+  active_sources: number
+  geographic_regions: string[]
+}
+
+interface ApiCoverageResponse {
+  total_sources: number
+  active_sources: number
+  categories_covered: number
+  sources_by_coverage: ApiSourceCoverage[]
+  by_category: ApiCategoryMetric[]
+}
 
 // ============================================================================
 // Query function
 // ============================================================================
 
 async function fetchCoverageMetrics(): Promise<CoverageMetrics> {
-  const supabase = getSupabaseBrowserClient()
+  const data = await tarvariGet<ApiCoverageResponse>('/console/coverage')
 
-  const { data: sources, error } = await supabase
-    .from('intel_sources')
-    .select('source_key, name, category, status, coverage')
-
-  if (error) throw error
-  if (!sources || sources.length === 0) return emptyMetrics()
-
-  // Type-assert the untyped Supabase response to our known row shape.
-  // The Supabase client in this codebase is not generically typed to Database.
-  const typedSources = sources as unknown as IntelSourceRow[]
-
-  // Build flat source list for the details table
-  const sourcesByCoverage: SourceCoverage[] = typedSources.map((s) => ({
+  const sourcesByCoverage: SourceCoverage[] = data.sources_by_coverage.map((s) => ({
     sourceKey: s.source_key,
     name: s.name,
     category: s.category,
     status: s.status,
-    geographicCoverage: s.coverage?.geo ?? null,
-    updateFrequency: s.coverage?.frequency ?? null,
+    geographicCoverage: s.geographic_coverage,
+    updateFrequency: s.update_frequency,
   }))
 
-  // Aggregate by category
-  const byCategory = buildCategoryMetrics(typedSources)
+  const byCategory: CoverageByCategory[] = data.by_category.map((c) => ({
+    category: c.category,
+    sourceCount: c.source_count,
+    activeSources: c.active_sources,
+    geographicRegions: c.geographic_regions,
+  }))
 
   return {
-    totalSources: typedSources.length,
-    activeSources: typedSources.filter((s) => s.status === 'active').length,
-    categoriesCovered: byCategory.length,
+    totalSources: data.total_sources,
+    activeSources: data.active_sources,
+    categoriesCovered: data.categories_covered,
     sourcesByCoverage,
     byCategory,
   }
@@ -67,15 +84,11 @@ async function fetchCoverageMetrics(): Promise<CoverageMetrics> {
 // ============================================================================
 
 /**
- * Fetches intel source coverage metrics from Supabase.
- *
- * Returns aggregate counts (total sources, active sources, categories covered),
- * a flat source list, and per-category breakdowns. Returns `emptyMetrics()` when
- * the table is empty.
+ * Fetches intel source coverage metrics from the TarvaRI API.
  *
  * - queryKey: `['coverage', 'metrics']`
- * - staleTime: 45 seconds (sources change infrequently)
- * - refetchInterval: 60 seconds (background polling)
+ * - staleTime: 45 seconds
+ * - refetchInterval: 60 seconds
  */
 export function useCoverageMetrics() {
   return useQuery<CoverageMetrics>({

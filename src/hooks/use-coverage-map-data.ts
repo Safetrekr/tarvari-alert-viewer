@@ -3,19 +3,17 @@
 /**
  * TanStack Query hook for coverage map data.
  *
- * Fetches `intel_normalized` rows that have GeoJSON geometry and
- * transforms them into `MapMarker[]` for map rendering. Supports
- * optional filtering by category, severity, and date range.
+ * Fetches geo-located intel items from the TarvaRI backend API
+ * (`/console/intel/locations`) and transforms them into `MapMarker[]`
+ * for map rendering. Supports optional filtering by category, severity,
+ * and date range.
  *
  * @module use-coverage-map-data
- * @see WS-1.3 Section 4.4
- * @see HOOKS-SPEC.md
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
-import { toMarkers, type MapMarker } from '@/lib/coverage-utils'
-import type { IntelNormalizedRow } from '@/lib/supabase/types'
+import { tarvariGet } from '@/lib/tarvari-api'
+import type { MapMarker } from '@/lib/coverage-utils'
 
 // ============================================================================
 // Types
@@ -31,33 +29,63 @@ export interface CoverageMapFilters {
 }
 
 // ============================================================================
+// API response type (GeoJSON)
+// ============================================================================
+
+interface GeoJSONFeature {
+  type: 'Feature'
+  geometry: {
+    type: string
+    coordinates: number[] | number[][] | number[][][]
+  }
+  properties: Record<string, unknown>
+}
+
+interface GeoJSONFeatureCollection {
+  type: 'FeatureCollection'
+  features: GeoJSONFeature[]
+}
+
+// ============================================================================
 // Query function
 // ============================================================================
 
 async function fetchCoverageMapData(filters?: CoverageMapFilters): Promise<MapMarker[]> {
-  const supabase = getSupabaseBrowserClient()
+  const params: Record<string, string | undefined> = {}
 
-  let query = supabase
-    .from('intel_normalized')
-    .select('id, title, severity, category, source_id, geo, ingested_at')
-    .not('geo', 'is', null)
-    .limit(1000)
+  // API accepts single category filter
+  if (filters?.categories && filters.categories.length > 0) {
+    params.category = filters.categories[0]
+  } else if (filters?.category) {
+    params.category = filters.category
+  }
+  if (filters?.severity) params.severity = filters.severity
+  if (filters?.startDate) params.start_date = filters.startDate
+  if (filters?.endDate) params.end_date = filters.endDate
 
-  if (filters?.categories && filters.categories.length > 0) query = query.in('category', filters.categories)
-  else if (filters?.category) query = query.eq('category', filters.category)
-  if (filters?.severity) query = query.eq('severity', filters.severity)
-  if (filters?.startDate) query = query.gte('ingested_at', filters.startDate)
-  if (filters?.endDate) query = query.lte('ingested_at', filters.endDate)
+  const data = await tarvariGet<GeoJSONFeatureCollection>('/console/coverage/map-data', params)
 
-  const { data, error } = await query
+  if (!data.features) return []
 
-  if (error) throw error
-  if (!data) return []
-
-  // Type-assert the untyped Supabase response to our known row shape.
-  const typedData = data as unknown as IntelNormalizedRow[]
-
-  return toMarkers(typedData)
+  return data.features
+    .filter(
+      (f): f is GeoJSONFeature & { geometry: { type: 'Point'; coordinates: number[] } } =>
+        f.geometry?.type === 'Point' &&
+        Array.isArray(f.geometry.coordinates) &&
+        f.geometry.coordinates.length >= 2 &&
+        typeof f.geometry.coordinates[0] === 'number' &&
+        typeof f.geometry.coordinates[1] === 'number',
+    )
+    .map((f) => ({
+      id: (f.properties.id as string) ?? crypto.randomUUID(),
+      lat: f.geometry.coordinates[1], // GeoJSON is [lng, lat]
+      lng: f.geometry.coordinates[0],
+      title: (f.properties.title as string) ?? 'Intel Item',
+      severity: (f.properties.severity as string) ?? 'Unknown',
+      category: (f.properties.category as string) ?? 'other',
+      sourceId: (f.properties.source_key as string) ?? '',
+      ingestedAt: (f.properties.ingested_at as string) ?? '',
+    }))
 }
 
 // ============================================================================
@@ -67,16 +95,9 @@ async function fetchCoverageMapData(filters?: CoverageMapFilters): Promise<MapMa
 /**
  * Fetches intel items with geographic data for map rendering.
  *
- * Transforms `intel_normalized` rows into `MapMarker[]`, filtering to
- * Point geometries and flipping GeoJSON [lng, lat] to { lat, lng }.
- * Returns `[]` when no matching data exists.
- *
  * - queryKey: `['coverage', 'map-data', filters]`
- * - staleTime: 30 seconds (intel is ingested continuously)
- * - refetchInterval: 30 seconds (background polling)
- *
- * @param filters - Optional category, severity, and date range filters.
- *   When filters change, TanStack Query automatically refetches.
+ * - staleTime: 30 seconds
+ * - refetchInterval: 30 seconds
  */
 export function useCoverageMapData(filters?: CoverageMapFilters) {
   return useQuery<MapMarker[]>({
