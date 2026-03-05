@@ -34,8 +34,10 @@ import {
 
 import { useCameraStore } from '@/stores/camera.store'
 import { useUIStore } from '@/stores/ui.store'
+import { useCoverageStore } from '@/stores/coverage.store'
 import { DISTRICTS, type DistrictId } from '@/lib/interfaces/district'
 import { KNOWN_CATEGORIES } from '@/lib/interfaces/coverage'
+import { VIEW_MODE_LABELS } from '@/lib/interfaces/intel-bundles'
 import { returnToHub, flyToDistrict } from '@/lib/spatial-actions'
 import { cn } from '@/lib/utils'
 
@@ -51,6 +53,7 @@ export function SpatialBreadcrumb({ className }: SpatialBreadcrumbProps) {
   const semanticLevel = useCameraStore((s) => s.semanticLevel)
   const selectedDistrictId = useUIStore((s) => s.selectedDistrictId)
   const morphPhase = useUIStore((s) => s.morph.phase)
+  const viewMode = useCoverageStore((s) => s.viewMode)
 
   // Resolve display name from selected ID (legacy districts or coverage categories)
   const selectedDistrict = selectedDistrictId
@@ -124,6 +127,25 @@ export function SpatialBreadcrumb({ className }: SpatialBreadcrumbProps) {
             </BreadcrumbPage>
           )}
         </BreadcrumbItem>
+
+        {/* View mode badge (shown when not in district view) */}
+        {!showDistrict && viewMode !== 'triaged' && (
+          <>
+            <BreadcrumbSeparator className="opacity-30">
+              <ChevronRight className="h-3 w-3" />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbPage
+                className={cn(
+                  'font-mono text-[11px] font-normal',
+                  'tracking-[0.02em] opacity-40',
+                )}
+              >
+                {VIEW_MODE_LABELS[viewMode]}
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </>
+        )}
 
         {/* District segment */}
         {showDistrict && (

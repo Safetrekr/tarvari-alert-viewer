@@ -346,6 +346,11 @@ view mode, so switching back to a previously-loaded mode is instant (cache hit).
 
 ## 4. Data Layer
 
+> **SUPERSEDED:** This section's type definitions and column names are inaccurate.
+> Use **[data-layer-architecture.md](data-layer-architecture.md)** for all types, queries, and hooks.
+> Use **[IMPLEMENTATION-NOTES.md](IMPLEMENTATION-NOTES.md)** for canonical values.
+> Key corrections: column is `representative_coordinates` (not `geo_centroid`), `risk_score` is `string | null` (not `number`), ViewMode is `'triaged' | 'all-bundles' | 'raw'`.
+
 ### 4.1 New Supabase Types
 
 Add to `src/lib/supabase/types.ts`:

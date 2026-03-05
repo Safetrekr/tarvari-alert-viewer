@@ -91,7 +91,7 @@ All three share a cognitive flow: SCAN (10s) -> ASSESS (30s) -> INVESTIGATE (1-5
 | AC-01.2 | Any view mode is active | I click a different segment in the toggle | The active segment updates immediately, the URL updates via `replaceState`, and all data-dependent components re-render with the new mode's data |
 | AC-01.3 | A category filter is active (`?category=weather`) | I switch view modes | The category filter is preserved; only the data substrate changes |
 | AC-01.4 | A district view is open (morph state) | I switch view modes | The district view remains open; its content re-renders for the new mode with a 200ms crossfade |
-| AC-01.5 | I navigate to `?view=bundles` directly | The page loads | The "All Bundles" mode is active and the toggle reflects this |
+| AC-01.5 | I navigate to `?view=all-bundles` directly | The page loads | The "All Bundles" mode is active and the toggle reflects this |
 | AC-01.6 | I navigate to `?view=invalid` | The page loads | The default "Triaged" mode is active and the URL is corrected silently |
 | AC-01.7 | I switch modes rapidly (3 clicks within 500ms) | Intermediate queries are in-flight | Only the final mode's data renders; intermediate queries are cancelled by TanStack Query key changes |
 
@@ -545,7 +545,7 @@ The Data View Modes feature is complete when:
 - [ ] All P0 user stories are implemented and pass acceptance criteria
 - [ ] The confidence loop works end-to-end: Triaged -> bundle detail -> rationale -> member alerts -> "View All in Raw Mode" -> Raw Alerts -> back to Triaged
 - [ ] View mode toggle renders in the NavigationHUD, positioned top-center per AIA section 5.1
-- [ ] URL deep-linking works: `?view=triaged`, `?view=bundles`, `?view=raw` all load the correct mode
+- [ ] URL deep-linking works: `?view=triaged`, `?view=all-bundles`, `?view=raw` all load the correct mode
 - [ ] `?view=` composes with `?category=` (both params active simultaneously)
 - [ ] Category cards show bundle-level metrics in Triaged/Bundles modes and raw alert metrics in Raw mode
 - [ ] Feed panel and KPI stats adapt to the active view mode

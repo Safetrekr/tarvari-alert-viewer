@@ -79,9 +79,13 @@ import { KNOWN_CATEGORIES } from '@/lib/interfaces/coverage'
 import { buildAllGridItems, type CategoryGridItem } from '@/lib/interfaces/coverage'
 import { useCoverageMetrics } from '@/hooks/use-coverage-metrics'
 import { useCoverageMapData } from '@/hooks/use-coverage-map-data'
-import { useCoverageStore, syncCoverageFromUrl, syncCategoriesToUrl } from '@/stores/coverage.store'
+import { useCoverageStore, syncCoverageFromUrl, syncCategoriesToUrl, syncViewModeToUrl } from '@/stores/coverage.store'
 import { CoverageOverviewStats } from '@/components/coverage/CoverageOverviewStats'
+import { ViewModeToggle } from '@/components/coverage/ViewModeToggle'
 import { GRID_WIDTH, GRID_HEIGHT } from '@/components/coverage/CoverageGrid'
+import type { ViewMode } from '@/lib/interfaces/intel-bundles'
+import { useIntelBundles } from '@/hooks/use-intel-bundles'
+import { TriageRationalePanel } from '@/components/coverage/TriageRationalePanel'
 
 import '@/styles/atrium.css'
 import '@/styles/morph.css'
@@ -161,11 +165,51 @@ export default function LaunchPage() {
   const selectedCategories = useCoverageStore((s) => s.selectedCategories)
   const toggleCategory = useCoverageStore((s) => s.toggleCategory)
   const clearSelection = useCoverageStore((s) => s.clearSelection)
+  const viewMode = useCoverageStore((s) => s.viewMode)
+  const setViewMode = useCoverageStore((s) => s.setViewMode)
   const mapFilters = useMemo(
     () => (selectedCategories.length > 0 ? { categories: selectedCategories } : undefined),
     [selectedCategories],
   )
   const { data: mapMarkers = [], isLoading: isMapLoading } = useCoverageMapData(mapFilters)
+
+  // Intel bundles (data view modes)
+  const { data: bundles = [], isLoading: isBundlesLoading } = useIntelBundles(viewMode)
+  const selectedBundleId = useCoverageStore((s) => s.selectedBundleId)
+  const setSelectedBundleId = useCoverageStore((s) => s.setSelectedBundleId)
+
+  const viewModeCounts = useMemo(
+    () => ({
+      'triaged': bundles.filter((b) => b.bundle.status === 'approved').length,
+      'all-bundles': bundles.length,
+      'raw': mapMarkers.length,
+    }),
+    [bundles, mapMarkers],
+  )
+
+  const handleViewModeChange = useCallback(
+    (mode: ViewMode) => {
+      setViewMode(mode)
+      syncViewModeToUrl(mode)
+    },
+    [setViewMode],
+  )
+
+  const handleSelectBundle = useCallback(
+    (id: string) => {
+      setSelectedBundleId(selectedBundleId === id ? null : id)
+    },
+    [setSelectedBundleId, selectedBundleId],
+  )
+
+  const handleCloseRationale = useCallback(() => {
+    setSelectedBundleId(null)
+  }, [setSelectedBundleId])
+
+  const selectedBundle = useMemo(
+    () => bundles.find((b) => b.bundle.id === selectedBundleId) ?? null,
+    [bundles, selectedBundleId],
+  )
 
   // Filter toggle: add/remove category from filter set
   const handleFilter = useCallback(
@@ -224,14 +268,20 @@ export default function LaunchPage() {
         label: 'Toggle Command Palette',
       },
       // Note: Escape for morph reverse is handled by useMorphChoreography.
-      // This Escape handler only closes the command palette.
+      // This Escape handler closes the command palette and triage panel.
       {
         key: 'Escape',
-        handler: () => setCommandPaletteOpen(false),
-        label: 'Close Command Palette',
+        handler: () => {
+          if (selectedBundleId) {
+            setSelectedBundleId(null)
+          } else {
+            setCommandPaletteOpen(false)
+          }
+        },
+        label: 'Close Panel',
       },
     ],
-    [toggleCommandPalette, setCommandPaletteOpen],
+    [toggleCommandPalette, setCommandPaletteOpen, selectedBundleId, setSelectedBundleId],
   )
 
   useKeyboardShortcuts(shortcuts)
@@ -284,6 +334,20 @@ export default function LaunchPage() {
             {/* Horizon scan line moved to fixed viewport overlay below */}
           </EnrichmentLayer>
 
+          {/* View mode toggle -- positioned above the map, left-aligned */}
+          <ZoomGate show={['Z1', 'Z2', 'Z3']}>
+            <div
+              className="absolute"
+              style={{
+                left: -(GRID_WIDTH / 2) - 230 + 125,
+                top: -(GRID_HEIGHT / 2) - 900 - 40 + 400 - 44,
+                pointerEvents: 'auto',
+              }}
+            >
+              <ViewModeToggle value={viewMode} onChange={handleViewModeChange} counts={viewModeCounts} />
+            </div>
+          </ZoomGate>
+
           {/* Global coverage map -- spans from stats left edge to grid right edge, Z1+ only */}
           <ZoomGate show={['Z1', 'Z2', 'Z3']}>
             <div
@@ -328,7 +392,8 @@ export default function LaunchPage() {
             </div>
           </ZoomGate>
 
-          {/* Morph Orchestrator: manages coverage grid + category icon grid.
+          {/* Content area: Category grid is always visible. Bundle grid
+              renders above it when in triaged/all-bundles mode.
               Re-enable pointer-events here because SpatialCanvas disables them
               (per Q4: children re-enable individually). */}
           <div data-panning={isPanActive ? 'true' : 'false'} style={{ pointerEvents: 'auto', transform: 'translate(125px, 400px)' }}>
@@ -394,6 +459,9 @@ export default function LaunchPage() {
 
       {/* District view overlay (fixed, z-30) -- self-gates on morph phase */}
       <DistrictViewOverlay />
+
+      {/* Triage rationale slide-out panel (fixed, z-45) */}
+      <TriageRationalePanel item={selectedBundle} onClose={handleCloseRationale} />
 
       {/* Navigation HUD overlay (fixed, z-40) */}
       <NavigationHUD isPanActive={isPanActive}>
