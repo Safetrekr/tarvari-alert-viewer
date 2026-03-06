@@ -148,41 +148,70 @@ export async function fetchCoverageMapDataFromSupabase(
 export async function fetchCoverageMetricsFromSupabase(): Promise<CoverageMetrics> {
   const supabase = getSupabaseBrowserClient()
 
-  const { data, error } = await supabase
-    .from('public_intel_feed')
-    .select('category')
-    .limit(10000)
+  // Fetch intel counts and source data in parallel
+  const [feedResult, sourcesResult] = await Promise.all([
+    supabase
+      .from('public_intel_feed')
+      .select('category, operational_priority')
+      .limit(10000),
+    supabase
+      .from('public_intel_sources')
+      .select('source_key, name, status, category'),
+  ])
 
-  if (error) {
-    throw new Error('Supabase query failed (public_intel_feed/metrics): ' + error.message)
+  if (feedResult.error) {
+    throw new Error('Supabase query failed (public_intel_feed/metrics): ' + feedResult.error.message)
   }
 
-  const rows = data ?? []
+  const rows = feedResult.data ?? []
+  const sources = (sourcesResult.data ?? []) as Array<Record<string, unknown>>
 
-  const categoryCounts = new Map<string, number>()
+  // Source status breakdown
+  const totalSources = sources.length
+  const activeSources = sources.filter((s) => s.status === 'active').length
+  const sourcesByCoverage = sources.map((s) => ({
+    sourceKey: s.source_key as string,
+    name: s.name as string,
+    status: s.status as string,
+    category: s.category as string,
+    geographicCoverage: null as string | null,
+    updateFrequency: null as string | null,
+  }))
+
+  // Category breakdown with P1/P2 counts
+  const categoryCounts = new Map<string, { total: number; p1: number; p2: number }>()
   for (const row of rows) {
-    const cat = (row as Record<string, unknown>).category as string
-    categoryCounts.set(cat, (categoryCounts.get(cat) ?? 0) + 1)
+    const r = row as Record<string, unknown>
+    const cat = r.category as string
+    const pri = r.operational_priority as string | null
+    const entry = categoryCounts.get(cat) ?? { total: 0, p1: 0, p2: 0 }
+    entry.total++
+    if (pri === 'P1') entry.p1++
+    if (pri === 'P2') entry.p2++
+    categoryCounts.set(cat, entry)
   }
 
   const byCategory: CoverageByCategory[] = Array.from(categoryCounts.entries()).map(
-    ([category, count]) => ({
-      category,
-      sourceCount: 0,
-      activeSources: 0,
-      geographicRegions: [],
-      alertCount: count,
-      p1Count: 0,
-      p2Count: 0,
-    }),
+    ([category, counts]) => {
+      const catSources = sources.filter((s) => s.category === category)
+      return {
+        category,
+        sourceCount: catSources.length,
+        activeSources: catSources.filter((s) => s.status === 'active').length,
+        geographicRegions: [],
+        alertCount: counts.total,
+        p1Count: counts.p1,
+        p2Count: counts.p2,
+      }
+    },
   )
 
   return {
-    totalSources: 0,
-    activeSources: 0,
+    totalSources,
+    activeSources,
     categoriesCovered: categoryCounts.size,
     totalAlerts: rows.length,
-    sourcesByCoverage: [],
+    sourcesByCoverage,
     byCategory,
   }
 }
