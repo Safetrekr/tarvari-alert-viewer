@@ -11,7 +11,7 @@
  * @see WS-1.3 Section 4.3
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
 import { DATA_MODE } from '@/lib/data-mode'
 import { fetchCoverageMetricsFromSupabase } from '@/lib/supabase/queries'
@@ -138,5 +138,6 @@ export function useCoverageMetrics() {
     queryFn: fetchCoverageMetrics,
     staleTime: 45_000,
     refetchInterval: 60_000,
+    placeholderData: keepPreviousData,
   })
 }

@@ -18,6 +18,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import {
   Map,
+  Source,
+  Layer,
   Popup,
   type MapRef,
   type MapLayerMouseEvent,
@@ -68,12 +70,21 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
       source: 'carto-dark',
       paint: {
         'raster-brightness-max': 0.45,
-        'raster-saturation': -0.3,
-        'raster-hue-rotate': 200,
+        'raster-brightness-min': 0.02,
+        'raster-saturation': -0.15,
+        'raster-contrast': 0.1,
       },
     },
   ],
 }
+
+/** Natural Earth 110m admin-0 boundary lines (land only). ~90 KB GeoJSON. */
+const BOUNDARY_GEOJSON_URL =
+  'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_110m_admin_0_boundary_lines_land.geojson'
+
+/** Natural Earth 110m land polygons. ~200 KB GeoJSON. */
+const LAND_GEOJSON_URL =
+  'https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_110m_land.geojson'
 
 const INITIAL_VIEW_STATE = {
   longitude: 0,
@@ -246,7 +257,6 @@ export function CoverageMap({
   const [popup, setPopup] = useState<PopupState | null>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [webglError, setWebglError] = useState(false)
-
   // Check WebGL support on mount
   useEffect(() => {
     if (!isWebGLSupported()) {
@@ -328,7 +338,7 @@ export function CoverageMap({
     [onMarkerClick],
   )
 
-  // Mark map as loaded (raster tiles are pre-styled, no per-layer customization needed)
+  // Mark map as loaded
   const handleLoad = useCallback(() => {
     setMapLoaded(true)
   }, [])
@@ -436,7 +446,39 @@ export function CoverageMap({
         attributionControl={false}
         style={{ width: '100%', height: '100%' }}
       >
-        {/* Custom nav controls rendered outside Map below */}
+        {/* Blue tint overlay — renders above raster basemap, below boundaries */}
+        <Layer
+          id="blue-tint-overlay"
+          type="background"
+          paint={{
+            'background-color': '#1c2028',
+            'background-opacity': 0.7,
+          }}
+        />
+
+        {/* Land fill — matches app body bg so continents blend with the page */}
+        <Source id="land-fill-src" type="geojson" data={LAND_GEOJSON_URL}>
+          <Layer
+            id="land-fill"
+            type="fill"
+            paint={{
+              'fill-color': '#050911',
+              'fill-opacity': 0.85,
+            }}
+          />
+        </Source>
+
+        {/* Country boundary outlines from Natural Earth 110m GeoJSON */}
+        <Source id="country-boundaries-src" type="geojson" data={BOUNDARY_GEOJSON_URL}>
+          <Layer
+            id="country-boundaries"
+            type="line"
+            paint={{
+              'line-color': 'rgba(80, 100, 130, 0.45)',
+              'line-width': 0.6,
+            }}
+          />
+        </Source>
 
         {markers.length > 0 && <MapMarkerLayer data={geojson} selectedMarkerId={selectedMarkerId} />}
 

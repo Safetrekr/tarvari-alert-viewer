@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef, type KeyboardEvent } from 'react'
+import { forwardRef, type FormEvent, type KeyboardEvent } from 'react'
 import { motion, type Variants } from 'motion/react'
 import { Input } from '@tarva/ui'
 import { cn } from '@/lib/utils'
@@ -88,6 +88,11 @@ export const PassphraseField = forwardRef<HTMLInputElement, PassphraseFieldProps
       }
     }
 
+    const handleFormSubmit = (e: FormEvent) => {
+      e.preventDefault()
+      onSubmit()
+    }
+
     return (
       <motion.div
         className={cn('w-full max-w-xs', className)}
@@ -100,31 +105,34 @@ export const PassphraseField = forwardRef<HTMLInputElement, PassphraseFieldProps
           }
         }}
       >
-        <Input
-          ref={ref}
-          type="password"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          autoComplete="new-password"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          data-1p-ignore
-          data-lpignore="true"
-          data-form-type="other"
-          aria-label="Passphrase"
-          className={cn(
-            // Override @tarva/ui Input defaults for spatial aesthetic
-            'h-12 w-full rounded-lg border-0 bg-transparent text-center',
-            'font-mono text-base tracking-widest',
-            'text-text-primary placeholder:text-text-ghost',
-            'ring-1 ring-white/[0.06] ring-inset',
-            'focus-visible:ring-ember-bright/40 focus-visible:outline-none',
-            'transition-shadow duration-hover ease-hover'
-          )}
-          placeholder=""
-        />
+        <form onSubmit={handleFormSubmit}>
+          <Input
+            ref={ref}
+            type="password"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            enterKeyHint="go"
+            autoComplete="new-password"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            data-1p-ignore
+            data-lpignore="true"
+            data-form-type="other"
+            aria-label="Passphrase"
+            className={cn(
+              // Override @tarva/ui Input defaults for spatial aesthetic
+              'h-12 w-full rounded-lg border-0 bg-transparent text-center',
+              'font-mono text-base tracking-widest',
+              'text-text-primary placeholder:text-text-ghost',
+              'ring-1 ring-white/[0.06] ring-inset',
+              'focus-visible:ring-ember-bright/40 focus-visible:outline-none',
+              'transition-shadow duration-hover ease-hover'
+            )}
+            placeholder=""
+          />
+        </form>
       </motion.div>
     )
   }

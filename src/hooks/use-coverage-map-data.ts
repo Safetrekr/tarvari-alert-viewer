@@ -11,7 +11,7 @@
  * @module use-coverage-map-data
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
 import { DATA_MODE } from '@/lib/data-mode'
 import { fetchCoverageMapDataFromSupabase } from '@/lib/supabase/queries'
@@ -129,5 +129,6 @@ export function useCoverageMapData(filters?: CoverageMapFilters) {
     queryFn: () => fetchCoverageMapData(filters),
     staleTime: 30_000,
     refetchInterval: 30_000,
+    placeholderData: keepPreviousData,
   })
 }

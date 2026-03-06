@@ -11,7 +11,7 @@
  * @module use-category-intel
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
 import { DATA_MODE } from '@/lib/data-mode'
 import { fetchCategoryIntelFromSupabase } from '@/lib/supabase/queries'
@@ -110,5 +110,6 @@ export function useCategoryIntel(categoryId: string | null) {
     enabled: !!categoryId,
     staleTime: 30_000,
     refetchInterval: 45_000,
+    placeholderData: keepPreviousData,
   })
 }

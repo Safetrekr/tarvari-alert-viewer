@@ -11,7 +11,7 @@
  * @module use-intel-bundles
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
 import { DATA_MODE } from '@/lib/data-mode'
 import { fetchBundlesFromSupabase } from '@/lib/supabase/queries'
@@ -134,5 +134,6 @@ export function useIntelBundles(viewMode: ViewMode) {
     enabled: isEnabled,
     staleTime: 30_000,
     refetchInterval: 45_000,
+    placeholderData: keepPreviousData,
   })
 }

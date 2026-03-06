@@ -1,5 +1,15 @@
 @import 'maplibre-gl/dist/maplibre-gl.css';
 
+/*
+ * Override vendor scroll-behavior: smooth on <html> — it conflicts with
+ * MapLibre GL's canvas rendering and causes visible jitter during map
+ * interactions and data refetches. The vendor @tarva/ui/styles.css sets
+ * `html { scroll-behavior: smooth }` which MapLibre explicitly warns about.
+ */
+html {
+  scroll-behavior: auto !important;
+}
+
 .maplibregl-popup-content {
   background: transparent !important;
   box-shadow: none !important;
