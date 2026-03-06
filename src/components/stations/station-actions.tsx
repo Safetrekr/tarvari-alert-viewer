@@ -80,7 +80,7 @@ export function StationActions({
   }
 
   return (
-    // @ts-expect-error — dual @types/react from workspace link; resolves in CI with vendored build
+    // @ts-ignore — dual @types/react from workspace link vs vendored build
     <CardFooter
       className={cn(
         'flex items-center gap-2 border-t border-white/[0.04] px-5 pt-3 pb-4',

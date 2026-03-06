@@ -49,7 +49,7 @@ export function StationHeader({ title, icon, trailing, className, ...props }: St
   const districtName = APP_DISPLAY_NAMES[districtId]
 
   return (
-    // @ts-expect-error — dual @types/react from workspace link; resolves in CI with vendored build
+    // @ts-ignore — dual @types/react from workspace link vs vendored build
     <CardHeader className={cn('border-b border-white/[0.04] px-5 pt-4 pb-3', className)} {...props}>
       {/* District context label */}
       <span
