@@ -13,7 +13,13 @@
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prebuild:static": "[ -d src/app/api ] && mv src/app/api src/app/_api-disabled || true",
+    "build:static": "STATIC_EXPORT=true NEXT_PUBLIC_DATA_MODE=supabase next build --webpack",
+    "postbuild:static": "[ -d src/app/_api-disabled ] && mv src/app/_api-disabled src/app/api || true",
+    "prebuild:pages": "[ -d src/app/api ] && mv src/app/api src/app/_api-disabled || true",
+    "build:pages": "STATIC_EXPORT=true NEXT_PUBLIC_DATA_MODE=supabase GITHUB_PAGES=tarvari-alert-viewer next build --webpack",
+    "postbuild:pages": "[ -d src/app/_api-disabled ] && mv src/app/_api-disabled src/app/api || true"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

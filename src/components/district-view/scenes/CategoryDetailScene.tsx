@@ -1,16 +1,12 @@
 /**
  * CategoryDetailScene -- data-driven detail view for a single intel category.
  *
- * Renders four sections in a two-column, two-row layout:
- *   A (top-left):     Filtered alert list (scrollable, sorted by ingestedAt desc)
- *   B (top-right):    Severity breakdown horizontal stacked bar + legend
- *   C (bottom-left):  Source health table
- *   D (bottom-right): Interactive MapLibre coverage map (WS-4.1)
+ * Renders four sections in a two-column layout:
+ *   Left column:   Filtered alert list (full height, scrollable, sortable)
+ *   Right column:  Severity breakdown → Coverage map (~70%) → Source health table (~30%)
  *
- * Data comes from `useCoverageMapData` (alerts/markers) and `useCoverageMetrics`
- * (source health), both filtered to the given `categoryId`.
- *
- * Replaces the 6 hand-crafted legacy ambient scenes (Decision 6).
+ * Clicking an alert in the list selects it, and the dock panel (DistrictViewDock)
+ * shows its full detail (summary, event type, confidence, geo scope, timestamps).
  *
  * @module CategoryDetailScene
  * @see WS-3.1 Section 4.1
@@ -18,18 +14,25 @@
 
 'use client'
 
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
+import type { MapRef } from 'react-map-gl/maplibre'
 
 import { cn } from '@/lib/utils'
 import {
   getCategoryMeta,
   SEVERITY_LEVELS,
   SEVERITY_COLORS,
+  PRIORITY_LEVELS,
+  isPriorityVisible,
   type SeverityLevel,
+  type OperationalPriority,
 } from '@/lib/interfaces/coverage'
+import { useCoverageStore, syncPrioritiesToUrl } from '@/stores/coverage.store'
+import { PriorityBadge } from '@/components/coverage/PriorityBadge'
 import { useCoverageMetrics } from '@/hooks/use-coverage-metrics'
-import { useCoverageMapData } from '@/hooks/use-coverage-map-data'
+import { useCoverageMapData, type CoverageMapFilters } from '@/hooks/use-coverage-map-data'
+import { useCategoryIntel, type CategoryIntelItem } from '@/hooks/use-category-intel'
 import type { MapMarker } from '@/lib/coverage-utils'
 import type { PanelSide } from '@/lib/morph-types'
 
@@ -84,6 +87,18 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 // ---------------------------------------------------------------------------
+// Severity ordering
+// ---------------------------------------------------------------------------
+
+const SEVERITY_ORDER: Record<string, number> = {
+  Extreme: 0,
+  Severe: 1,
+  Moderate: 2,
+  Minor: 3,
+  Unknown: 4,
+}
+
+// ---------------------------------------------------------------------------
 // Relative time helper
 // ---------------------------------------------------------------------------
 
@@ -107,41 +122,160 @@ function relativeTime(isoDate: string): string {
   return `${days}d ago`
 }
 
+function formatTimestamp(iso: string | null): string {
+  if (!iso) return '--'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '--'
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  })
+}
+
 // ---------------------------------------------------------------------------
-// Section A: Filtered Alert List
+// Section A: Filtered Alert List (uses CategoryIntelItem for richer data)
 // ---------------------------------------------------------------------------
+
+type SortField = 'time' | 'severity'
 
 const MAX_DISPLAY_ITEMS = 50
 
 function AlertList({
-  markers,
+  items,
   isLoading,
   isError,
   displayName,
+  selectedId,
+  onSelect,
 }: {
-  markers: MapMarker[] | undefined
+  items: CategoryIntelItem[] | undefined
   isLoading: boolean
   isError: boolean
   displayName: string
+  selectedId: string | null
+  onSelect: (id: string | null) => void
 }) {
-  const sorted = useMemo(() => {
-    if (!markers) return []
-    return [...markers]
-      .sort((a, b) => new Date(b.ingestedAt).getTime() - new Date(a.ingestedAt).getTime())
-      .slice(0, MAX_DISPLAY_ITEMS)
-  }, [markers])
+  const [sortBy, setSortBy] = useState<SortField>('severity')
+  const listRef = useRef<HTMLDivElement>(null)
+  const selectedPriorities = useCoverageStore((s) => s.selectedPriorities)
+  const togglePriority = useCoverageStore((s) => s.togglePriority)
+  const clearPriorities = useCoverageStore((s) => s.clearPriorities)
+  const hasPriorityFilter = selectedPriorities.length > 0
 
-  const totalCount = markers?.length ?? 0
+  // Auto-scroll to pre-selected alert when it changes
+  useEffect(() => {
+    if (!selectedId || !listRef.current) return
+    const el = listRef.current.querySelector(`[data-alert-id="${selectedId}"]`)
+    if (el) {
+      // Small delay to let the list render first
+      requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))
+    }
+  }, [selectedId])
+
+  const sorted = useMemo(() => {
+    if (!items) return []
+    return [...items]
+      .filter((item) => {
+        if (hasPriorityFilter) {
+          return item.operationalPriority != null && selectedPriorities.includes(item.operationalPriority)
+        }
+        // Default visibility: hide P4 in list context unless explicitly filtered
+        if (item.operationalPriority) {
+          return isPriorityVisible(item.operationalPriority, 'list')
+        }
+        return true // null priority = show by default
+      })
+      .sort((a, b) => {
+        if (sortBy === 'severity') {
+          const sa = SEVERITY_ORDER[a.severity] ?? 4
+          const sb = SEVERITY_ORDER[b.severity] ?? 4
+          if (sa !== sb) return sa - sb
+          return new Date(b.ingestedAt).getTime() - new Date(a.ingestedAt).getTime()
+        }
+        return new Date(b.ingestedAt).getTime() - new Date(a.ingestedAt).getTime()
+      })
+      .slice(0, MAX_DISPLAY_ITEMS)
+  }, [items, sortBy, hasPriorityFilter, selectedPriorities])
+
+  const totalCount = items?.length ?? 0
 
   return (
     <div className="flex h-full flex-col" aria-busy={isLoading}>
-      {/* Section header */}
-      <span
-        className="mb-3 block font-mono text-[9px] font-medium tracking-[0.1em] uppercase"
-        style={{ color: 'rgba(255, 255, 255, 0.15)' }}
-      >
-        ALERTS
-      </span>
+      {/* Section header with priority filter + sort toggle */}
+      <div className="mb-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => { if (hasPriorityFilter) { clearPriorities(); syncPrioritiesToUrl([]) } }}
+          className="font-mono text-[9px] font-medium tracking-[0.1em] uppercase cursor-pointer"
+          style={{ color: hasPriorityFilter ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 255, 255, 0.15)' }}
+          title={hasPriorityFilter ? 'Clear priority filter' : undefined}
+        >
+          ALERTS{hasPriorityFilter ? ` (${sorted.length} of ${totalCount})` : ''}
+        </button>
+
+        {/* Priority filter buttons */}
+        <div className="flex gap-1">
+          {PRIORITY_LEVELS.map((p) => {
+            const isActive = selectedPriorities.includes(p)
+            return (
+              <button
+                key={p}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => {
+                  togglePriority(p)
+                  const next = isActive
+                    ? selectedPriorities.filter((x) => x !== p)
+                    : [...selectedPriorities, p]
+                  syncPrioritiesToUrl(next as OperationalPriority[])
+                }}
+                className="rounded px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider transition-colors cursor-pointer"
+                style={{
+                  color: isActive ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.15)',
+                  backgroundColor: isActive ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                  border: `1px solid ${isActive ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.04)'}`,
+                }}
+              >
+                {p}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 14, backgroundColor: 'rgba(255, 255, 255, 0.06)' }} />
+
+        <div className="ml-auto flex gap-1">
+          <button
+            type="button"
+            onClick={() => setSortBy('severity')}
+            className="rounded px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider transition-colors cursor-pointer"
+            style={{
+              color: sortBy === 'severity' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.15)',
+              backgroundColor: sortBy === 'severity' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+              border: `1px solid ${sortBy === 'severity' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.04)'}`,
+            }}
+          >
+            Severity
+          </button>
+          <button
+            type="button"
+            onClick={() => setSortBy('time')}
+            className="rounded px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider transition-colors cursor-pointer"
+            style={{
+              color: sortBy === 'time' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.15)',
+              backgroundColor: sortBy === 'time' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+              border: `1px solid ${sortBy === 'time' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.04)'}`,
+            }}
+          >
+            Time
+          </button>
+        </div>
+      </div>
 
       {/* Loading skeleton */}
       {isLoading && (
@@ -183,19 +317,34 @@ function AlertList({
       {/* Alert items */}
       {!isLoading && !isError && sorted.length > 0 && (
         <>
-          <div role="list" className="flex flex-1 flex-col gap-1 overflow-y-auto pr-1">
-            {sorted.map((marker) => {
+          <div ref={listRef} role="list" className="flex flex-1 flex-col gap-1 overflow-y-auto pr-1">
+            {sorted.map((item) => {
               const severityColor =
-                SEVERITY_COLORS[marker.severity as SeverityLevel] ?? SEVERITY_COLORS.Unknown
+                SEVERITY_COLORS[item.severity as SeverityLevel] ?? SEVERITY_COLORS.Unknown
+              const isSelected = selectedId === item.id
               return (
-                <div
-                  key={marker.id}
+                <button
+                  key={item.id}
+                  type="button"
                   role="listitem"
+                  data-alert-id={item.id}
+                  onClick={() => onSelect(isSelected ? null : item.id)}
                   className={cn(
-                    'flex items-center gap-3 rounded-md px-3 py-2',
-                    'bg-white/[0.02] hover:bg-white/[0.04]',
-                    'transition-colors duration-150',
+                    'flex w-full items-center gap-3 rounded-md px-3 py-2 text-left',
+                    'transition-colors duration-150 cursor-pointer',
                   )}
+                  style={{
+                    backgroundColor: isSelected
+                      ? 'rgba(255, 255, 255, 0.06)'
+                      : 'rgba(255, 255, 255, 0.02)',
+                    borderLeft: isSelected ? `2px solid ${severityColor}` : '2px solid transparent',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)'
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)'
+                  }}
                 >
                   {/* Severity badge */}
                   <span
@@ -206,15 +355,20 @@ function AlertList({
                       border: `1px solid color-mix(in srgb, ${severityColor} 30%, transparent)`,
                     }}
                   >
-                    {marker.severity}
+                    {item.severity}
                   </span>
+
+                  {/* Priority badge -- P1/P2 show shape; P3/P4 return null */}
+                  {item.operationalPriority && (
+                    <PriorityBadge priority={item.operationalPriority} size="sm" />
+                  )}
 
                   {/* Title */}
                   <span
                     className="min-w-0 flex-1 truncate font-mono text-[11px]"
-                    style={{ color: 'rgba(255, 255, 255, 0.25)' }}
+                    style={{ color: isSelected ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.25)' }}
                   >
-                    {marker.title}
+                    {item.title}
                   </span>
 
                   {/* Relative time */}
@@ -222,9 +376,9 @@ function AlertList({
                     className="shrink-0 font-mono text-[9px]"
                     style={{ color: 'rgba(255, 255, 255, 0.12)' }}
                   >
-                    {relativeTime(marker.ingestedAt)}
+                    {relativeTime(item.ingestedAt)}
                   </span>
-                </div>
+                </button>
               )
             })}
           </div>
@@ -500,25 +654,49 @@ interface CategoryDetailSceneProps {
   readonly categoryId: string
   /** Which side the dock panel is on (determines content area clearance). */
   readonly dockSide: PanelSide
+  /** Currently selected alert ID (shown in dock). */
+  readonly selectedAlertId: string | null
+  /** Callback when an alert is selected/deselected. */
+  readonly onSelectAlert: (id: string | null) => void
+  /** Ref forwarded to the CoverageMap for bbox reading. */
+  readonly mapRef?: React.RefObject<MapRef | null>
+  /** Source filter applied from the district filter panel. */
+  readonly sourceFilter?: string | null
+  /** Current bounding box from viewport filtering. */
+  readonly currentBbox?: [number, number, number, number] | null
 }
 
 export const CategoryDetailScene = memo(function CategoryDetailScene({
   categoryId,
   dockSide,
+  selectedAlertId,
+  onSelectAlert,
+  mapRef: externalMapRef,
+  sourceFilter,
+  currentBbox,
 }: CategoryDetailSceneProps) {
   const meta = getCategoryMeta(categoryId)
+
+  const mapFilters: CoverageMapFilters = useMemo(() => {
+    const f: CoverageMapFilters = { category: categoryId }
+    if (sourceFilter) f.sourceKey = sourceFilter
+    if (currentBbox) f.bbox = currentBbox
+    return f
+  }, [categoryId, sourceFilter, currentBbox])
 
   const {
     data: markers,
     isLoading: markersLoading,
-    isError: markersError,
-  } = useCoverageMapData({ category: categoryId })
+  } = useCoverageMapData(mapFilters)
+
+  const {
+    data: intelItems,
+    isLoading: intelLoading,
+    isError: intelError,
+  } = useCategoryIntel(categoryId)
 
   const { isLoading: metricsLoading } = useCoverageMetrics()
 
-  // Content area clears the dock panel side (360px + 20px gap) and the
-  // opposite side (80px for the back button), plus top (80px header)
-  // and bottom (40px).
   const contentInset: React.CSSProperties = {
     position: 'absolute',
     top: 80,
@@ -539,41 +717,49 @@ export const CategoryDetailScene = memo(function CategoryDetailScene({
         )}
         style={{
           gridTemplateColumns: '1fr 1fr',
-          gridTemplateRows: '1fr 1fr',
+          gridTemplateRows: '1fr',
         }}
       >
-        {/* Section A: Alert List (top-left) */}
+        {/* Left column: Alert List (full height) */}
         <div className="min-h-0 overflow-hidden">
           <AlertList
-            markers={markers}
-            isLoading={markersLoading}
-            isError={markersError}
+            items={intelItems}
+            isLoading={intelLoading}
+            isError={intelError}
             displayName={meta.displayName}
+            selectedId={selectedAlertId}
+            onSelect={onSelectAlert}
           />
         </div>
 
-        {/* Section B: Severity Breakdown (top-right) */}
-        <div className="min-h-0 overflow-hidden">
-          <SeverityBreakdown markers={markers} />
-        </div>
+        {/* Right column: Severity → Map (70%) → Sources (30%) */}
+        <div className="flex min-h-0 flex-col gap-4 overflow-hidden">
+          {/* Severity Breakdown */}
+          <div className="shrink-0">
+            <SeverityBreakdown markers={markers} />
+          </div>
 
-        {/* Section C: Source Health Table (bottom-left) */}
-        <div className="min-h-0 overflow-hidden">
-          <SourceHealthTable
-            categoryId={categoryId}
-            isLoading={metricsLoading}
-            displayName={meta.displayName}
-          />
-        </div>
+          {/* Coverage Map (~70% of remaining space) */}
+          <div className="min-h-0" style={{ flex: '7 1 0%' }}>
+            <div style={{ height: '100%', position: 'relative' }}>
+              <CoverageMap
+                categoryId={categoryId}
+                categoryName={meta.displayName}
+                markers={markers ?? []}
+                isLoading={markersLoading}
+                onMarkerClick={onSelectAlert}
+                selectedMarkerId={selectedAlertId}
+                externalMapRef={externalMapRef}
+              />
+            </div>
+          </div>
 
-        {/* Section D: Coverage Map (bottom-right) */}
-        <div className="min-h-0 overflow-hidden">
-          <div style={{ minHeight: 280, height: '100%', position: 'relative' }}>
-            <CoverageMap
+          {/* Source Health Table (~30% of remaining space) */}
+          <div className="min-h-0 overflow-hidden" style={{ flex: '3 1 0%' }}>
+            <SourceHealthTable
               categoryId={categoryId}
-              categoryName={meta.displayName}
-              markers={markers ?? []}
-              isLoading={markersLoading}
+              isLoading={metricsLoading}
+              displayName={meta.displayName}
             />
           </div>
         </div>
@@ -581,3 +767,7 @@ export const CategoryDetailScene = memo(function CategoryDetailScene({
     </div>
   )
 })
+
+// Re-export for dock panel use
+export { formatTimestamp }
+export type { CategoryIntelItem } from '@/hooks/use-category-intel'

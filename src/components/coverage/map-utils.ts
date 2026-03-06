@@ -12,6 +12,13 @@
 import type { MapMarker } from '@/lib/coverage-utils'
 
 // ============================================================================
+// New-alert threshold
+// ============================================================================
+
+/** Alerts ingested within this window are flagged as "new" on the map. */
+export const NEW_ALERT_THRESHOLD_MS = 5 * 60 * 1000 // 5 minutes
+
+// ============================================================================
 // Severity color map (hex values for MapLibre GL paint properties)
 // ============================================================================
 
@@ -51,6 +58,10 @@ export interface MarkerFeatureCollection {
       category: string
       sourceId: string
       ingestedAt: string
+      /** True if the alert was ingested within the last NEW_ALERT_THRESHOLD_MS. */
+      isNew: boolean
+      /** Operational priority for marker sizing. 'P4' when absent. */
+      priority: string
     }
   }>
 }
@@ -62,23 +73,32 @@ export interface MarkerFeatureCollection {
  * Properties are carried through for popup display and styling.
  */
 export function markersToGeoJSON(markers: MapMarker[]): MarkerFeatureCollection {
+  const now = Date.now()
+
   return {
     type: 'FeatureCollection',
-    features: markers.map((marker) => ({
-      type: 'Feature' as const,
-      geometry: {
-        type: 'Point' as const,
-        coordinates: [marker.lng, marker.lat] as [number, number],
-      },
-      properties: {
-        id: marker.id,
-        title: marker.title,
-        severity: marker.severity,
-        category: marker.category,
-        sourceId: marker.sourceId,
-        ingestedAt: marker.ingestedAt,
-      },
-    })),
+    features: markers.map((marker) => {
+      const ingestedMs = new Date(marker.ingestedAt).getTime()
+      const isNew = !Number.isNaN(ingestedMs) && now - ingestedMs < NEW_ALERT_THRESHOLD_MS
+
+      return {
+        type: 'Feature' as const,
+        geometry: {
+          type: 'Point' as const,
+          coordinates: [marker.lng, marker.lat] as [number, number],
+        },
+        properties: {
+          id: marker.id,
+          title: marker.title,
+          severity: marker.severity,
+          category: marker.category,
+          sourceId: marker.sourceId,
+          ingestedAt: marker.ingestedAt,
+          isNew,
+          priority: marker.operationalPriority ?? 'P4',
+        },
+      }
+    }),
   }
 }
 
@@ -96,6 +116,59 @@ export function markersToGeoJSON(markers: MapMarker[]): MarkerFeatureCollection 
  * Defined as a const tuple to preserve the literal types that
  * MapLibre's `DataDrivenPropertyValueSpecification<string>` expects.
  */
+// ============================================================================
+// Priority radius constants
+// ============================================================================
+
+/** Base circle radius for P1 markers (1.5x default). */
+export const PRIORITY_RADIUS_P1 = 9
+/** Base circle radius for P2 markers (1.25x default). */
+export const PRIORITY_RADIUS_P2 = 7.5
+/** Default circle radius for P3/P4/unknown markers. */
+export const PRIORITY_RADIUS_DEFAULT = 6
+
+/**
+ * Priority-based circle radius expression for MapLibre GL paint properties.
+ * Maps the `priority` feature property to a numeric radius.
+ */
+export const CIRCLE_RADIUS_EXPRESSION = [
+  'match',
+  ['get', 'priority'],
+  'P1', PRIORITY_RADIUS_P1,
+  'P2', PRIORITY_RADIUS_P2,
+  'P3', PRIORITY_RADIUS_DEFAULT,
+  'P4', PRIORITY_RADIUS_DEFAULT,
+  PRIORITY_RADIUS_DEFAULT,
+] as const
+
+/**
+ * Priority-scaled new-alert glow radius expression.
+ * Maintains ~2.33x ratio to marker radius per priority level.
+ */
+export const NEW_GLOW_RADIUS_EXPRESSION = [
+  'match',
+  ['get', 'priority'],
+  'P1', 21,
+  'P2', 17.5,
+  14,
+] as const
+
+/**
+ * Priority-scaled selected highlight ring radius expression.
+ * Maintains 8px gap between marker edge and ring for all priority levels.
+ */
+export const SELECTED_RING_RADIUS_EXPRESSION = [
+  'match',
+  ['get', 'priority'],
+  'P1', 17,
+  'P2', 15.5,
+  14,
+] as const
+
+// ============================================================================
+// MapLibre style expressions
+// ============================================================================
+
 export const CIRCLE_COLOR_EXPRESSION = [
   'match',
   ['get', 'severity'],

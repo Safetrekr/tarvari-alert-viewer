@@ -88,7 +88,15 @@ import { GRID_WIDTH, GRID_HEIGHT } from '@/components/coverage/CoverageGrid'
 import type { ViewMode } from '@/lib/interfaces/intel-bundles'
 import { useIntelBundles } from '@/hooks/use-intel-bundles'
 import { TriageRationalePanel } from '@/components/coverage/TriageRationalePanel'
+import { GeoSummaryPanel } from '@/components/coverage/GeoSummaryPanel'
 import { AlertDetailPanel } from '@/components/coverage/AlertDetailPanel'
+import { PriorityFeedStrip } from '@/components/coverage/PriorityFeedStrip'
+import { ThreatPictureCard } from '@/components/coverage/ThreatPictureCard'
+import { PriorityFeedPanel } from '@/components/coverage/PriorityFeedPanel'
+import { useRealtimePriorityAlerts } from '@/hooks/use-realtime-priority-alerts'
+import { useNotificationDispatch } from '@/hooks/use-notification-dispatch'
+import type { SearchResult } from '@/hooks/use-intel-search'
+import { useThreatPicture } from '@/hooks/use-threat-picture'
 
 import '@/styles/atrium.css'
 import '@/styles/morph.css'
@@ -163,8 +171,24 @@ export default function LaunchPage() {
   // URL-based initial district (legacy compatibility)
   useInitialDistrictFromUrl()
 
-  // Coverage data (WS-2.1)
+  // Real-time P1/P2 notifications (WS-2.4 + WS-2.5)
+  const { notify } = useNotificationDispatch()
+  useRealtimePriorityAlerts({
+    onAlert: (payload) => {
+      notify({
+        id: payload.id,
+        title: payload.title,
+        priority: (payload.operational_priority ?? 'P2') as 'P1' | 'P2',
+        severity: payload.severity,
+        category: payload.category,
+        ingestedAt: payload.ingested_at,
+      })
+    },
+  })
+
+  // Coverage data (WS-2.1) + threat picture (WS-4.1)
   const { data: coverageMetrics, isLoading: isMetricsLoading } = useCoverageMetrics()
+  const { data: threatPicture } = useThreatPicture()
   const selectedCategories = useCoverageStore((s) => s.selectedCategories)
   const toggleCategory = useCoverageStore((s) => s.toggleCategory)
   const clearSelection = useCoverageStore((s) => s.clearSelection)
@@ -248,6 +272,14 @@ export default function LaunchPage() {
     returnFromAlertDetail(storedCamera)
   }, [clearMapAlert])
 
+  // Geo summary panel (WS-4.5 + WS-4.3)
+  const openGeoSummary = useCoverageStore((s) => s.openGeoSummary)
+  const geoSummaryOpen = useCoverageStore((s) => s.geoSummaryOpen)
+  const closeGeoSummary = useCoverageStore((s) => s.closeGeoSummary)
+  const handleOpenThreatPicture = useCallback(() => {
+    openGeoSummary()
+  }, [openGeoSummary])
+
   const startMorph = useUIStore((s) => s.startMorph)
   const setDistrictPreselectedAlertId = useCoverageStore((s) => s.setDistrictPreselectedAlertId)
 
@@ -261,6 +293,15 @@ export default function LaunchPage() {
       startMorph(category)
     },
     [clearMapAlert, startMorph, setDistrictPreselectedAlertId],
+  )
+
+  // Search result -> fast morph navigation (WS-3.3)
+  const handleSearchResultSelect = useCallback(
+    (result: SearchResult) => {
+      setDistrictPreselectedAlertId(result.id)
+      startMorph(result.category, { fast: true })
+    },
+    [setDistrictPreselectedAlertId, startMorph],
   )
 
   // Filter toggle: add/remove category from filter set
@@ -279,10 +320,16 @@ export default function LaunchPage() {
     syncCategoriesToUrl([])
   }, [clearSelection])
 
-  // Build grid items for all 15 categories, merging live metrics where available
+  // Build trend map from threat picture data (WS-4.4)
+  const trendMap = useMemo(() => {
+    if (!threatPicture?.byCategory?.length) return undefined
+    return new Map(threatPicture.byCategory.map((t) => [t.category, t.trend]))
+  }, [threatPicture])
+
+  // Build grid items for all 15 categories, merging live metrics + trend data
   const gridItems: CategoryGridItem[] = useMemo(
-    () => buildAllGridItems(coverageMetrics?.byCategory ?? []),
-    [coverageMetrics],
+    () => buildAllGridItems(coverageMetrics?.byCategory ?? [], trendMap),
+    [coverageMetrics, trendMap],
   )
 
   // URL sync for category selection
@@ -320,7 +367,7 @@ export default function LaunchPage() {
         label: 'Toggle Command Palette',
       },
       // Note: Escape for morph reverse is handled by useMorphChoreography.
-      // Priority chain: INSPECT detail > triage panel > command palette.
+      // Priority chain: INSPECT detail > triage panel > priority feed > geo panel > command palette.
       {
         key: 'Escape',
         handler: () => {
@@ -328,6 +375,10 @@ export default function LaunchPage() {
             handleCloseInspect()
           } else if (selectedBundleId) {
             setSelectedBundleId(null)
+          } else if (useCoverageStore.getState().priorityFeedExpanded) {
+            useCoverageStore.getState().setPriorityFeedExpanded(false)
+          } else if (geoSummaryOpen) {
+            closeGeoSummary()
           } else {
             setCommandPaletteOpen(false)
           }
@@ -335,7 +386,7 @@ export default function LaunchPage() {
         label: 'Close Panel',
       },
     ],
-    [toggleCommandPalette, setCommandPaletteOpen, selectedBundleId, setSelectedBundleId, selectedMapAlertId, handleCloseInspect],
+    [toggleCommandPalette, setCommandPaletteOpen, selectedBundleId, setSelectedBundleId, selectedMapAlertId, handleCloseInspect, geoSummaryOpen, closeGeoSummary],
   )
 
   useKeyboardShortcuts(shortcuts)
@@ -400,6 +451,7 @@ export default function LaunchPage() {
                 alignItems: 'flex-end',
                 justifyContent: 'space-between',
                 pointerEvents: 'auto',
+                zIndex: 2,
               }}
             >
               <ViewModeToggle value={viewMode} onChange={handleViewModeChange} counts={viewModeCounts} />
@@ -410,6 +462,22 @@ export default function LaunchPage() {
                 onPresetChange={setMapTimePreset}
                 onCustomChange={setCustomTimeRange}
               />
+            </div>
+          </ZoomGate>
+
+          {/* Priority feed strip -- persistent P1/P2 summary, above toolbar.
+              Own ZoomGate (Z1+), outside morph-panels-scatter for morph independence. */}
+          <ZoomGate show={['Z1', 'Z2', 'Z3']}>
+            <div
+              className="absolute"
+              style={{
+                left: -(GRID_WIDTH / 2) - 230 + 125,
+                top: -(GRID_HEIGHT / 2) - 900 - 40 + 400 - 54 - 48,
+                width: GRID_WIDTH + 230,
+                pointerEvents: 'auto',
+              }}
+            >
+              <PriorityFeedStrip />
             </div>
           </ZoomGate>
 
@@ -441,8 +509,8 @@ export default function LaunchPage() {
             <div
               className="absolute"
               style={{
-                left: 1550,
-                top: -280,
+                left: 1950,
+                top: -480,
                 pointerEvents: 'none',
               }}
             >
@@ -470,6 +538,7 @@ export default function LaunchPage() {
                 isLoading={isMetricsLoading}
                 isAllSelected={selectedCategories.length === 0}
                 onClearFilter={handleClearFilter}
+                onOpenThreatPicture={handleOpenThreatPicture}
               />
             </div>
           </ZoomGate>
@@ -523,12 +592,27 @@ export default function LaunchPage() {
             <EdgeFragments />
           </div>
 
-          {/* Map Ledger: positioned to the left of the map, top-aligned */}
+          {/* Threat Picture card: upper-left, above Intel Monitoring, left of map */}
           <ZoomGate show={['Z1', 'Z2', 'Z3']}>
             <div
               className="absolute"
               style={{
-                left: -(GRID_WIDTH / 2) - 230 + 125 - 175,
+                left: -1350,
+                top: -(GRID_HEIGHT / 2) - 900 - 40 + 400,
+                width: 320,
+                pointerEvents: 'auto',
+              }}
+            >
+              <ThreatPictureCard onClick={handleOpenThreatPicture} />
+            </div>
+          </ZoomGate>
+
+          {/* Map Ledger: positioned to the right of the map, top-aligned */}
+          <ZoomGate show={['Z1', 'Z2', 'Z3']}>
+            <div
+              className="absolute"
+              style={{
+                left: -(GRID_WIDTH / 2) - 230 + 125 + GRID_WIDTH + 230 + 12,
                 top: -(GRID_HEIGHT / 2) - 900 - 40 + 400,
                 pointerEvents: 'auto',
               }}
@@ -544,6 +628,12 @@ export default function LaunchPage() {
 
       {/* Triage rationale slide-out panel (fixed, z-45) */}
       <TriageRationalePanel item={selectedBundle} onClose={handleCloseRationale} />
+
+      {/* Geographic intelligence slide-over panel (fixed, z-42) */}
+      <GeoSummaryPanel onClose={closeGeoSummary} />
+
+      {/* Priority feed expanded panel (fixed, z-35) */}
+      <PriorityFeedPanel />
 
       {/* Navigation HUD overlay (fixed, z-40) */}
       <NavigationHUD isPanActive={isPanActive}>
@@ -616,7 +706,7 @@ export default function LaunchPage() {
       <BottomStatusStrip />
 
       {/* Command palette (outside HUD, has its own z-50 via Dialog) */}
-      <CommandPalette onRefresh={async () => { /* WS-1.5 telemetry refresh */ }} />
+      <CommandPalette onRefresh={async () => { /* WS-1.5 telemetry refresh */ }} onSearchResultSelect={handleSearchResultSelect} />
 
       {/* Phase 3 background effects (narration cycle + attention choreography) */}
       <Phase3Effects />

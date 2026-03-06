@@ -8,6 +8,7 @@
  */
 
 import type { IntelBundleRow, TriageDecisionRow, IntelNormalizedRow } from '@/lib/supabase/types'
+import type { OperationalPriority } from '@/lib/interfaces/coverage'
 
 // ============================================================================
 // View mode
@@ -46,6 +47,7 @@ export const DEFAULT_VIEW_MODE: ViewMode = 'triaged'
 export interface BundleWithDecision {
   bundle: IntelBundleRow
   decision: TriageDecisionRow | null
+  operationalPriority: OperationalPriority | null
 }
 
 /**

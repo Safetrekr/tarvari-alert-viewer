@@ -60,6 +60,11 @@ export function useClaudeHealthCheck(): void {
     }
 
     const check = async () => {
+      if (process.env.NEXT_PUBLIC_DATA_MODE === 'supabase') {
+        setClaudeStatus(false, false, 'Claude unavailable in static mode')
+        return
+      }
+
       try {
         const response = await fetch('/api/ai/claude', {
           method: 'GET',

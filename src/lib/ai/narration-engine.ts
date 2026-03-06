@@ -62,6 +62,10 @@ const INTER_CALL_PAUSE_MS = 500
 export async function generateNarration(
   request: NarrationRequest,
 ): Promise<NarrationResult> {
+  if (process.env.NEXT_PUBLIC_DATA_MODE === 'supabase') {
+    return { success: false, narration: null, error: 'Narration unavailable in static mode' } as NarrationResult
+  }
+
   let lastError: string | undefined
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {

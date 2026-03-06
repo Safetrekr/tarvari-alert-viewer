@@ -30,6 +30,15 @@ export const DISTRICT_ZOOM = 1.5 as const
 /** Zoom step size for keyboard/command palette zoom in/out. */
 export const ZOOM_STEP = 0.15 as const
 
+/** World-space position for the INSPECT alert detail panel (centered on screen). */
+export const ALERT_DETAIL_POSITION = { x: 1950, y: -480 } as const
+
+/** Zoom level for reading the detail panel (Z2 range). */
+export const ALERT_DETAIL_ZOOM = 1.0 as const
+
+/** Softer spring config for the detail panel camera flight. */
+const DETAIL_SPRING = { stiffness: 100, damping: 22, mass: 1.0 } as const
+
 // ---------------------------------------------------------------------------
 // World-coordinate helpers
 // ---------------------------------------------------------------------------
@@ -100,6 +109,28 @@ export function flyToDistrict(nodeId: NodeId): void {
 
   const pos = getDistrictWorldPosition(district.ringIndex)
   flyToWorldPoint(pos.x, pos.y, DISTRICT_ZOOM)
+}
+
+/**
+ * Fly the camera to the INSPECT alert detail panel (right of map).
+ * Uses a softer spring for a settling-in feel.
+ */
+export function flyToAlertDetail(): void {
+  const { viewportWidth, viewportHeight, flyTo } = useCameraStore.getState()
+  const targetOffsetX = viewportWidth / 2 - ALERT_DETAIL_POSITION.x * ALERT_DETAIL_ZOOM
+  const targetOffsetY = viewportHeight / 2 - ALERT_DETAIL_POSITION.y * ALERT_DETAIL_ZOOM
+  flyTo(targetOffsetX, targetOffsetY, ALERT_DETAIL_ZOOM, DETAIL_SPRING)
+}
+
+/**
+ * Return camera to a previously stored position, or hub as fallback.
+ */
+export function returnFromAlertDetail(stored: { offsetX: number; offsetY: number; zoom: number } | null): void {
+  if (stored) {
+    useCameraStore.getState().flyTo(stored.offsetX, stored.offsetY, stored.zoom, DETAIL_SPRING)
+  } else {
+    returnToHub()
+  }
 }
 
 /**

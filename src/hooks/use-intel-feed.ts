@@ -12,6 +12,9 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
+import { DATA_MODE } from '@/lib/data-mode'
+import { fetchIntelFeedFromSupabase } from '@/lib/supabase/queries'
+import type { OperationalPriority } from '@/lib/interfaces/coverage'
 
 // ============================================================================
 // Types
@@ -24,6 +27,7 @@ export interface IntelFeedItem {
   category: string
   sourceId: string
   ingestedAt: string // ISO 8601
+  operationalPriority: OperationalPriority | null
 }
 
 // ============================================================================
@@ -42,6 +46,7 @@ interface ApiIntelItem {
   short_summary: string | null
   ingested_at: string
   sent_at: string | null
+  operational_priority: string | null
 }
 
 interface ApiIntelFeedResponse {
@@ -53,7 +58,7 @@ interface ApiIntelFeedResponse {
 // Query function
 // ============================================================================
 
-async function fetchIntelFeed(): Promise<IntelFeedItem[]> {
+async function fetchIntelFeedFromConsole(): Promise<IntelFeedItem[]> {
   const data = await tarvariGet<ApiIntelFeedResponse>('/console/intel', { limit: 50 })
 
   return data.items.map((r) => ({
@@ -63,7 +68,13 @@ async function fetchIntelFeed(): Promise<IntelFeedItem[]> {
     category: r.category,
     sourceId: r.source_key ?? '',
     ingestedAt: r.ingested_at,
+    operationalPriority: (r.operational_priority as OperationalPriority) ?? null,
   }))
+}
+
+async function fetchIntelFeed(): Promise<IntelFeedItem[]> {
+  if (DATA_MODE === 'supabase') return fetchIntelFeedFromSupabase()
+  return fetchIntelFeedFromConsole()
 }
 
 // ============================================================================

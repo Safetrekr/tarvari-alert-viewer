@@ -30,6 +30,10 @@ export const TARVA_CHAT_DISTRICT_KEY = ['districts', 'tarva-chat'] as const
  * Fetch the Tarva Chat district snapshot from the Launch route handler.
  */
 async function fetchTarvaChatDistrict(): Promise<TarvaChatSnapshot> {
+  if (process.env.NEXT_PUBLIC_DATA_MODE === 'supabase') {
+    return EMPTY_TARVA_CHAT_SNAPSHOT
+  }
+
   const response = await fetch('/api/districts/tarva-chat')
   if (!response.ok) {
     throw new Error(`Tarva Chat district fetch failed: ${response.status}`)

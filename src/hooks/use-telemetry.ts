@@ -31,6 +31,14 @@ import { useDistrictsStore } from '@/stores/districts.store'
 // ---------------------------------------------------------------------------
 
 async function fetchTelemetry(): Promise<SystemSnapshot> {
+  if (process.env.NEXT_PUBLIC_DATA_MODE === 'supabase') {
+    return {
+      apps: {},
+      timestamp: new Date().toISOString(),
+      summary: { total: 0, operational: 0, degraded: 0, down: 0, offline: 0, unknown: 0 },
+    } as SystemSnapshot
+  }
+
   const response = await fetch('/api/telemetry')
 
   if (!response.ok) {

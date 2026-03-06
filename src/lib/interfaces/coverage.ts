@@ -257,6 +257,82 @@ export function isPriorityVisible(
 }
 
 // ---------------------------------------------------------------------------
+// Trend direction (Phase 4: Geographic Intelligence)
+// ---------------------------------------------------------------------------
+
+/** Directional trend for temporal comparisons (per-category, per-region, overall). */
+export type TrendDirection = 'up' | 'down' | 'stable'
+
+// ---------------------------------------------------------------------------
+// Threat level (Phase 4: Geographic Intelligence)
+// ---------------------------------------------------------------------------
+
+/** Five-level threat assessment scale used in geographic summaries. */
+export const THREAT_LEVELS = ['LOW', 'MODERATE', 'ELEVATED', 'HIGH', 'CRITICAL'] as const
+
+/** Threat level type. */
+export type ThreatLevel = (typeof THREAT_LEVELS)[number]
+
+// ---------------------------------------------------------------------------
+// Geographic hierarchy (Phase 4: Geographic Intelligence, AD-7)
+// ---------------------------------------------------------------------------
+
+/** Geographic hierarchy levels for intel summaries. */
+export type GeoLevel = 'world' | 'region' | 'country'
+
+/** Summary period types. */
+export type SummaryType = 'hourly' | 'daily'
+
+/**
+ * The 11 travel-security geographic region keys (AD-7).
+ * Kebab-case identifiers used as `summaryGeoKey` when `summaryGeoLevel` is `'region'`.
+ */
+export const GEO_REGION_KEYS = [
+  'north-america',
+  'central-america-caribbean',
+  'south-america',
+  'western-europe',
+  'eastern-europe',
+  'middle-east',
+  'north-africa',
+  'sub-saharan-africa',
+  'south-central-asia',
+  'east-southeast-asia',
+  'oceania',
+] as const
+
+export type GeoRegionKey = (typeof GEO_REGION_KEYS)[number]
+
+/** Display metadata for each geographic region. */
+export const GEO_REGION_META: Record<GeoRegionKey, { displayName: string; shortName: string }> = {
+  'north-america':              { displayName: 'North America',              shortName: 'N. AMERICA' },
+  'central-america-caribbean':  { displayName: 'Central America & Caribbean', shortName: 'C. AMERICA' },
+  'south-america':              { displayName: 'South America',              shortName: 'S. AMERICA' },
+  'western-europe':             { displayName: 'Western Europe',             shortName: 'W. EUROPE' },
+  'eastern-europe':             { displayName: 'Eastern Europe',             shortName: 'E. EUROPE' },
+  'middle-east':                { displayName: 'Middle East',                shortName: 'MID EAST' },
+  'north-africa':               { displayName: 'North Africa',              shortName: 'N. AFRICA' },
+  'sub-saharan-africa':         { displayName: 'Sub-Saharan Africa',        shortName: 'SS. AFRICA' },
+  'south-central-asia':         { displayName: 'South & Central Asia',      shortName: 'S/C ASIA' },
+  'east-southeast-asia':        { displayName: 'East & Southeast Asia',     shortName: 'E/SE ASIA' },
+  'oceania':                    { displayName: 'Oceania',                    shortName: 'OCEANIA' },
+}
+
+/** Check whether a string is a valid GeoRegionKey. */
+export function isValidGeoRegionKey(key: string): key is GeoRegionKey {
+  return (GEO_REGION_KEYS as readonly string[]).includes(key)
+}
+
+/** Get the display name for a geo key at any level. */
+export function getGeoDisplayName(level: GeoLevel, key: string): string {
+  if (level === 'world') return 'World'
+  if (level === 'region' && isValidGeoRegionKey(key)) {
+    return GEO_REGION_META[key].displayName
+  }
+  return key.toUpperCase()
+}
+
+// ---------------------------------------------------------------------------
 // Source status (per COVERAGE-DATA-SPEC.md)
 // ---------------------------------------------------------------------------
 
@@ -284,6 +360,8 @@ export interface CategoryGridItem {
   meta: CategoryMeta
   /** Live source count metrics. Null only during loading (should not render). */
   metrics: CoverageByCategory
+  /** Trend direction compared to previous period. Undefined when threat picture data is unavailable. */
+  trend?: TrendDirection
 }
 
 /**
@@ -292,11 +370,15 @@ export interface CategoryGridItem {
  * Unknown categories from the database that are not in KNOWN_CATEGORIES
  * are mapped to the 'other' entry.
  */
-export function buildGridItems(byCategory: CoverageByCategory[]): CategoryGridItem[] {
+export function buildGridItems(
+  byCategory: CoverageByCategory[],
+  trendMap?: Map<string, TrendDirection>,
+): CategoryGridItem[] {
   return byCategory.map((cat) => ({
     id: cat.category,
     meta: getCategoryMeta(cat.category),
     metrics: cat,
+    trend: trendMap?.get(cat.category),
   }))
 }
 
@@ -306,7 +388,10 @@ export function buildGridItems(byCategory: CoverageByCategory[]): CategoryGridIt
  * Ensures the grid always shows all categories so users can click into
  * district view even before data is populated.
  */
-export function buildAllGridItems(byCategory: CoverageByCategory[]): CategoryGridItem[] {
+export function buildAllGridItems(
+  byCategory: CoverageByCategory[],
+  trendMap?: Map<string, TrendDirection>,
+): CategoryGridItem[] {
   const liveMap = new Map(byCategory.map((c) => [c.category, c]))
 
   return KNOWN_CATEGORIES.map((meta) => ({
@@ -318,6 +403,9 @@ export function buildAllGridItems(byCategory: CoverageByCategory[]): CategoryGri
       activeSources: 0,
       geographicRegions: [],
       alertCount: 0,
+      p1Count: 0,
+      p2Count: 0,
     },
+    trend: trendMap?.get(meta.id),
   }))
 }

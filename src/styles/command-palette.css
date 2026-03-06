@@ -117,6 +117,36 @@
 }
 
 /* ----------------------------------------------------------------
+   Search result snippet -- bold highlights from ts_headline
+   ---------------------------------------------------------------- */
+.command-palette-glass [data-slot="command-item"] .search-snippet b {
+  color: rgba(var(--ambient-ink-rgb), 0.55);
+  font-weight: 600;
+}
+
+/* ----------------------------------------------------------------
+   Search result items -- two-line layout override
+   ---------------------------------------------------------------- */
+.command-palette-glass .search-result-item[data-slot="command-item"] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* ----------------------------------------------------------------
+   Search loading state -- centered spinner
+   ---------------------------------------------------------------- */
+.command-palette-glass .search-loading[data-slot="command-item"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-tertiary, rgba(var(--ambient-ink-rgb), 0.35));
+}
+
+/* ----------------------------------------------------------------
    Reduced motion -- disable dialog enter/exit animations
    ---------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {

@@ -29,6 +29,8 @@ export interface CoverageOverviewStatsProps {
   isAllSelected?: boolean
   /** Callback to clear category filter (select ALL). */
   onClearFilter?: () => void
+  /** @deprecated Threat picture now has its own card. Kept for API compat. */
+  onOpenThreatPicture?: () => void
 }
 
 // ---------------------------------------------------------------------------
@@ -73,6 +75,8 @@ export function CoverageOverviewStats({
   isLoading = false,
   isAllSelected = true,
   onClearFilter,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onOpenThreatPicture: _onOpenThreatPicture,
 }: CoverageOverviewStatsProps) {
   return (
     <div className="flex flex-col gap-3" style={{ width: 200 }}>
@@ -117,6 +121,7 @@ export function CoverageOverviewStats({
 
       <StatRow icon={AlertTriangle} label="Total Alerts" value={totalAlerts} isLoading={isLoading} />
       <StatRow icon={Grid3x3} label="Categories" value={categoriesCovered} isLoading={isLoading} />
+
     </div>
   )
 }

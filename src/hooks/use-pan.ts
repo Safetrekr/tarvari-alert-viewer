@@ -93,6 +93,8 @@ export function usePan(viewportRef: React.RefObject<HTMLDivElement | null>): voi
       if (e.button !== 0) return
 
       cancelMomentum()
+      // Cancel any active flyTo spring animation so manual pan takes priority
+      useCameraStore.getState().cancelAnimation()
 
       // Record the start position but do NOT capture the pointer yet.
       // This allows click events to propagate to interactive children

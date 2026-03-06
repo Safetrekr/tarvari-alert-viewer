@@ -46,6 +46,7 @@ import {
   Home,
   Compass,
   BookOpen,
+  Globe,
   Navigation,
   ZoomIn,
   ZoomOut,
@@ -58,9 +59,16 @@ import {
   RefreshCw,
   LogOut,
   Zap,
+  Loader2,
+  Search,
+  AlertCircle,
 } from 'lucide-react'
 import { useCommandPalette } from '@/hooks/use-command-palette'
 import { useCameraDirector } from '@/hooks/use-camera-director'
+import { useIntelSearch, type SearchResult } from '@/hooks/use-intel-search'
+import { PriorityBadge } from '@/components/coverage/PriorityBadge'
+import { SEVERITY_COLORS, type SeverityLevel } from '@/lib/interfaces/coverage'
+import { sanitizeSnippet } from '@/lib/sanitize-snippet'
 import type { PaletteSuggestion } from '@/lib/interfaces/command-palette'
 
 import '@/styles/command-palette.css'
@@ -78,6 +86,7 @@ const COMMAND_ICONS: Record<string, React.ComponentType<{ className?: string }>>
   'go-to-hub': Home,
   'go-to-constellation': Compass,
   'go-to-evidence-ledger': BookOpen,
+  'threat-picture': Globe,
   // View -- zoom
   'zoom-in': ZoomIn,
   'zoom-out': ZoomOut,
@@ -116,13 +125,21 @@ interface CommandPaletteProps {
    * Typically: `() => queryClient.invalidateQueries({ queryKey: ['telemetry'] })`
    */
   onRefresh: () => Promise<void>
+  /**
+   * Called when a search result is selected from the Intel Search group.
+   * WS-3.3 wires this to morph navigation: close palette, determine category,
+   * call startMorph(category, { fast: true }), set districtPreselectedAlertId.
+   *
+   * If not provided, selecting a search result only closes the palette.
+   */
+  onSearchResultSelect?: (result: SearchResult) => void
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-export function CommandPalette({ onRefresh }: CommandPaletteProps) {
+export function CommandPalette({ onRefresh, onSearchResultSelect }: CommandPaletteProps) {
   const {
     isOpen,
     setOpen,
@@ -135,6 +152,17 @@ export function CommandPalette({ onRefresh }: CommandPaletteProps) {
 
   // Track the current input for filtering and AI forwarding
   const [inputValue, setInputValue] = useState('')
+
+  // Intel search integration (WS-3.2)
+  const { queryResult, debouncedQuery } = useIntelSearch({ query: inputValue })
+  const { data: searchResults, isLoading: isSearching, isError: isSearchError } = queryResult
+
+  // Search group state derivation
+  const showSearchIdle = inputValue.length < 3
+  const showSearchLoading = !showSearchIdle && isSearching
+  const showSearchResults = !showSearchIdle && !isSearching && !isSearchError && searchResults && searchResults.length > 0
+  const showSearchEmpty = !showSearchIdle && !isSearching && !isSearchError && searchResults && searchResults.length === 0
+  const showSearchError = !showSearchIdle && isSearchError
 
   // Get current suggestions based on input (StructuredCommandPalette handles filtering)
   const suggestions = getSuggestions(inputValue, 30)
@@ -157,6 +185,16 @@ export function CommandPalette({ onRefresh }: CommandPaletteProps) {
       setInputValue('')
     },
     [executeById],
+  )
+
+  // Handle search result selection (WS-3.2)
+  const handleSelectSearchResult = useCallback(
+    (result: SearchResult) => {
+      setInputValue('')
+      setOpen(false)
+      onSearchResultSelect?.(result)
+    },
+    [setOpen, onSearchResultSelect],
   )
 
   // Handle "Ask AI..." selection -- forwards to AI Camera Director
@@ -254,7 +292,7 @@ export function CommandPalette({ onRefresh }: CommandPaletteProps) {
             className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
           >
             <CommandInput
-              placeholder="Navigate, zoom, or search commands..."
+              placeholder="Navigate, zoom, or search intel..."
               value={inputValue}
               onValueChange={setInputValue}
             />
@@ -296,6 +334,71 @@ export function CommandPalette({ onRefresh }: CommandPaletteProps) {
                 actionSuggestions,
                 navigationSuggestions.length > 0 || viewSuggestions.length > 0,
               )}
+
+              {/* Intel Search group (WS-3.2) */}
+              <CommandSeparator />
+              <CommandGroup heading="Intel Search">
+                {showSearchIdle && (
+                  <CommandItem disabled value="search-idle" className="search-loading">
+                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-30" />
+                    <span className="text-xs opacity-40">Type 3+ characters to search intel</span>
+                  </CommandItem>
+                )}
+                {showSearchLoading && (
+                  <CommandItem disabled value="search-loading" className="search-loading" aria-label="Searching intel...">
+                    <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin opacity-50" />
+                    <span className="text-xs opacity-40">Searching...</span>
+                  </CommandItem>
+                )}
+                {showSearchResults && searchResults!.map((result) => (
+                  <CommandItem
+                    key={result.id}
+                    value={result.id}
+                    onSelect={() => handleSelectSearchResult(result)}
+                    className="search-result-item"
+                    aria-label={`${result.operationalPriority ?? 'Unassigned'} ${result.severity}: ${result.title}`}
+                  >
+                    {/* Line 1: priority + severity + title */}
+                    <div className="flex w-full items-center gap-1.5">
+                      {result.operationalPriority && (
+                        <PriorityBadge priority={result.operationalPriority} size="sm" />
+                      )}
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: SEVERITY_COLORS[result.severity as SeverityLevel] ?? SEVERITY_COLORS.Unknown }}
+                        aria-hidden="true"
+                      />
+                      <span
+                        className="min-w-0 flex-1 truncate font-mono text-[11px]"
+                        style={{ color: 'rgba(255, 255, 255, 0.35)' }}
+                      >
+                        {result.title}
+                      </span>
+                    </div>
+                    {/* Line 2: snippet */}
+                    {result.snippet && (
+                      <div
+                        className="search-snippet w-full truncate pl-[28px] font-mono text-[9px]"
+                        style={{ color: 'rgba(255, 255, 255, 0.18)' }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeSnippet(result.snippet) }}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </CommandItem>
+                ))}
+                {showSearchEmpty && (
+                  <CommandItem disabled value="search-empty" className="search-loading">
+                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-30" />
+                    <span className="text-xs opacity-40">No intel matches found</span>
+                  </CommandItem>
+                )}
+                {showSearchError && (
+                  <CommandItem disabled value="search-error" className="search-loading">
+                    <AlertCircle className="mr-2 h-4 w-4 shrink-0 opacity-30" />
+                    <span className="text-xs opacity-40">Search unavailable -- try again</span>
+                  </CommandItem>
+                )}
+              </CommandGroup>
 
               {/* AI group -- always rendered, conditional behavior */}
               <CommandSeparator />

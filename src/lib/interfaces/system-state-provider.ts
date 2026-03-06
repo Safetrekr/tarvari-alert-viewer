@@ -241,6 +241,16 @@ export class PollingSystemStateProvider implements SystemStateProvider {
   }
 
   async refresh(): Promise<SystemSnapshot> {
+    if (process.env.NEXT_PUBLIC_DATA_MODE === 'supabase') {
+      const empty: SystemSnapshot = {
+        apps: {},
+        globalMetrics: { alertCount: 0, activeWork: 0, systemPulse: 'OPERATIONAL' },
+        timestamp: new Date().toISOString(),
+      } as SystemSnapshot
+      this.updateSnapshot(empty)
+      return empty
+    }
+
     // Phase 1: fetch from the telemetry Route Handler.
     // WS-1.5 will wire this to the actual endpoint.
     const response = await fetch('/api/telemetry')

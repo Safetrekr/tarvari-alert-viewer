@@ -31,11 +31,15 @@ import {
   CircleDot,
   ArrowRight,
   MapPin,
+  TrendingUp,
+  TrendingDown,
+  Minus,
   type LucideIcon,
 } from 'lucide-react'
 
-import type { CategoryGridItem } from '@/lib/interfaces/coverage'
+import type { CategoryGridItem, OperationalPriority, TrendDirection } from '@/lib/interfaces/coverage'
 import type { NodeId } from '@/lib/interfaces/district'
+import { PriorityBadge } from '@/components/coverage/PriorityBadge'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -106,6 +110,33 @@ const cardVariants: Variants = {
 }
 
 // ---------------------------------------------------------------------------
+// Trend arrow (file-private)
+// ---------------------------------------------------------------------------
+
+const TREND_CONFIG: Record<TrendDirection, {
+  icon: LucideIcon
+  color: string
+  label: string
+}> = {
+  up:     { icon: TrendingUp,   color: 'rgba(239, 68, 68, 0.70)',   label: 'trending up' },
+  down:   { icon: TrendingDown, color: 'rgba(34, 197, 94, 0.70)',   label: 'trending down' },
+  stable: { icon: Minus,        color: 'rgba(156, 163, 175, 0.40)', label: 'stable' },
+}
+
+function TrendArrow({ trend }: { trend: TrendDirection }) {
+  const config = TREND_CONFIG[trend]
+  const Icon = config.icon
+  return (
+    <Icon
+      size={14}
+      style={{ color: config.color }}
+      aria-hidden="true"
+      className="shrink-0"
+    />
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -121,6 +152,9 @@ export function CategoryCard({
   const { id, meta, metrics } = item
   const IconComponent = ICON_MAP[meta.icon] ?? FallbackIcon
   const [isHovered, setIsHovered] = useState(false)
+  const priorityCount = metrics.p1Count + metrics.p2Count
+  const highestPriority: OperationalPriority | null =
+    metrics.p1Count > 0 ? 'P1' : metrics.p2Count > 0 ? 'P2' : null
 
   // Resolve variant string (morph selection takes priority, then filter dimming)
   const variant = isSelected ? 'selected' : hasSelection ? 'dimmed' : 'idle'
@@ -144,7 +178,7 @@ export function CategoryCard({
       animate={variant}
       role="group"
       tabIndex={0}
-      aria-label={`${meta.displayName} category -- ${metrics.sourceCount} sources, ${metrics.activeSources} active${isFiltered ? ' (filtering map)' : ''}`}
+      aria-label={`${meta.displayName} category -- ${metrics.alertCount} alerts, ${metrics.sourceCount} sources${priorityCount > 0 ? `, ${priorityCount} priority` : ''}${item.trend ? `, ${TREND_CONFIG[item.trend].label}` : ''}${isFiltered ? ' (filtering map)' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className="relative flex cursor-default flex-col items-start gap-3 rounded-xl border bg-[rgba(var(--ambient-ink-rgb),0.05)] px-4 py-4 backdrop-blur-[12px] backdrop-saturate-[120%] border-[rgba(var(--ambient-ink-rgb),0.10)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-ember-bright)]"
@@ -156,6 +190,28 @@ export function CategoryCard({
         transition: 'opacity 0.3s ease',
       }}
     >
+      {/* Priority badge -- top-right corner */}
+      {highestPriority !== null && (
+        <span
+          className="absolute top-2 right-2 inline-flex items-center gap-1"
+          aria-hidden="true"
+        >
+          <PriorityBadge priority={highestPriority} size="md" />
+          {priorityCount > 1 && (
+            <span
+              className="font-mono text-[9px] tabular-nums leading-none"
+              style={{
+                color: highestPriority === 'P1'
+                  ? 'rgba(255, 255, 255, 0.55)'
+                  : 'rgba(255, 255, 255, 0.35)',
+              }}
+            >
+              {priorityCount}
+            </span>
+          )}
+        </span>
+      )}
+
       {/* Category icon */}
       <IconComponent
         size={24}
@@ -168,14 +224,17 @@ export function CategoryCard({
         {meta.displayName}
       </span>
 
-      {/* Source count */}
-      <span className="text-text-primary text-2xl font-bold tabular-nums leading-none">
-        {metrics.sourceCount}
+      {/* Alert count (primary metric) + trend arrow */}
+      <span className="flex items-center gap-1.5">
+        <span className="text-text-primary text-2xl font-bold tabular-nums leading-none">
+          {metrics.alertCount}
+        </span>
+        {item.trend && <TrendArrow trend={item.trend} />}
       </span>
 
-      {/* Active indicator */}
+      {/* Source count (secondary) */}
       <span className="text-text-tertiary text-[10px] tabular-nums">
-        {metrics.activeSources} active
+        {metrics.sourceCount} {metrics.sourceCount === 1 ? 'source' : 'sources'}
       </span>
 
       {/* Hover overlay with two action buttons */}

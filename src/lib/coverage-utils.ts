@@ -11,6 +11,7 @@
  */
 
 import type { IntelSourceRow, IntelNormalizedRow } from '@/lib/supabase/types'
+import type { OperationalPriority } from '@/lib/interfaces/coverage'
 
 // ============================================================================
 // Types
@@ -22,6 +23,12 @@ export interface CoverageByCategory {
   sourceCount: number
   activeSources: number
   geographicRegions: string[]
+  /** Number of raw intel alerts in this category. */
+  alertCount: number
+  /** Number of P1 (Critical) operational priority alerts in this category. */
+  p1Count: number
+  /** Number of P2 (High) operational priority alerts in this category. */
+  p2Count: number
 }
 
 /** Simplified marker for map rendering. */
@@ -34,6 +41,7 @@ export interface MapMarker {
   category: string
   sourceId: string
   ingestedAt: string
+  operationalPriority: OperationalPriority | null
 }
 
 /** Geographic bounds for a set of map markers. */
@@ -58,6 +66,7 @@ export interface CoverageMetrics {
   totalSources: number
   activeSources: number
   categoriesCovered: number
+  totalAlerts: number
   sourcesByCoverage: SourceCoverage[]
   byCategory: CoverageByCategory[]
 }
@@ -88,6 +97,9 @@ export function buildCategoryMetrics(sources: IntelSourceRow[]): CoverageByCateg
         sourceCount: 0,
         activeSources: 0,
         geographicRegions: [],
+        alertCount: 0,
+        p1Count: 0,
+        p2Count: 0,
       })
     }
 
@@ -134,6 +146,7 @@ export function toMarkers(items: IntelNormalizedRow[]): MapMarker[] {
       category: item.category ?? 'other',
       sourceId: item.source_id,
       ingestedAt: item.ingested_at,
+      operationalPriority: null,
     }))
 }
 
@@ -173,6 +186,7 @@ export function emptyMetrics(): CoverageMetrics {
     totalSources: 0,
     activeSources: 0,
     categoriesCovered: 0,
+    totalAlerts: 0,
     sourcesByCoverage: [],
     byCategory: [],
   }

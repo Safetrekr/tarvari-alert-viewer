@@ -52,6 +52,8 @@ export default function RootLayout({
             theme="dark"
             richColors
             offset={52}
+            visibleToasts={4}
+            closeButton
             toastOptions={{
               className: 'font-sans',
             }}

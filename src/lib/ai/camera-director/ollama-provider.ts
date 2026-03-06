@@ -77,6 +77,10 @@ export async function queryOllamaForDirective(
   model: string = 'llama3.1:8b',
   timeoutMs: number = OLLAMA_CAMERA_TIMEOUT_MS,
 ): Promise<OllamaCameraResult> {
+  if (process.env.NEXT_PUBLIC_DATA_MODE === 'supabase') {
+    return { success: false, validation: null, provider: 'ollama', modelId: model, latencyMs: 0, error: 'Ollama unavailable in static mode' } as OllamaCameraResult
+  }
+
   const startTime = performance.now()
 
   try {
@@ -169,6 +173,8 @@ export async function queryOllamaForDirective(
  * The route handler itself checks Ollama availability.
  */
 export async function checkOllamaRouteHealth(): Promise<boolean> {
+  if (process.env.NEXT_PUBLIC_DATA_MODE === 'supabase') return false
+
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 3_000)

@@ -98,6 +98,10 @@ export class StationProposalGenerator {
     snapshot: SystemSnapshot,
     previousIterations: readonly BuilderIteration[] = []
   ): Promise<ProposalGeneratorResult> {
+    if (process.env.NEXT_PUBLIC_DATA_MODE === 'supabase') {
+      return { success: false, proposal: null, error: 'Claude unavailable in static mode' } as ProposalGeneratorResult
+    }
+
     // Step 1: Build catalog context.
     const catalogContext = this.buildCatalogContext(registry, snapshot)
 

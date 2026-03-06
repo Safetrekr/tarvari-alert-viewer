@@ -26,6 +26,10 @@ export const AGENT_BUILDER_DISTRICT_KEY = ['districts', 'agent-builder'] as cons
 const DEFAULT_REFETCH_INTERVAL = 15_000
 
 async function fetchAgentBuilderDistrict(): Promise<AgentBuilderDistrictData> {
+  if (process.env.NEXT_PUBLIC_DATA_MODE === 'supabase') {
+    return EMPTY_AGENT_BUILDER_DATA
+  }
+
   const response = await fetch('/api/districts/agent-builder')
   if (!response.ok) {
     throw new Error(`Agent Builder district fetch failed: ${response.status}`)

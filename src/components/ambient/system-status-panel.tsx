@@ -24,8 +24,8 @@ import { getCategoryColor, getCategoryMeta } from '@/lib/interfaces/coverage'
 // Position & size constants (world-space pixels)
 // ---------------------------------------------------------------------------
 
-const PANEL_X = -1400
-const PANEL_Y = -450
+const PANEL_X = -1350
+const PANEL_Y = -350
 const PANEL_W = 320
 const PANEL_H = 900
 

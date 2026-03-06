@@ -36,6 +36,10 @@ export const PROJECT_ROOM_DISTRICT_KEY = ['districts', 'project-room'] as const
 const DEFAULT_REFETCH_INTERVAL = 30_000
 
 async function fetchProjectRoomDistrict(): Promise<ProjectRoomSnapshot> {
+  if (process.env.NEXT_PUBLIC_DATA_MODE === 'supabase') {
+    return EMPTY_PROJECT_ROOM_SNAPSHOT
+  }
+
   const response = await fetch('/api/districts/project-room')
   if (!response.ok) {
     throw new Error(`Project Room district fetch failed: ${response.status}`)

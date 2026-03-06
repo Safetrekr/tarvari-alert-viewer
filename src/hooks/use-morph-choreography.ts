@@ -37,8 +37,8 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useUIStore, uiSelectors } from '@/stores/ui.store'
 import type { NodeId } from '@/lib/interfaces/district'
-import type { MorphPhase, MorphDirection } from '@/lib/morph-types'
-import { MORPH_TIMING, MORPH_TIMING_REDUCED } from '@/lib/morph-types'
+import type { MorphPhase, MorphDirection, StartMorphOptions } from '@/lib/morph-types'
+import { MORPH_TIMING, MORPH_TIMING_REDUCED, MORPH_TIMING_FAST } from '@/lib/morph-types'
 
 interface UseMorphChoreographyOptions {
   /** Whether the user prefers reduced motion. */
@@ -55,7 +55,7 @@ interface UseMorphChoreographyReturn {
   /** Whether the morph is actively animating. */
   isMorphing: boolean
   /** Start a forward morph to the specified node. */
-  startMorph: (nodeId: NodeId) => void
+  startMorph: (nodeId: NodeId, options?: StartMorphOptions) => void
   /** Start a reverse morph back to the atrium. */
   reverseMorph: () => void
 }
@@ -67,7 +67,14 @@ export function useMorphChoreography(
   options: UseMorphChoreographyOptions,
 ): UseMorphChoreographyReturn {
   const { prefersReducedMotion } = options
-  const timing = prefersReducedMotion ? MORPH_TIMING_REDUCED : MORPH_TIMING
+  const fast = useUIStore((s) => s.morph.fast)
+
+  // Timing precedence: reduced-motion > fast > normal (WCAG 2.3.3)
+  const timing = prefersReducedMotion
+    ? MORPH_TIMING_REDUCED
+    : fast
+      ? MORPH_TIMING_FAST
+      : MORPH_TIMING
 
   // Store actions
   const startMorphAction = useUIStore((s) => s.startMorph)
@@ -122,12 +129,16 @@ export function useMorphChoreography(
     }
 
     if (phase === 'entering-district') {
+      // URL sync: in fast morph, settled phase is skipped, so sync here
+      if (fast) {
+        syncUrlCategory(targetId)
+      }
       clearPhaseTimer()
       phaseTimerRef.current = setTimeout(() => {
         setMorphPhase('district')
       }, timing.enteringDistrict)
     }
-  }, [phase, direction, targetId, timing, setMorphPhase, clearPhaseTimer])
+  }, [phase, direction, targetId, timing, fast, setMorphPhase, clearPhaseTimer])
 
   // ----------------------------------------------------------------
   // REVERSE FLOW: leaving-district -> idle, or expanding (reverse) -> idle
@@ -172,9 +183,9 @@ export function useMorphChoreography(
   // Public API
   // ----------------------------------------------------------------
   const startMorph = useCallback(
-    (nodeId: NodeId) => {
+    (nodeId: NodeId, options?: StartMorphOptions) => {
       if (phase !== 'idle') return
-      startMorphAction(nodeId)
+      startMorphAction(nodeId, options)
     },
     [phase, startMorphAction],
   )

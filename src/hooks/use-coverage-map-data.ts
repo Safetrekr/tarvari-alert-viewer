@@ -6,18 +6,28 @@
  * Fetches geo-located intel items from the TarvaRI backend API
  * (`/console/intel/locations`) and transforms them into `MapMarker[]`
  * for map rendering. Supports optional filtering by category, severity,
- * and date range.
+ * date range, bounding box, and intel source.
  *
  * @module use-coverage-map-data
  */
 
 import { useQuery } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
+import { DATA_MODE } from '@/lib/data-mode'
+import { fetchCoverageMapDataFromSupabase } from '@/lib/supabase/queries'
 import type { MapMarker } from '@/lib/coverage-utils'
+import type { OperationalPriority } from '@/lib/interfaces/coverage'
 
 // ============================================================================
 // Types
 // ============================================================================
+
+/**
+ * Geographic bounding box as a 4-tuple: [west, south, east, north].
+ * Coordinates are WGS84 longitude/latitude.
+ * Serialized to a comma-separated query parameter for API calls.
+ */
+export type BBox = [west: number, south: number, east: number, north: number]
 
 /** Optional filters for the coverage map data query. */
 export interface CoverageMapFilters {
@@ -26,6 +36,12 @@ export interface CoverageMapFilters {
   severity?: string
   startDate?: string // ISO 8601
   endDate?: string // ISO 8601
+  /** Geographic bounding box filter. When provided, only items within this
+   *  viewport are returned. Format: [west, south, east, north] in WGS84. */
+  bbox?: BBox
+  /** Intel source identifier filter. When provided, only items from this
+   *  source are returned (e.g., 'nws-alerts', 'gdacs-rss'). */
+  sourceKey?: string
 }
 
 // ============================================================================
@@ -50,7 +66,7 @@ interface GeoJSONFeatureCollection {
 // Query function
 // ============================================================================
 
-async function fetchCoverageMapData(filters?: CoverageMapFilters): Promise<MapMarker[]> {
+async function fetchCoverageMapDataFromConsole(filters?: CoverageMapFilters): Promise<MapMarker[]> {
   const params: Record<string, string | undefined> = {}
 
   // API accepts single category filter
@@ -62,6 +78,8 @@ async function fetchCoverageMapData(filters?: CoverageMapFilters): Promise<MapMa
   if (filters?.severity) params.severity = filters.severity
   if (filters?.startDate) params.start_date = filters.startDate
   if (filters?.endDate) params.end_date = filters.endDate
+  if (filters?.bbox) params.bbox = filters.bbox.join(',')
+  if (filters?.sourceKey) params.source_key = filters.sourceKey
 
   const data = await tarvariGet<GeoJSONFeatureCollection>('/console/coverage/map-data', params)
 
@@ -85,7 +103,13 @@ async function fetchCoverageMapData(filters?: CoverageMapFilters): Promise<MapMa
       category: (f.properties.category as string) ?? 'other',
       sourceId: (f.properties.source_key as string) ?? '',
       ingestedAt: (f.properties.ingested_at as string) ?? '',
+      operationalPriority: (f.properties.operational_priority as OperationalPriority | null) ?? null,
     }))
+}
+
+async function fetchCoverageMapData(filters?: CoverageMapFilters): Promise<MapMarker[]> {
+  if (DATA_MODE === 'supabase') return fetchCoverageMapDataFromSupabase(filters)
+  return fetchCoverageMapDataFromConsole(filters)
 }
 
 // ============================================================================

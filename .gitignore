@@ -52,3 +52,6 @@ pnpm-debug.log*
 
 # Playwright MCP
 .playwright-mcp/
+
+# Vendored @tarva/ui build for CI (committed intentionally)
+!vendor/

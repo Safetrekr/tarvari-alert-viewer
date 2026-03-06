@@ -4,7 +4,8 @@
  * TanStack Query hook for coverage metrics.
  *
  * Fetches aggregate source/category metrics from the TarvaRI
- * backend API (`/console/coverage`).
+ * backend API (`/console/coverage`) and alert counts per category
+ * from `/console/intel`.
  *
  * @module use-coverage-metrics
  * @see WS-1.3 Section 4.3
@@ -12,8 +13,9 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
+import { DATA_MODE } from '@/lib/data-mode'
+import { fetchCoverageMetricsFromSupabase } from '@/lib/supabase/queries'
 import {
-  emptyMetrics,
   type CoverageMetrics,
   type CoverageByCategory,
   type SourceCoverage,
@@ -47,14 +49,42 @@ interface ApiCoverageResponse {
   by_category: ApiCategoryMetric[]
 }
 
+interface ApiIntelItem {
+  category: string
+  operational_priority: string | null
+  [key: string]: unknown
+}
+
+interface ApiIntelResponse {
+  items: ApiIntelItem[]
+  total_count: number
+}
+
 // ============================================================================
 // Query function
 // ============================================================================
 
-async function fetchCoverageMetrics(): Promise<CoverageMetrics> {
-  const data = await tarvariGet<ApiCoverageResponse>('/console/coverage')
+async function fetchCoverageMetricsFromConsole(): Promise<CoverageMetrics> {
+  // Fetch both coverage (sources) and intel (alerts) in parallel
+  const [coverageData, intelData] = await Promise.all([
+    tarvariGet<ApiCoverageResponse>('/console/coverage'),
+    tarvariGet<ApiIntelResponse>('/console/intel', { limit: 1000 }),
+  ])
 
-  const sourcesByCoverage: SourceCoverage[] = data.sources_by_coverage.map((s) => ({
+  // Count alerts and priority breakdown per category
+  const categoryCounts = new Map<string, { total: number; p1: number; p2: number }>()
+  for (const item of intelData.items) {
+    const cat = item.category
+    if (!categoryCounts.has(cat)) {
+      categoryCounts.set(cat, { total: 0, p1: 0, p2: 0 })
+    }
+    const counts = categoryCounts.get(cat)!
+    counts.total++
+    if (item.operational_priority === 'P1') counts.p1++
+    else if (item.operational_priority === 'P2') counts.p2++
+  }
+
+  const sourcesByCoverage: SourceCoverage[] = coverageData.sources_by_coverage.map((s) => ({
     sourceKey: s.source_key,
     name: s.name,
     category: s.category,
@@ -63,20 +93,32 @@ async function fetchCoverageMetrics(): Promise<CoverageMetrics> {
     updateFrequency: s.update_frequency,
   }))
 
-  const byCategory: CoverageByCategory[] = data.by_category.map((c) => ({
-    category: c.category,
-    sourceCount: c.source_count,
-    activeSources: c.active_sources,
-    geographicRegions: c.geographic_regions,
-  }))
+  const byCategory: CoverageByCategory[] = coverageData.by_category.map((c) => {
+    const counts = categoryCounts.get(c.category)
+    return {
+      category: c.category,
+      sourceCount: c.source_count,
+      activeSources: c.active_sources,
+      geographicRegions: c.geographic_regions,
+      alertCount: counts?.total ?? 0,
+      p1Count: counts?.p1 ?? 0,
+      p2Count: counts?.p2 ?? 0,
+    }
+  })
 
   return {
-    totalSources: data.total_sources,
-    activeSources: data.active_sources,
-    categoriesCovered: data.categories_covered,
+    totalSources: coverageData.total_sources,
+    activeSources: coverageData.active_sources,
+    categoriesCovered: coverageData.categories_covered,
+    totalAlerts: intelData.total_count,
     sourcesByCoverage,
     byCategory,
   }
+}
+
+async function fetchCoverageMetrics(): Promise<CoverageMetrics> {
+  if (DATA_MODE === 'supabase') return fetchCoverageMetricsFromSupabase()
+  return fetchCoverageMetricsFromConsole()
 }
 
 // ============================================================================
