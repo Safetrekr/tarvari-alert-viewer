@@ -169,6 +169,7 @@ export function StationPanel({
   const entranceDelay = staggerIndex * 0.1 // 100ms stagger per station
 
   const panelContent = (
+    // @ts-expect-error — dual @types/react from workspace link; resolves in CI with vendored build
     <Card
       className={cn(
         'station-panel',

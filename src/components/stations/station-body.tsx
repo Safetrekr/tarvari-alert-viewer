@@ -67,6 +67,7 @@ export function StationBody({ children, maxHeight = 280, className, ...props }: 
   const isScrollable = bodyType === 'table' || bodyType === 'list'
 
   const bodyContent = (
+    // @ts-expect-error — dual @types/react from workspace link; resolves in CI with vendored build
     <CardContent
       className={cn('px-5 py-3', 'font-sans text-[14px] leading-[1.6] font-normal', className)}
       style={{

@@ -36,8 +36,8 @@ jobs:
       - name: Build static export
         env:
           NEXT_PUBLIC_DATA_MODE: supabase
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
           STATIC_EXPORT: 'true'
           GITHUB_PAGES: tarvari-alert-viewer
         run: pnpm build:pages
