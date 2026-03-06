@@ -17,6 +17,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
 import { DATA_MODE } from '@/lib/data-mode'
+import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import type { OperationalPriority } from '@/lib/interfaces/coverage'
 
 // ============================================================================
@@ -125,6 +126,40 @@ async function fetchIntelSearch(params: IntelSearchParams): Promise<SearchResult
   }))
 }
 
+async function fetchIntelSearchFromSupabase(params: IntelSearchParams): Promise<SearchResult[]> {
+  const supabase = getSupabaseBrowserClient()
+
+  let query = supabase
+    .from('public_intel_feed')
+    .select('id, title, severity, category, operational_priority')
+    .ilike('title', `%${params.query}%`)
+    .order('ingested_at', { ascending: false })
+    .limit(params.limit ?? 10)
+
+  if (params.category) {
+    query = query.eq('category', params.category)
+  }
+  if (params.severity) {
+    query = query.eq('severity', params.severity)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    throw new Error('Supabase search failed: ' + error.message)
+  }
+
+  return (data ?? []).map((r: Record<string, unknown>, i: number) => ({
+    id: r.id as string,
+    title: r.title as string,
+    snippet: r.title as string,
+    severity: r.severity as string,
+    category: r.category as string,
+    operationalPriority: (r.operational_priority as OperationalPriority) ?? null,
+    score: 1 - i * 0.01,
+  }))
+}
+
 // ============================================================================
 // Hook
 // ============================================================================
@@ -152,8 +187,11 @@ export function useIntelSearch(params: IntelSearchParams): UseIntelSearchResult 
 
   const queryResult = useQuery<SearchResult[]>({
     queryKey: intelSearchKey(debouncedParams),
-    queryFn: () => fetchIntelSearch(debouncedParams),
-    enabled: DATA_MODE !== 'supabase' && debouncedQuery.length >= 3,
+    queryFn: () =>
+      DATA_MODE === 'supabase'
+        ? fetchIntelSearchFromSupabase(debouncedParams)
+        : fetchIntelSearch(debouncedParams),
+    enabled: debouncedQuery.length >= 3,
     refetchOnWindowFocus: false,
   })
 
