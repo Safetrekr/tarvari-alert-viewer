@@ -12,6 +12,7 @@
 
 @import '@tarva/ui/styles.css';
 @import '../styles/spatial-tokens.css';
+@import '../styles/mobile-tokens.css';
 @source '../../node_modules/@tarva/ui/dist/**/*.js';
 @import 'tailwindcss';
 
@@ -164,6 +165,21 @@
   /* Font families */
   --font-sans: 'Geist Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'Geist Mono', 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  /* Safe area insets (from env() via spatial-tokens.css) */
+  --spacing-safe-area-top: var(--safe-area-top);
+  --spacing-safe-area-right: var(--safe-area-right);
+  --spacing-safe-area-bottom: var(--safe-area-bottom);
+  --spacing-safe-area-left: var(--safe-area-left);
+
+  /* Mobile layout dimensions (with fallbacks for desktop) */
+  --spacing-header-height: var(--space-header-height, 48px);
+  --spacing-bottom-nav-height: var(--space-bottom-nav-height, 56px);
+  --spacing-card-padding: var(--space-card-padding, 14px);
+  --spacing-card-gap: var(--space-card-gap, 10px);
+  --spacing-section-gap: var(--space-section-gap, 16px);
+  --spacing-content-padding: var(--space-content-padding, 12px);
+  --spacing-inline-gap: var(--space-inline-gap, 8px);
 }
 
 /* -----------------------------------------------------------------
