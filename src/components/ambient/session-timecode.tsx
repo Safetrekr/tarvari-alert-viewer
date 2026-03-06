@@ -35,7 +35,13 @@ function pad2(n: number): string {
 // Component
 // ---------------------------------------------------------------------------
 
-export const SessionTimecode = memo(function SessionTimecode() {
+interface SessionTimecodeProps {
+  /** When true, renders inline (position: relative) instead of fixed viewport overlay.
+   *  Used in MobileHeader where the timecode sits inside the header flex layout. */
+  inline?: boolean
+}
+
+export const SessionTimecode = memo(function SessionTimecode({ inline }: SessionTimecodeProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const frameRef = useRef(0)
   const frameDisplayRef = useRef<HTMLSpanElement>(null)
@@ -104,22 +110,20 @@ export const SessionTimecode = memo(function SessionTimecode() {
   return (
     <div
       style={{
-        position: 'fixed',
-        bottom: 16,
-        right: 16,
+        position: inline ? 'relative' : 'fixed',
+        ...(inline ? {} : { bottom: 16, right: 16, zIndex: 50 }),
         display: 'flex',
         alignItems: 'center',
-        gap: 6,
+        gap: inline ? 4 : 6,
         pointerEvents: 'none',
-        zIndex: 50,
       }}
     >
       {/* Pulsing REC dot */}
       <div
         className="enrichment-rec-pulse"
         style={{
-          width: 3,
-          height: 3,
+          width: inline ? 2.5 : 3,
+          height: inline ? 2.5 : 3,
           borderRadius: '50%',
           backgroundColor: 'rgba(14, 165, 233, 0.3)',
           flexShrink: 0,
@@ -130,7 +134,7 @@ export const SessionTimecode = memo(function SessionTimecode() {
       <span
         style={{
           fontFamily: 'var(--font-mono, monospace)',
-          fontSize: 8,
+          fontSize: inline ? 7 : 8,
           fontWeight: 500,
           color: 'rgba(255, 255, 255, 0.15)',
           letterSpacing: '0.06em',
@@ -144,7 +148,7 @@ export const SessionTimecode = memo(function SessionTimecode() {
       <span
         style={{
           fontFamily: 'var(--font-mono, monospace)',
-          fontSize: 10,
+          fontSize: inline ? 9 : 10,
           fontWeight: 500,
           color: 'rgba(255, 255, 255, 0.25)',
           letterSpacing: '0.04em',
