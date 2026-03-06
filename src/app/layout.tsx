@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
 import './globals.css'
@@ -46,6 +47,15 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>{children}</QueryProvider>
+          <Toaster
+            position="bottom-right"
+            theme="dark"
+            richColors
+            offset={52}
+            toastOptions={{
+              className: 'font-sans',
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>
