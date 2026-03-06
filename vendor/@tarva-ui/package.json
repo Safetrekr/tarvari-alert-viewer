@@ -23,72 +23,72 @@
     "typescript"
   ],
   "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./index.cjs",
+  "module": "./index.js",
+  "types": "./index.d.ts",
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+        "types": "./index.d.ts",
+        "default": "./index.js"
       },
       "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
+        "types": "./index.d.cts",
+        "default": "./index.cjs"
       }
     },
-    "./styles.css": "./dist/styles.css",
+    "./styles.css": "./styles.css",
     "./motion": {
       "import": {
-        "types": "./dist/motion/index.d.ts",
-        "default": "./dist/motion/index.js"
+        "types": "./motion/index.d.ts",
+        "default": "./motion/index.js"
       },
       "require": {
-        "types": "./dist/motion/index.d.cts",
-        "default": "./dist/motion/index.cjs"
+        "types": "./motion/index.d.cts",
+        "default": "./motion/index.cjs"
       }
     },
     "./providers": {
       "import": {
-        "types": "./dist/providers/index.d.ts",
-        "default": "./dist/providers/index.js"
+        "types": "./providers/index.d.ts",
+        "default": "./providers/index.js"
       },
       "require": {
-        "types": "./dist/providers/index.d.cts",
-        "default": "./dist/providers/index.cjs"
+        "types": "./providers/index.d.cts",
+        "default": "./providers/index.cjs"
       }
     },
     "./utils": {
       "import": {
-        "types": "./dist/utils/index.d.ts",
-        "default": "./dist/utils/index.js"
+        "types": "./utils/index.d.ts",
+        "default": "./utils/index.js"
       },
       "require": {
-        "types": "./dist/utils/index.d.cts",
-        "default": "./dist/utils/index.cjs"
+        "types": "./utils/index.d.cts",
+        "default": "./utils/index.cjs"
       }
     },
     "./tokens": {
       "import": {
-        "types": "./dist/tokens/index.d.ts",
-        "default": "./dist/tokens/index.js"
+        "types": "./tokens/index.d.ts",
+        "default": "./tokens/index.js"
       },
       "require": {
-        "types": "./dist/tokens/index.d.cts",
-        "default": "./dist/tokens/index.cjs"
+        "types": "./tokens/index.d.cts",
+        "default": "./tokens/index.cjs"
       }
     },
     "./data-grid": {
       "import": {
-        "types": "./dist/data-grid/index.d.ts",
-        "default": "./dist/data-grid/index.js"
+        "types": "./data-grid/index.d.ts",
+        "default": "./data-grid/index.js"
       },
       "require": {
-        "types": "./dist/data-grid/index.d.cts",
-        "default": "./dist/data-grid/index.cjs"
+        "types": "./data-grid/index.d.cts",
+        "default": "./data-grid/index.cjs"
       }
     },
-    "./data-grid/styles.css": "./dist/data-grid/data-grid.css"
+    "./data-grid/styles.css": "./data-grid/data-grid.css"
   },
   "sideEffects": [
     "*.css"
