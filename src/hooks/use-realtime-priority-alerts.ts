@@ -16,6 +16,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { DATA_MODE } from '@/lib/data-mode'
 import { PRIORITY_FEED_QUERY_KEY } from '@/hooks/use-priority-feed'
 
 // ============================================================================
@@ -75,7 +76,8 @@ const PRIORITY_ALERT_CHANNEL_NAME = 'priority-alerts-p1-p2'
 export function useRealtimePriorityAlerts(
   options: UseRealtimePriorityAlertsOptions = {},
 ): UseRealtimePriorityAlertsReturn {
-  const { onAlert, enabled = true } = options
+  const { onAlert, enabled: enabledOption = true } = options
+  const enabled = enabledOption && DATA_MODE !== 'supabase'
 
   const [connectionStatus, setConnectionStatus] = useState<RealtimeConnectionStatus>('disconnected')
   const [lastEventAt, setLastEventAt] = useState<string | null>(null)

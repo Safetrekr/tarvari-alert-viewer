@@ -130,6 +130,7 @@ export function ThreatPictureCard({ onClick }: ThreatPictureCardProps) {
   const { data: summaryAvail } = useQuery({
     queryKey: ['summary-availability'],
     queryFn: fetchSummaryAvailability,
+    enabled: DATA_MODE !== 'supabase',
     staleTime: 120_000,
     refetchInterval: 120_000,
   })

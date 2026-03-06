@@ -20,6 +20,7 @@
 
 import { useQuery, keepPreviousData, type UseQueryResult } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
+import { DATA_MODE } from '@/lib/data-mode'
 import type { GeoLevel, ThreatLevel, TrendDirection, SummaryType } from '@/lib/interfaces/coverage'
 
 // ============================================================================
@@ -270,7 +271,7 @@ export function useLatestGeoSummary(
   return useQuery<GeoSummary | null>({
     queryKey: GEO_SUMMARY_QUERY_KEYS.latest(geoLevel!, geoKey!),
     queryFn: () => fetchLatestSummary(geoLevel!, geoKey!),
-    enabled: geoLevel != null && geoKey != null,
+    enabled: DATA_MODE !== 'supabase' && geoLevel != null && geoKey != null,
     staleTime: 60_000,
     refetchInterval: 120_000,
     placeholderData: keepPreviousData,
@@ -295,7 +296,7 @@ export function useGeoSummaryHistory(
   return useQuery<GeoSummary[]>({
     queryKey: GEO_SUMMARY_QUERY_KEYS.history(geoLevel!, geoKey!, type!),
     queryFn: () => fetchSummaryHistory(geoLevel!, geoKey!, type!),
-    enabled: geoLevel != null && geoKey != null && type != null,
+    enabled: DATA_MODE !== 'supabase' && geoLevel != null && geoKey != null && type != null,
     staleTime: 120_000,
     refetchInterval: false,
     placeholderData: keepPreviousData,
@@ -315,7 +316,7 @@ export function useAllGeoSummaries(enabled: boolean): UseQueryResult<GeoSummary[
       const data = await tarvariGet<ApiSummariesResponse>('/console/summaries')
       return (data.items ?? []).map(normalizeGeoSummary)
     },
-    enabled,
+    enabled: DATA_MODE !== 'supabase' && enabled,
     staleTime: 90_000,
     refetchInterval: 120_000,
     retry: 1,

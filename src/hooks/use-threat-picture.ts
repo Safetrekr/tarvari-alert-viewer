@@ -14,6 +14,7 @@
 
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
+import { DATA_MODE } from '@/lib/data-mode'
 import type { SeverityLevel, OperationalPriority, TrendDirection } from '@/lib/interfaces/coverage'
 
 // ============================================================================
@@ -266,6 +267,7 @@ export function useThreatPicture(): UseQueryResult<ThreatPicture> {
   return useQuery<ThreatPicture>({
     queryKey: ['threat-picture'],
     queryFn: fetchThreatPicture,
+    enabled: DATA_MODE !== 'supabase',
     staleTime: 90_000,
     refetchInterval: 120_000,
   })

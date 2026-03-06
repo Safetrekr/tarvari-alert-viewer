@@ -16,6 +16,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
+import { DATA_MODE } from '@/lib/data-mode'
 import type { OperationalPriority } from '@/lib/interfaces/coverage'
 
 // ============================================================================
@@ -152,7 +153,7 @@ export function useIntelSearch(params: IntelSearchParams): UseIntelSearchResult 
   const queryResult = useQuery<SearchResult[]>({
     queryKey: intelSearchKey(debouncedParams),
     queryFn: () => fetchIntelSearch(debouncedParams),
-    enabled: debouncedQuery.length >= 3,
+    enabled: DATA_MODE !== 'supabase' && debouncedQuery.length >= 3,
     refetchOnWindowFocus: false,
   })
 

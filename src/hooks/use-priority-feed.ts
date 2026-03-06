@@ -17,6 +17,7 @@
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
+import { DATA_MODE } from '@/lib/data-mode'
 import type { OperationalPriority } from '@/lib/interfaces/coverage'
 
 // ============================================================================
@@ -147,6 +148,7 @@ export function usePriorityFeed() {
   return useQuery<PriorityFeedSummary>({
     queryKey: PRIORITY_FEED_QUERY_KEY,
     queryFn: fetchPriorityFeed,
+    enabled: DATA_MODE !== 'supabase',
     staleTime: 10_000,
     refetchInterval: 15_000,
     placeholderData: keepPreviousData,
