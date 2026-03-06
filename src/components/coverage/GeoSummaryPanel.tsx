@@ -18,7 +18,7 @@
  * @see R10 (mutual exclusion with DistrictViewOverlay)
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   X,
@@ -33,7 +33,7 @@ import {
   RefreshCw,
 } from 'lucide-react'
 
-import { useLatestGeoSummary, type GeoSummary, type StructuredBreakdown, type KeyEvent } from '@/hooks/use-geo-summaries'
+import { useAllGeoSummaries, type GeoSummary, type KeyEvent } from '@/hooks/use-geo-summaries'
 import { useThreatPicture, type RegionBreakdown } from '@/hooks/use-threat-picture'
 import { useCoverageStore } from '@/stores/coverage.store'
 import { useUIStore } from '@/stores/ui.store'
@@ -44,7 +44,6 @@ import {
   type SummaryType,
   GEO_REGION_KEYS,
   GEO_REGION_META,
-  type GeoRegionKey,
   getGeoDisplayName,
   getCategoryMeta,
   SEVERITY_COLORS,
@@ -134,160 +133,233 @@ function TrendIcon({ trend }: { trend: TrendDirection }) {
 // Panel Header
 // ============================================================================
 
-function GeoBreadcrumb({
-  level,
-  geoKey,
-  onNavigate,
-}: {
-  level: GeoLevel
-  geoKey: string
-  onNavigate: (level: GeoLevel, key: string) => void
-}) {
-  const segments: { label: string; onClick?: () => void }[] = []
+// ============================================================================
+// Filter pill group
+// ============================================================================
 
-  if (level === 'world') {
-    segments.push({ label: 'World' })
-  } else if (level === 'region') {
-    segments.push({ label: 'World', onClick: () => onNavigate('world', 'world') })
-    segments.push({ label: getGeoDisplayName('region', geoKey) })
-  } else {
-    segments.push({ label: 'World', onClick: () => onNavigate('world', 'world') })
-    // We don't know which region this country belongs to, so we show just the country
-    segments.push({ label: getGeoDisplayName('country', geoKey) })
-  }
+type LevelFilter = 'all' | GeoLevel
+type TypeFilter = 'all' | SummaryType
 
-  return (
-    <nav aria-label="Geographic breadcrumb" style={{ flex: 1 }}>
-      <ol style={{ display: 'flex', alignItems: 'center', gap: 4, listStyle: 'none', margin: 0, padding: 0 }}>
-        {segments.map((seg, i) => (
-          <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            {i > 0 && (
-              <span style={{ ...MONO, fontSize: 11, color: 'rgba(255, 255, 255, 0.12)' }}>&gt;</span>
-            )}
-            {seg.onClick ? (
-              <button
-                type="button"
-                onClick={seg.onClick}
-                style={{
-                  ...MONO,
-                  fontSize: 11,
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(255, 255, 255, 0.25)',
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.4)' }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.25)' }}
-              >
-                {seg.label}
-              </button>
-            ) : (
-              <span style={{ ...MONO, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.4)' }}>
-                {seg.label}
-              </span>
-            )}
-          </li>
-        ))}
-      </ol>
-    </nav>
-  )
-}
-
-function SummaryTypeToggle({
+function FilterPillGroup<T extends string>({
+  label,
+  options,
   value,
   onChange,
 }: {
-  value: SummaryType
-  onChange: (type: SummaryType) => void
+  label: string
+  options: { value: T; label: string }[]
+  value: T
+  onChange: (v: T) => void
 }) {
-  const types: SummaryType[] = ['hourly', 'daily']
   return (
-    <div style={{ display: 'flex', gap: 2, borderRadius: 6, padding: 2, background: 'rgba(255, 255, 255, 0.03)' }}>
-      {types.map((t) => (
-        <button
-          key={t}
-          type="button"
-          onClick={() => onChange(t)}
-          style={{
-            ...MONO,
-            fontSize: 9,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            fontWeight: value === t ? 600 : 400,
-            color: value === t ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.2)',
-            background: value === t ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-            border: 'none',
-            borderRadius: 4,
-            padding: '4px 8px',
-            cursor: 'pointer',
-            transition: 'all 150ms ease',
-          }}
-        >
-          {t}
-        </button>
-      ))}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ ...GHOST, marginBottom: 0, fontSize: 9 }}>{label}</span>
+      <div style={{ display: 'flex', gap: 2, borderRadius: 6, padding: 2, background: 'rgba(255, 255, 255, 0.03)' }}>
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            style={{
+              ...MONO,
+              fontSize: 9,
+              letterSpacing: '0.10em',
+              textTransform: 'uppercase',
+              fontWeight: value === opt.value ? 600 : 400,
+              color: value === opt.value ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.2)',
+              background: value === opt.value ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+              border: 'none',
+              borderRadius: 4,
+              padding: '4px 8px',
+              cursor: 'pointer',
+              transition: 'all 150ms ease',
+            }}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
 
+const LEVEL_OPTIONS: { value: LevelFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'world', label: 'World' },
+  { value: 'region', label: 'Region' },
+  { value: 'country', label: 'Country' },
+]
+
+const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'hourly', label: 'Hourly' },
+  { value: 'daily', label: 'Daily' },
+]
+
+// ============================================================================
+// Panel header + filter bar
+// ============================================================================
+
 function PanelHeader({
-  level,
-  geoKey,
-  summaryType,
   closeRef,
   onClose,
-  onNavigate,
-  onTypeChange,
+  filterLevel,
+  filterType,
+  onFilterLevelChange,
+  onFilterTypeChange,
 }: {
-  level: GeoLevel
-  geoKey: string
-  summaryType: SummaryType
   closeRef: React.RefObject<HTMLButtonElement | null>
   onClose: () => void
-  onNavigate: (level: GeoLevel, key: string) => void
-  onTypeChange: (type: SummaryType) => void
+  filterLevel: LevelFilter
+  filterType: TypeFilter
+  onFilterLevelChange: (v: LevelFilter) => void
+  onFilterTypeChange: (v: TypeFilter) => void
 }) {
   return (
-    <div
-      style={{
-        padding: '16px 20px',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        flexShrink: 0,
-      }}
-    >
-      <button
-        ref={closeRef}
-        type="button"
-        onClick={onClose}
-        aria-label="Close geographic summary"
+    <div style={{ flexShrink: 0 }}>
+      {/* Title row */}
+      <div
         style={{
-          width: 28,
-          height: 28,
+          padding: '16px 20px 12px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          background: 'rgba(255, 255, 255, 0.04)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
-          borderRadius: 6,
-          cursor: 'pointer',
-          color: 'rgba(255, 255, 255, 0.35)',
-          flexShrink: 0,
-          transition: 'color 150ms ease',
+          gap: 12,
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)' }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.35)' }}
       >
-        <X size={14} />
-      </button>
-      <GeoBreadcrumb level={level} geoKey={geoKey} onNavigate={onNavigate} />
-      <SummaryTypeToggle value={summaryType} onChange={onTypeChange} />
+        <button
+          ref={closeRef}
+          type="button"
+          onClick={onClose}
+          aria-label="Close geographic summary"
+          style={{
+            width: 28,
+            height: 28,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(255, 255, 255, 0.04)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            borderRadius: 6,
+            cursor: 'pointer',
+            color: 'rgba(255, 255, 255, 0.35)',
+            flexShrink: 0,
+            transition: 'color 150ms ease',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.35)' }}
+        >
+          <X size={14} />
+        </button>
+        <span style={{ ...MONO, fontSize: 12, fontWeight: 600, color: 'rgba(255, 255, 255, 0.4)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          Intelligence Summaries
+        </span>
+      </div>
+
+      {/* Filter bar */}
+      <div
+        style={{
+          padding: '0 20px 14px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 12,
+          borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+        }}
+      >
+        <FilterPillGroup label="Level" options={LEVEL_OPTIONS} value={filterLevel} onChange={onFilterLevelChange} />
+        <FilterPillGroup label="Type" options={TYPE_OPTIONS} value={filterType} onChange={onFilterTypeChange} />
+      </div>
     </div>
+  )
+}
+
+// ============================================================================
+// Summary list card (compact card for browse mode)
+// ============================================================================
+
+function SummaryListCard({
+  summary,
+  onClick,
+}: {
+  summary: GeoSummary
+  onClick: () => void
+}) {
+  const tlConfig = THREAT_LEVEL_CONFIG[summary.threatLevel]
+  const displayName = getGeoDisplayName(summary.geoLevel, summary.geoKey)
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        padding: '14px 16px',
+        background: 'rgba(255, 255, 255, 0.02)',
+        border: '1px solid rgba(255, 255, 255, 0.06)',
+        borderRadius: 10,
+        cursor: 'pointer',
+        textAlign: 'left',
+        transition: 'background 150ms ease, border-color 150ms ease',
+        width: '100%',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
+        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.10)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'
+        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)'
+      }}
+    >
+      {/* Row 1: name + threat badge + chevron */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Shield size={12} style={{ color: tlConfig.color, flexShrink: 0 }} />
+        <span style={{ ...MONO, fontSize: 12, fontWeight: 500, color: 'rgba(255, 255, 255, 0.45)', letterSpacing: '0.04em', flex: 1 }}>
+          {displayName}
+        </span>
+        <span
+          style={{
+            ...MONO, fontSize: 8, fontWeight: 700, letterSpacing: '0.08em',
+            color: tlConfig.color, padding: '2px 6px', borderRadius: 3,
+            border: `1px solid ${tlConfig.borderColor}`, background: tlConfig.bgColor,
+          }}
+        >
+          {summary.threatLevel}
+        </span>
+        <ChevronRight size={12} style={{ color: 'rgba(255, 255, 255, 0.15)', flexShrink: 0 }} />
+      </div>
+
+      {/* Row 2: level pill + type pill + timestamp */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{
+          ...MONO, fontSize: 8, letterSpacing: '0.08em', textTransform: 'uppercase',
+          color: 'rgba(255, 255, 255, 0.25)', padding: '1px 5px', borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.06)',
+        }}>
+          {summary.geoLevel}
+        </span>
+        <span style={{
+          ...MONO, fontSize: 8, letterSpacing: '0.08em', textTransform: 'uppercase',
+          color: 'rgba(255, 255, 255, 0.25)', padding: '1px 5px', borderRadius: 3,
+          border: '1px solid rgba(255, 255, 255, 0.06)',
+        }}>
+          {summary.summaryType}
+        </span>
+        <span style={{ ...MONO, fontSize: 9, color: 'rgba(255, 255, 255, 0.15)', marginLeft: 'auto' }}>
+          {relativeTime(summary.generatedAt)}
+        </span>
+      </div>
+
+      {/* Row 3: truncated summary excerpt */}
+      <div style={{
+        ...MONO, fontSize: 11, lineHeight: 1.5, color: 'rgba(255, 255, 255, 0.25)',
+        overflow: 'hidden', textOverflow: 'ellipsis',
+        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+      }}>
+        {summary.summaryText.replace(/[#*\-]/g, '').trim().slice(0, 200)}
+      </div>
+    </button>
   )
 }
 
@@ -971,25 +1043,38 @@ export function GeoSummaryPanel({ onClose }: GeoSummaryPanelProps) {
 
   // Store state
   const geoSummaryOpen = useCoverageStore((s) => s.geoSummaryOpen)
-  const summaryGeoLevel = useCoverageStore((s) => s.summaryGeoLevel)
-  const summaryGeoKey = useCoverageStore((s) => s.summaryGeoKey)
-  const summaryType = useCoverageStore((s) => s.summaryType)
-  const drillDownGeo = useCoverageStore((s) => s.drillDownGeo)
-  const setSummaryType = useCoverageStore((s) => s.setSummaryType)
 
-  // Data hooks
+  // Local filter + selection state
+  const [filterLevel, setFilterLevel] = useState<LevelFilter>('all')
+  const [filterType, setFilterType] = useState<TypeFilter>('all')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  // Fetch ALL summaries
   const {
-    data: summary,
+    data: allSummaries,
     isLoading,
     isError,
     refetch,
-  } = useLatestGeoSummary(
-    geoSummaryOpen ? summaryGeoLevel : null,
-    geoSummaryOpen ? summaryGeoKey : null,
-  )
+  } = useAllGeoSummaries(geoSummaryOpen)
 
   const { data: threatPicture } = useThreatPicture()
   const regionData = threatPicture?.byRegion ?? []
+
+  // Filter summaries
+  const filtered = useMemo(() => {
+    if (!allSummaries) return []
+    return allSummaries.filter((s) => {
+      if (filterLevel !== 'all' && s.geoLevel !== filterLevel) return false
+      if (filterType !== 'all' && s.summaryType !== filterType) return false
+      return true
+    })
+  }, [allSummaries, filterLevel, filterType])
+
+  // Selected summary for detail view
+  const selectedSummary = useMemo(
+    () => (selectedId ? filtered.find((s) => s.id === selectedId) ?? null : null),
+    [selectedId, filtered],
+  )
 
   // Morph mutual exclusion (R10)
   const morphPhase = useUIStore((s) => s.morph.phase)
@@ -1008,20 +1093,26 @@ export function GeoSummaryPanel({ onClose }: GeoSummaryPanelProps) {
     }
   }, [geoSummaryOpen])
 
-  // Navigation within panel
-  const handleNavigate = useCallback(
-    (level: GeoLevel, key: string) => {
-      if (level === 'world') {
-        drillDownGeo('world', 'world')
-      } else {
-        drillDownGeo(level, key)
-      }
-    },
-    [drillDownGeo],
-  )
+  // Reset selection when panel closes or filters change
+  useEffect(() => {
+    if (!geoSummaryOpen) {
+      setSelectedId(null)
+      setFilterLevel('all')
+      setFilterType('all')
+    }
+  }, [geoSummaryOpen])
 
-  // Determine content state — null means no summary exists for this scope
-  const isEmpty = !isLoading && !isError && (!summary || !summary.summaryText)
+  // Drill-down from detail view (region cards)
+  const handleDrillDown = useCallback(
+    (level: GeoLevel, key: string) => {
+      setFilterLevel(level)
+      setSelectedId(null)
+      // Find matching summary and select it if unique
+      const match = allSummaries?.find((s) => s.geoLevel === level && s.geoKey === key)
+      if (match) setSelectedId(match.id)
+    },
+    [allSummaries],
+  )
 
   // Reduced motion
   const prefersReducedMotion = typeof window !== 'undefined'
@@ -1062,13 +1153,12 @@ export function GeoSummaryPanel({ onClose }: GeoSummaryPanelProps) {
           aria-modal="false"
         >
           <PanelHeader
-            level={summaryGeoLevel}
-            geoKey={summaryGeoKey}
-            summaryType={summaryType}
             closeRef={closeRef}
             onClose={onClose}
-            onNavigate={handleNavigate}
-            onTypeChange={setSummaryType}
+            filterLevel={filterLevel}
+            filterType={filterType}
+            onFilterLevelChange={(v) => { setFilterLevel(v); setSelectedId(null) }}
+            onFilterTypeChange={(v) => { setFilterType(v); setSelectedId(null) }}
           />
           <div
             style={{
@@ -1081,16 +1171,69 @@ export function GeoSummaryPanel({ onClose }: GeoSummaryPanelProps) {
             }}
           >
             {isLoading && <PanelSkeleton />}
-            {isError && <PanelError onRetry={() => refetch()} level={summaryGeoLevel} geoKey={summaryGeoKey} />}
-            {isEmpty && <PanelEmpty level={summaryGeoLevel} geoKey={summaryGeoKey} />}
-            {!isLoading && !isError && summary && summary.summaryText && (
-              <SummaryContent
-                summary={summary}
-                summaryType={summaryType}
-                level={summaryGeoLevel}
-                regionData={regionData}
-                onDrillDown={handleNavigate}
+            {isError && (
+              <PanelError
+                onRetry={() => refetch()}
+                level="world"
+                geoKey="world"
               />
+            )}
+
+            {/* Detail view — back button + full content */}
+            {!isLoading && !isError && selectedSummary && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(null)}
+                  style={{
+                    ...MONO,
+                    fontSize: 10,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(255, 255, 255, 0.3)',
+                    background: 'none',
+                    border: 'none',
+                    padding: '0 0 12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255, 255, 255, 0.3)' }}
+                >
+                  <span style={{ fontSize: 12 }}>‹</span> Back to list
+                </button>
+                <SummaryContent
+                  summary={selectedSummary}
+                  summaryType={selectedSummary.summaryType}
+                  level={selectedSummary.geoLevel}
+                  regionData={regionData}
+                  onDrillDown={handleDrillDown}
+                />
+              </>
+            )}
+
+            {/* List view — filtered summary cards */}
+            {!isLoading && !isError && !selectedSummary && (
+              <>
+                {filtered.length === 0 ? (
+                  <PanelEmpty level={filterLevel === 'all' ? 'world' : filterLevel} geoKey="world" />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ ...MONO, fontSize: 9, color: 'rgba(255, 255, 255, 0.15)', letterSpacing: '0.06em' }}>
+                      {filtered.length} {filtered.length === 1 ? 'summary' : 'summaries'}
+                    </div>
+                    {filtered.map((s) => (
+                      <SummaryListCard
+                        key={s.id}
+                        summary={s}
+                        onClick={() => setSelectedId(s.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </motion.div>

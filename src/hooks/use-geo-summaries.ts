@@ -302,3 +302,22 @@ export function useGeoSummaryHistory(
     retry: 1,
   })
 }
+
+/**
+ * Fetch ALL available geographic summaries (unfiltered).
+ * Returns a normalized array for the filter/browse UI.
+ * Polls every 120s. staleTime 90s.
+ */
+export function useAllGeoSummaries(enabled: boolean): UseQueryResult<GeoSummary[]> {
+  return useQuery<GeoSummary[]>({
+    queryKey: ['geo-summary', 'all-index'],
+    queryFn: async () => {
+      const data = await tarvariGet<ApiSummariesResponse>('/console/summaries')
+      return (data.items ?? []).map(normalizeGeoSummary)
+    },
+    enabled,
+    staleTime: 90_000,
+    refetchInterval: 120_000,
+    retry: 1,
+  })
+}
