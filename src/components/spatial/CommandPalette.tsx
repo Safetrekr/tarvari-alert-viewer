@@ -276,7 +276,7 @@ export function CommandPalette({ onRefresh, onSearchResultSelect }: CommandPalet
           showCloseButton={false}
         >
           <DialogTitle className="sr-only">
-            Tarva Launch Command Palette
+            TarvaRI Command Palette
           </DialogTitle>
           <Command
             /**

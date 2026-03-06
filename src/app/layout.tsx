@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Tarva Launch',
-  description: 'Spatial mission control for the Tarva ecosystem',
+  title: 'TarvaRI',
+  description: 'TarvaRI Intelligence Console',
   icons: {
     icon: [
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },

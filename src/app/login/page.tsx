@@ -3,7 +3,7 @@ import { LoginScene } from '@/components/auth/login-scene'
 import '@/styles/login.css'
 
 export const metadata: Metadata = {
-  title: 'Tarva Launch',
+  title: 'TarvaRI',
 }
 
 export default function LoginPage() {
