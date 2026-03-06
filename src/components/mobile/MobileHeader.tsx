@@ -2,6 +2,7 @@
 
 import { Search } from 'lucide-react'
 import { SessionTimecode } from '@/components/ambient/session-timecode'
+import { ConnectivityDot } from './ConnectivityDot'
 
 export interface MobileHeaderProps {
   scanLine?: React.ReactNode
@@ -37,7 +38,7 @@ export function MobileHeader({
         >
           <Search size={18} />
         </button>
-        <div className="mobile-connectivity-dot" aria-hidden="true" />
+        <ConnectivityDot />
       </div>
     </header>
   )

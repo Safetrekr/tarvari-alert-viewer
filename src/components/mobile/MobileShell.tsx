@@ -6,6 +6,8 @@ import { useState, useCallback, useSyncExternalStore } from 'react'
 import { MobileHeader } from './MobileHeader'
 import { MobileBottomNav } from './MobileBottomNav'
 import { MobileScanLine } from './MobileScanLine'
+import { ThreatPulseBackground } from './ThreatPulseBackground'
+import { DataStaleBanner } from './DataStaleBanner'
 import { DEFAULT_MOBILE_TAB, MOBILE_TABS } from '@/lib/interfaces/mobile'
 import type { MobileTab } from '@/lib/interfaces/mobile'
 import { useUIStore } from '@/stores/ui.store'
@@ -91,6 +93,7 @@ export function MobileShell({
       className="mobile-shell"
       data-orientation={isLandscape ? 'landscape' : 'portrait'}
     >
+      <ThreatPulseBackground />
       <MobileHeader
         scanLine={<MobileScanLine />}
         threatIndicator={threatIndicator}
@@ -98,6 +101,7 @@ export function MobileShell({
       />
 
       <main className="mobile-content">
+        <DataStaleBanner />
         {activeTab === 'situation' && (
           <div id="tab-situation" role="tabpanel">
             {situationContent}

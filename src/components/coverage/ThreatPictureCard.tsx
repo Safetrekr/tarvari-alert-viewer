@@ -31,6 +31,7 @@ import { tarvariGet } from '@/lib/tarvari-api'
 import { getCategoryMeta } from '@/lib/interfaces/coverage'
 import { DATA_MODE } from '@/lib/data-mode'
 import { fetchSummaryAvailabilityFromSupabase } from '@/lib/supabase/queries'
+import { derivePosture, POSTURE_CONFIG } from '@/lib/threat-utils'
 
 // ============================================================================
 // Constants
@@ -47,16 +48,6 @@ const GHOST: React.CSSProperties = {
   letterSpacing: '0.12em',
   textTransform: 'uppercase' as const,
   fontWeight: 500,
-}
-
-type PostureLevel = 'CRITICAL' | 'HIGH' | 'ELEVATED' | 'GUARDED' | 'LOW'
-
-const POSTURE_CONFIG: Record<PostureLevel, { color: string; bg: string; border: string }> = {
-  CRITICAL: { color: 'rgba(220, 38, 38, 0.9)', bg: 'rgba(220, 38, 38, 0.10)', border: 'rgba(220, 38, 38, 0.25)' },
-  HIGH:     { color: 'rgba(239, 68, 68, 0.8)', bg: 'rgba(239, 68, 68, 0.08)', border: 'rgba(239, 68, 68, 0.20)' },
-  ELEVATED: { color: 'rgba(249, 115, 22, 0.8)', bg: 'rgba(249, 115, 22, 0.08)', border: 'rgba(249, 115, 22, 0.20)' },
-  GUARDED:  { color: 'rgba(234, 179, 8, 0.8)', bg: 'rgba(234, 179, 8, 0.06)', border: 'rgba(234, 179, 8, 0.15)' },
-  LOW:      { color: 'rgba(34, 197, 94, 0.7)', bg: 'rgba(34, 197, 94, 0.06)', border: 'rgba(34, 197, 94, 0.15)' },
 }
 
 // ============================================================================
@@ -135,16 +126,10 @@ export function ThreatPictureCard({ onClick }: ThreatPictureCardProps) {
     refetchInterval: 120_000,
   })
 
-  // Derive posture from severity distribution
-  const posture: PostureLevel = useMemo(() => {
-    if (!tp) return 'LOW'
-    const extreme = tp.bySeverity.find((s) => s.severity === 'Extreme')?.count ?? 0
-    const severe = tp.bySeverity.find((s) => s.severity === 'Severe')?.count ?? 0
-    if (extreme >= 10) return 'CRITICAL'
-    if (extreme > 0 || severe >= 50) return 'HIGH'
-    if (severe > 0) return 'ELEVATED'
-    if (tp.totalActiveAlerts > 0) return 'GUARDED'
-    return 'LOW'
+  // Derive posture from severity distribution (shared utility)
+  const posture = useMemo(() => {
+    if (!tp) return 'LOW' as const
+    return derivePosture(tp.bySeverity, tp.totalActiveAlerts)
   }, [tp])
 
   const ps = POSTURE_CONFIG[posture]
