@@ -640,7 +640,7 @@ export default function LaunchPage() {
         {/* Tarva white logo -- top-left corner */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/images/logo/tarva-white-logo.svg"
+          src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/images/logo/tarva-white-logo.svg`}
           alt="Tarva"
           className="pointer-events-none fixed left-4 opacity-40"
           style={{ height: 14, top: 21, transform: 'translateY(-50%)' }}

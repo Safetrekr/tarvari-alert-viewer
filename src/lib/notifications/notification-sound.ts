@@ -21,7 +21,7 @@ export function playNotificationSound(): void {
   if (typeof Audio === 'undefined') return
 
   if (!audioInstance) {
-    audioInstance = new Audio('/sounds/alert-tone.mp3')
+    audioInstance = new Audio(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/sounds/alert-tone.mp3`)
     audioInstance.volume = 0.3
   }
 

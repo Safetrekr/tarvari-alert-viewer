@@ -40,6 +40,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
           STATIC_EXPORT: 'true'
           GITHUB_PAGES: tarvari-alert-viewer
+          NEXT_PUBLIC_BASE_PATH: /tarvari-alert-viewer
         run: pnpm build:pages
 
       - name: Configure Pages
