@@ -1,0 +1,200 @@
+/* =================================================================
+   Mobile Design Tokens -- TarvaRI Alert Viewer
+   =================================================================
+   Source: ui-design-system.md Section 3, combined-recommendations.md
+   Load order: after spatial-tokens.css, before component styles.
+
+   All mobile-specific custom properties are scoped inside
+   @media (max-width: 767px) to match the useIsMobile() breakpoint.
+   Desktop values remain unchanged.
+   ================================================================= */
+
+@media (max-width: 767px) {
+  :root {
+    /* ============================================================
+       a. SPACING
+       ============================================================ */
+    --space-card-padding: 14px;
+    --space-card-gap: 10px;
+    --space-section-gap: 16px;
+    --space-content-padding: 12px;
+    --space-inline-gap: 8px;
+
+    /* ============================================================
+       b. LAYOUT DIMENSIONS
+       ============================================================ */
+    --space-header-height: 48px;
+    --space-bottom-nav-height: 56px;
+    --space-bottom-sheet-handle: 24px;
+    --space-priority-strip-height: 44px;
+    --space-threat-banner-height: 56px;
+    --space-p1-banner-height: 64px;
+    --space-filter-chips-height: 40px;
+
+    /* ============================================================
+       c. BLUR OVERRIDES (GPU savings on mobile)
+       ============================================================ */
+    --blur-ambient: 6px;
+    --blur-standard: 8px;
+    --blur-active: 12px;
+    --blur-heavy: 16px;
+
+    /* ============================================================
+       d. ANIMATION TIMING OVERRIDES
+       ============================================================ */
+    --duration-hover: 150ms;
+    --duration-transition: 250ms;
+    --duration-morph: 400ms;
+    --duration-morph-complex: 600ms;
+    --duration-scan-sweep: 12000ms;
+    --duration-sheet-expand: 300ms;
+    --duration-sheet-dismiss: 250ms;
+    --duration-tab-switch: 200ms;
+    --duration-card-press: 100ms;
+
+    /* ============================================================
+       e. TOUCH TARGETS (WCAG 2.2 SC 2.5.8)
+       ============================================================ */
+    --touch-target-min: 44px;
+    --touch-target-comfortable: 48px;
+
+    /* ============================================================
+       f. CORNER BRACKETS
+       ============================================================ */
+    --corner-bracket-size: 10px;
+    --corner-bracket-offset: -4px;
+    --corner-bracket-thickness: 1px;
+    --corner-bracket-color: rgba(255, 255, 255, 0.15);
+
+    /* ============================================================
+       g. TYPOGRAPHY SCALE
+       ============================================================ */
+    --text-hero-metric: 28px;
+    --text-card-metric: 22px;
+    --text-section-heading: 16px;
+    --text-card-title: 12px;
+    --text-body: 13px;
+    --text-label: 11px;
+    --text-caption: 10px;
+    --text-ghost: 10px;
+    --text-decorative-micro: 9px;
+    --text-min-readable: 10px;
+    --tracking-label-mobile: 0.14em;
+    --line-height-body: 1.5;
+    --line-height-label: 1.3;
+    --line-height-metric: 1.0;
+
+    /* ============================================================
+       h. GLASS MATERIAL TOKENS
+       ============================================================ */
+    --glass-header-bg: rgba(5, 9, 17, 0.85);
+    --glass-header-blur: blur(8px) saturate(120%);
+    --glass-nav-bg: rgba(5, 9, 17, 0.90);
+    --glass-nav-blur: blur(8px) saturate(120%);
+    --glass-sheet-bg: rgba(5, 9, 17, 0.92);
+    --glass-sheet-blur: blur(16px) saturate(130%);
+    --glass-sheet-border: 1px solid rgba(255, 255, 255, 0.08);
+    --glass-sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    --glass-sheet-radius: 16px 16px 0 0;
+    --glass-card-bg: rgba(255, 255, 255, 0.03);
+    --glass-card-blur: blur(8px) saturate(120%);
+    --glass-popup-bg: rgba(10, 14, 24, 0.95);
+
+    /* ============================================================
+       i. BOTTOM SHEET TOKENS
+       ============================================================ */
+    --sheet-spring-stiffness: 400;
+    --sheet-spring-damping: 35;
+    --sheet-spring-mass: 0.8;
+    --sheet-snap-alert-detail: 70%, 100%;
+    --sheet-snap-category-detail: 35%, 65%, 100%;
+    --sheet-snap-priority-feed: 60%, 100%;
+    --sheet-snap-filter: 40%;
+    --sheet-landscape-max-height: 60%;
+
+    /* ============================================================
+       j. DRAG HANDLE TOKENS
+       ============================================================ */
+    --drag-handle-width: 40px;
+    --drag-handle-height: 2px;
+    --drag-handle-color: rgba(255, 255, 255, 0.20);
+    --drag-handle-glow: 0 0 8px rgba(255, 255, 255, 0.06);
+    --drag-handle-margin: 11px auto;
+
+    /* ============================================================
+       k. SEVERITY COLOR OVERRIDES (contrast-adjusted for mobile)
+       ============================================================ */
+    --severity-extreme: #ef4444;
+    --severity-severe: #f97316;
+    --severity-moderate: #eab308;
+    --severity-minor: #60a5fa;
+    --severity-unknown: #9ca3af;
+
+    /* ============================================================
+       l. POSTURE-LEVEL TOKENS
+       ============================================================ */
+    --posture-low-color: transparent;
+    --posture-moderate-color: rgba(234, 179, 8, 0.02);
+    --posture-elevated-color: rgba(234, 179, 8, 0.04);
+    --posture-high-color: rgba(239, 68, 68, 0.03);
+    --posture-critical-color: rgba(220, 38, 38, 0.04);
+    --posture-elevated-duration: 4s;
+    --posture-high-duration: 6s;
+    --posture-critical-duration: 4s;
+
+    /* ============================================================
+       m. SCAN LINE TOKENS
+       ============================================================ */
+    --scan-line-opacity: 0.03;
+    --scan-line-color: rgba(14, 165, 233, 0.08);
+    --scan-line-height: 1px;
+
+    /* ============================================================
+       n. CONTRAST-ADJUSTED TEXT TOKENS
+       ============================================================ */
+    --color-text-secondary-mobile: rgba(255, 255, 255, 0.40);
+    --color-data-stale-bg: rgba(234, 179, 8, 0.15);
+  }
+
+  /* Scroll-gated glass utility */
+  .glass-tier-2-off {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* ============================================================
+   KEYFRAMES (global scope -- gated by class usage, not viewport)
+   ============================================================ */
+
+@keyframes mobile-scan-sweep {
+  0% { transform: translateY(-1px); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes threat-pulse {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* Mobile scan line animation class */
+.mobile-scan-line {
+  animation: mobile-scan-sweep var(--duration-scan-sweep, 12000ms) linear infinite;
+  will-change: transform;
+}
+
+/* Threat pulse animation class */
+.mobile-threat-pulse {
+  animation: threat-pulse var(--posture-duration, 4s) ease-in-out infinite;
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-scan-line,
+  .mobile-threat-pulse {
+    animation: none !important;
+  }
+}
