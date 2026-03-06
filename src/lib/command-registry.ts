@@ -35,6 +35,7 @@ import {
 import { useCameraStore } from '@/stores/camera.store'
 import { useSettingsStore } from '@/stores/settings.store'
 import { useAuthStore } from '@/stores/auth.store'
+import { useCoverageStore } from '@/stores/coverage.store'
 import { ZOOM_DEFAULT } from '@/lib/constants'
 
 // ============================================================================
@@ -121,7 +122,21 @@ function createNavigationCommands(): PaletteCommand[] {
     },
   })
 
-  // 4-9. Go to each of the 6 districts
+  // 4. Open Threat Picture (WS-4.5)
+  commands.push({
+    id: 'threat-picture',
+    verb: 'open',
+    object: 'threat-picture',
+    displayLabel: 'Threat Picture',
+    synonyms: ['threat picture', 'geo summary', 'geographic intelligence', 'briefing', 'risk assessment', 'situation report', 'sitrep'],
+    category: 'navigation' as CommandCategory,
+    handler: async (): Promise<CommandResult> => {
+      useCoverageStore.getState().openGeoSummary()
+      return success('Opened threat picture briefing')
+    },
+  })
+
+  // 5-10. Go to each of the 6 districts
   const districtIds: AppIdentifier[] = [
     'agent-builder',
     'tarva-chat',

@@ -13,8 +13,11 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
+import { DATA_MODE } from '@/lib/data-mode'
+import { fetchBundlesFromSupabase } from '@/lib/supabase/queries'
 import type { IntelBundleRow } from '@/lib/supabase/types'
 import type { BundleWithDecision, ViewMode } from '@/lib/interfaces/intel-bundles'
+import type { OperationalPriority } from '@/lib/interfaces/coverage'
 
 // ============================================================================
 // API response types
@@ -31,6 +34,7 @@ interface ApiBundleItem {
   created_at: string
   routed_at: string | null
   routed_alert_count: number | null
+  operational_priority: string | null
 }
 
 interface ApiBundlesList {
@@ -69,14 +73,18 @@ function apiToBundle(item: ApiBundleItem): BundleWithDecision {
     updated_at: '',
   }
 
-  return { bundle, decision: null }
+  return {
+    bundle,
+    decision: null,
+    operationalPriority: (item.operational_priority as OperationalPriority) ?? null,
+  }
 }
 
 // ============================================================================
 // Query functions
 // ============================================================================
 
-async function fetchTriagedBundles(): Promise<BundleWithDecision[]> {
+async function fetchTriagedBundlesFromConsole(): Promise<BundleWithDecision[]> {
   const data = await tarvariGet<ApiBundlesList>('/console/bundles', {
     status: 'approved',
     limit: 100,
@@ -84,9 +92,19 @@ async function fetchTriagedBundles(): Promise<BundleWithDecision[]> {
   return data.items.map(apiToBundle)
 }
 
-async function fetchAllBundles(): Promise<BundleWithDecision[]> {
+async function fetchAllBundlesFromConsole(): Promise<BundleWithDecision[]> {
   const data = await tarvariGet<ApiBundlesList>('/console/bundles', { limit: 100 })
   return data.items.map(apiToBundle)
+}
+
+async function fetchTriagedBundles(): Promise<BundleWithDecision[]> {
+  if (DATA_MODE === 'supabase') return fetchBundlesFromSupabase('triaged')
+  return fetchTriagedBundlesFromConsole()
+}
+
+async function fetchAllBundles(): Promise<BundleWithDecision[]> {
+  if (DATA_MODE === 'supabase') return fetchBundlesFromSupabase('all-bundles')
+  return fetchAllBundlesFromConsole()
 }
 
 // ============================================================================

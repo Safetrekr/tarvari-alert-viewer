@@ -29,6 +29,9 @@ interface DistrictViewHeaderProps {
   readonly districtId: NodeId
   readonly panelSide: PanelSide
   readonly onBack: () => void
+  readonly filtersOpen?: boolean
+  readonly hasActiveFilter?: boolean
+  readonly onToggleFilters?: () => void
 }
 
 // ---------------------------------------------------------------------------
@@ -107,6 +110,9 @@ export function DistrictViewHeader({
   districtId,
   panelSide,
   onBack,
+  filtersOpen = false,
+  hasActiveFilter = false,
+  onToggleFilters,
 }: DistrictViewHeaderProps) {
   const meta = getCategoryMeta(districtId)
   const displayName = meta.displayName
@@ -220,6 +226,66 @@ export function DistrictViewHeader({
         BACK
         {backSide === 'right' && <PulsingChevrons direction="right" />}
       </motion.button>
+
+      {/* FILTERS toggle button -- right side, near top */}
+      {onToggleFilters && (
+        <motion.button
+          onClick={(e) => { e.stopPropagation(); onToggleFilters() }}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay: 0.35 }}
+          aria-expanded={filtersOpen}
+          aria-controls="district-filter-panel"
+          aria-label="Toggle district view filters"
+          style={{
+            position: 'fixed',
+            top: 56,
+            right: 380,
+            zIndex: 32,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 12px',
+            borderRadius: 6,
+            border: `1px solid ${filtersOpen ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.06)'}`,
+            background: filtersOpen ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.03)',
+            cursor: 'pointer',
+            pointerEvents: 'auto',
+            fontFamily: 'var(--font-mono, monospace)',
+            fontSize: 9,
+            fontWeight: 500,
+            color: filtersOpen ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.3)',
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            lineHeight: 1,
+            transition: 'color 200ms ease, background 200ms ease, border-color 200ms ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)'
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = filtersOpen ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.3)'
+            e.currentTarget.style.background = filtersOpen ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.03)'
+          }}
+        >
+          FILTERS
+          {/* Active filter indicator dot */}
+          {hasActiveFilter && (
+            <div
+              style={{
+                width: 4,
+                height: 4,
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                flexShrink: 0,
+              }}
+              aria-hidden="true"
+            />
+          )}
+        </motion.button>
+      )}
     </>
   )
 }

@@ -11,6 +11,8 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
+import { DATA_MODE } from '@/lib/data-mode'
+import { fetchBundleDetailFromSupabase } from '@/lib/supabase/queries'
 import type { IntelBundleRow } from '@/lib/supabase/types'
 import type { BundleWithMembers } from '@/lib/interfaces/intel-bundles'
 
@@ -43,7 +45,7 @@ interface ApiBundleDetail {
 // Query function
 // ============================================================================
 
-async function fetchBundleDetail(bundleId: string): Promise<BundleWithMembers | null> {
+async function fetchBundleDetailFromConsole(bundleId: string): Promise<BundleWithMembers | null> {
   const data = await tarvariGet<ApiBundleDetail>(`/console/bundles/${bundleId}`)
 
   const bundle: IntelBundleRow = {
@@ -75,9 +77,15 @@ async function fetchBundleDetail(bundleId: string): Promise<BundleWithMembers | 
   return {
     bundle,
     decision: null, // Detail endpoint doesn't include triage decisions yet
+    operationalPriority: null,
     members: [],
     primaryIntel: null,
   }
+}
+
+async function fetchBundleDetail(bundleId: string): Promise<BundleWithMembers | null> {
+  if (DATA_MODE === 'supabase') return fetchBundleDetailFromSupabase(bundleId)
+  return fetchBundleDetailFromConsole(bundleId)
 }
 
 // ============================================================================

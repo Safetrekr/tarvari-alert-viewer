@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * CoverageOverviewStats -- three KPI stat rows for the coverage grid.
+ * CoverageOverviewStats -- filter toggle + two KPI stat rows for the coverage grid.
  *
  * Stacked vertically to the left of the CoverageGrid in world-space.
  * Each row shows icon + label + value in a single horizontal line.
@@ -12,25 +12,25 @@
  * @see WS-2.1 Section 4.5
  */
 
-import { Database, Activity, Grid3x3, Layers, type LucideIcon } from 'lucide-react'
+import { Grid3x3, Layers, AlertTriangle, type LucideIcon } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 
 export interface CoverageOverviewStatsProps {
-  /** Total intel sources across all categories. */
-  totalSources: number
-  /** Sources with status === 'active'. */
-  activeSources: number
   /** Number of unique categories with >= 1 source. */
   categoriesCovered: number
+  /** Total number of raw intel alerts. */
+  totalAlerts: number
   /** Whether the data is still loading (shows skeleton state). */
   isLoading?: boolean
   /** Whether the "ALL" filter is active (no category selected). */
   isAllSelected?: boolean
   /** Callback to clear category filter (select ALL). */
   onClearFilter?: () => void
+  /** @deprecated Threat picture now has its own card. Kept for API compat. */
+  onOpenThreatPicture?: () => void
 }
 
 // ---------------------------------------------------------------------------
@@ -70,12 +70,13 @@ function StatRow({
 // ---------------------------------------------------------------------------
 
 export function CoverageOverviewStats({
-  totalSources,
-  activeSources,
   categoriesCovered,
+  totalAlerts,
   isLoading = false,
   isAllSelected = true,
   onClearFilter,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onOpenThreatPicture: _onOpenThreatPicture,
 }: CoverageOverviewStatsProps) {
   return (
     <div className="flex flex-col gap-3" style={{ width: 200 }}>
@@ -114,13 +115,13 @@ export function CoverageOverviewStats({
           className="ml-auto font-mono text-lg font-bold tabular-nums"
           style={{ color: isAllSelected ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.4)' }}
         >
-          {isLoading ? '—' : totalSources}
+          {isLoading ? '—' : totalAlerts}
         </span>
       </button>
 
-      <StatRow icon={Database} label="Total Sources" value={totalSources} isLoading={isLoading} />
-      <StatRow icon={Activity} label="Active Sources" value={activeSources} isLoading={isLoading} />
+      <StatRow icon={AlertTriangle} label="Total Alerts" value={totalAlerts} isLoading={isLoading} />
       <StatRow icon={Grid3x3} label="Categories" value={categoriesCovered} isLoading={isLoading} />
+
     </div>
   )
 }

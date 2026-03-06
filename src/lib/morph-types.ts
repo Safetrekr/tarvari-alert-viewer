@@ -71,6 +71,19 @@ export const MORPH_TIMING_REDUCED: Readonly<MorphTimingConfig> = {
 } as const
 
 /**
+ * Fast-path timing for search-initiated navigation.
+ * Only enteringDistrict is relevant -- expanding and settled are skipped.
+ *
+ * @see WS-3.4
+ */
+export const MORPH_TIMING_FAST: Readonly<MorphTimingConfig> = {
+  expanding: 0,
+  settledHold: 0,
+  enteringDistrict: 300,
+  leavingDistrict: 400,
+} as const
+
+/**
  * Complete morph state tracked in the UI store.
  */
 export interface MorphState {
@@ -85,6 +98,19 @@ export interface MorphState {
    * Used for phase timing coordination.
    */
   phaseStartedAt: number | null
+  /** Whether this morph uses the fast path (skip expanding + settled). */
+  fast: boolean
+}
+
+/** Options for startMorph behavior. */
+export interface StartMorphOptions {
+  /**
+   * When true, skip expanding + settled phases and transition
+   * directly from idle to entering-district with reduced duration.
+   * Used for search-initiated navigation where wayfinding animation
+   * adds friction rather than value.
+   */
+  fast?: boolean
 }
 
 /**
@@ -93,9 +119,9 @@ export interface MorphState {
 export interface MorphActions {
   /**
    * Begin forward morph to a district.
-   * Sets phase to 'expanding', direction to 'forward', targetId to the district.
+   * Sets phase to 'expanding' (or 'entering-district' if fast), direction to 'forward', targetId to the district.
    */
-  startMorph: (nodeId: NodeId) => void
+  startMorph: (nodeId: NodeId, options?: StartMorphOptions) => void
   /**
    * Begin reverse morph back to the atrium.
    * Sets phase to 'expanding', direction to 'reverse'.

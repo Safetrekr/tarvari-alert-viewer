@@ -15,6 +15,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import maplibregl from 'maplibre-gl'
 import {
   Map,
   Popup,
@@ -38,12 +39,40 @@ import {
 // Constants
 // ============================================================================
 
-const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
-
-/** Tarva color tokens for map customization. */
-const TARVA_LAND = '#11151d'    // rgba(255,255,255,0.05) on --color-void #050911 — matches category card bg
-const TARVA_BORDER_BRIGHT = 'rgba(255, 255, 255, 0.18)' // bright country outlines
-const TARVA_BORDER_DIM = 'rgba(255, 255, 255, 0.08)'    // roads, minor lines
+/**
+ * Raster tile style — uses CARTO's dark_all raster CDN instead of their
+ * vector tile endpoint (which has CORS / availability issues).
+ * Darkened via raster paint properties to match the Tarva design system.
+ */
+const MAP_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    'carto-dark': {
+      type: 'raster',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+        'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+      ],
+      tileSize: 256,
+      maxzoom: 20,
+      attribution:
+        '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    },
+  },
+  layers: [
+    {
+      id: 'carto-dark-layer',
+      type: 'raster',
+      source: 'carto-dark',
+      paint: {
+        'raster-brightness-max': 0.45,
+        'raster-saturation': -0.2,
+      },
+    },
+  ],
+}
 
 const INITIAL_VIEW_STATE = {
   longitude: 0,
@@ -63,6 +92,8 @@ interface PopupState {
   title: string
   severity: string
   ingestedAt: string
+  id: string
+  category: string
 }
 
 // ============================================================================
@@ -80,6 +111,14 @@ interface CoverageMapProps {
   readonly isLoading?: boolean
   /** If true, stay at global view — no auto-fit to markers. Markers pulse and fade. */
   readonly overview?: boolean
+  /** Called when an unclustered marker is clicked, with the marker's ID. */
+  readonly onMarkerClick?: (markerId: string) => void
+  /** Called when user clicks INSPECT on a marker popup. */
+  readonly onInspect?: (id: string, category: string, basic: { title: string; severity: string; ingestedAt: string }) => void
+  /** ID of the selected alert to highlight on the map. */
+  readonly selectedMarkerId?: string | null
+  /** Forwarded ref for parent components to read map bounds. */
+  readonly externalMapRef?: React.RefObject<MapRef | null>
 }
 
 // ============================================================================
@@ -196,8 +235,13 @@ export function CoverageMap({
   markers,
   isLoading = false,
   overview = false,
+  onMarkerClick,
+  onInspect,
+  selectedMarkerId,
+  externalMapRef,
 }: CoverageMapProps) {
-  const mapRef = useRef<MapRef>(null)
+  const internalMapRef = useRef<MapRef>(null)
+  const mapRef = externalMapRef ?? internalMapRef
   const [popup, setPopup] = useState<PopupState | null>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [webglError, setWebglError] = useState(false)
@@ -261,7 +305,7 @@ export function CoverageMap({
         return
       }
 
-      // Unclustered point click: show popup
+      // Unclustered point click: show popup + notify parent
       if (feature.geometry.type === 'Point') {
         const [lng, lat] = feature.geometry.coordinates
         setPopup({
@@ -270,69 +314,22 @@ export function CoverageMap({
           title: feature.properties?.title ?? 'Unknown',
           severity: feature.properties?.severity ?? 'Unknown',
           ingestedAt: feature.properties?.ingestedAt ?? new Date().toISOString(),
+          id: (feature.properties?.id as string) ?? '',
+          category: (feature.properties?.category as string) ?? '',
         })
+
+        const markerId = feature.properties?.id as string | undefined
+        if (markerId && onMarkerClick) {
+          onMarkerClick(markerId)
+        }
       }
     },
-    [],
+    [onMarkerClick],
   )
 
-  // Customize map colors on load: tarva gray land, transparent water
+  // Mark map as loaded (raster tiles are pre-styled, no per-layer customization needed)
   const handleLoad = useCallback(() => {
     setMapLoaded(true)
-    const mapInstance = mapRef.current?.getMap()
-    if (!mapInstance) return
-
-    // Make the background a dark translucent teal (ocean base)
-    mapInstance.setPaintProperty('background', 'background-color', 'rgba(39, 115, 137, 0.08)')
-
-    // Recolor all layers to match tarva design system
-    const style = mapInstance.getStyle()
-    if (!style?.layers) return
-
-    const waterIds = ['water', 'ocean', 'sea', 'lake', 'river', 'waterway']
-    const labelIds = ['label', 'name', 'text', 'place', 'poi', 'housenumber', 'roadname']
-    const boundaryIds = ['boundary_country', 'boundary_state']
-
-    for (const layer of style.layers) {
-      const id = layer.id.toLowerCase()
-      const isWater = waterIds.some((w) => id.includes(w))
-      const isLabel = labelIds.some((l) => id.includes(l))
-      const isBoundary = boundaryIds.some((b) => id.includes(b))
-
-      // Water fills → dark translucent teal
-      if (isWater && layer.type === 'fill') {
-        mapInstance.setPaintProperty(layer.id, 'fill-color', 'rgba(39, 115, 137, 0.08)')
-        continue
-      }
-
-      // Water lines → hide
-      if (isWater && layer.type === 'line') {
-        mapInstance.setPaintProperty(layer.id, 'line-color', 'transparent')
-        continue
-      }
-
-      // Labels/symbols — leave as-is (CARTO style has good zoom ranges:
-      // continent 0-2, country 2-7, cities 4+, etc.)
-      if (isLabel || layer.type === 'symbol') continue
-
-      // Country/state boundaries → bright, visible outlines
-      if (isBoundary && layer.type === 'line') {
-        mapInstance.setPaintProperty(layer.id, 'line-color', TARVA_BORDER_BRIGHT)
-        mapInstance.setPaintProperty(layer.id, 'line-opacity', 1)
-        mapInstance.setPaintProperty(layer.id, 'line-width', 1)
-        continue
-      }
-
-      // All other fill layers (land, parks, buildings, etc.) → tarva gray
-      if (layer.type === 'fill') {
-        mapInstance.setPaintProperty(layer.id, 'fill-color', TARVA_LAND)
-      }
-
-      // All other line layers (roads, etc.) → dim
-      if (layer.type === 'line') {
-        mapInstance.setPaintProperty(layer.id, 'line-color', TARVA_BORDER_DIM)
-      }
-    }
   }, [])
 
   // Cursor management
@@ -440,7 +437,7 @@ export function CoverageMap({
       >
         {/* Custom nav controls rendered outside Map below */}
 
-        {markers.length > 0 && <MapMarkerLayer data={geojson} />}
+        {markers.length > 0 && <MapMarkerLayer data={geojson} selectedMarkerId={selectedMarkerId} />}
 
         {popup && (
           <Popup
@@ -455,6 +452,9 @@ export function CoverageMap({
               severity={popup.severity}
               ingestedAt={popup.ingestedAt}
               onClose={() => setPopup(null)}
+              id={popup.id}
+              category={popup.category}
+              onInspect={onInspect}
             />
           </Popup>
         )}

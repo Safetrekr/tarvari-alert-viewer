@@ -125,6 +125,214 @@ export const SEVERITY_COLORS: Record<SeverityLevel, string> = {
 }
 
 // ---------------------------------------------------------------------------
+// Operational priority (per AD-1: achromatic visual channel)
+// ---------------------------------------------------------------------------
+
+/**
+ * Operational priority levels in descending urgency order.
+ * Matches backend `operational_priority` field values directly.
+ *
+ * @see AD-1 — Priority uses shape/weight/animation, never color.
+ */
+export const PRIORITY_LEVELS = ['P1', 'P2', 'P3', 'P4'] as const
+
+/**
+ * Operational priority level type, derived from PRIORITY_LEVELS.
+ * `'P1'` = Critical, `'P2'` = High, `'P3'` = Standard, `'P4'` = Low.
+ *
+ * @see AD-1 — Priority occupies the achromatic visual channel (shape/weight).
+ */
+export type OperationalPriority = (typeof PRIORITY_LEVELS)[number]
+
+/**
+ * Display metadata for a single operational priority level.
+ * Deliberately excludes all color-related fields to enforce AD-1:
+ * priority is communicated via shape, weight, and animation — never color.
+ * Severity owns the color channel exclusively.
+ */
+export interface PriorityMeta {
+  /** Priority level identifier. */
+  id: OperationalPriority
+  /** Human-readable label (e.g. 'Critical'). */
+  label: string
+  /** Abbreviated label for tight spaces (e.g. 'P1'). */
+  shortLabel: string
+  /** Optional description for tooltips and accessibility. */
+  description?: string
+  /** Geometric shape for pre-attentive visual distinction. */
+  shape: 'diamond' | 'triangle' | 'none'
+  /** Typographic weight for text-based priority indicators. */
+  weight: 'bold' | 'medium' | 'normal'
+  /** CSS animation identifier, or null for no animation. */
+  animation: 'pulse' | null
+  /**
+   * Where this priority level is shown without explicit filtering.
+   * - `'always'` — P1/P2 render in all contexts.
+   * - `'detail'` — P3 renders only in detail views.
+   * - `'filter-only'` — P4 is invisible unless explicitly filtered.
+   */
+  defaultVisibility: 'always' | 'detail' | 'filter-only'
+  /** Numeric weight for sorting (1 = highest priority). */
+  sortOrder: number
+}
+
+/**
+ * Priority metadata lookup table. Maps each priority level to its
+ * achromatic display properties (shape, weight, animation, visibility).
+ *
+ * @see AD-1 — No color fields. Severity owns color exclusively.
+ */
+export const PRIORITY_META: Record<OperationalPriority, PriorityMeta> = {
+  P1: {
+    id: 'P1',
+    label: 'Critical',
+    shortLabel: 'P1',
+    description: 'Immediate threat to life or critical infrastructure',
+    shape: 'diamond',
+    weight: 'bold',
+    animation: 'pulse',
+    defaultVisibility: 'always',
+    sortOrder: 1,
+  },
+  P2: {
+    id: 'P2',
+    label: 'High',
+    shortLabel: 'P2',
+    description: 'Significant threat requiring prompt attention',
+    shape: 'triangle',
+    weight: 'medium',
+    animation: null,
+    defaultVisibility: 'always',
+    sortOrder: 2,
+  },
+  P3: {
+    id: 'P3',
+    label: 'Standard',
+    shortLabel: 'P3',
+    description: 'Routine intelligence for situational awareness',
+    shape: 'none',
+    weight: 'normal',
+    animation: null,
+    defaultVisibility: 'detail',
+    sortOrder: 3,
+  },
+  P4: {
+    id: 'P4',
+    label: 'Low',
+    shortLabel: 'P4',
+    description: 'Background intelligence, lowest priority',
+    shape: 'none',
+    weight: 'normal',
+    animation: null,
+    defaultVisibility: 'filter-only',
+    sortOrder: 4,
+  },
+} as const
+
+/**
+ * Get the PriorityMeta for a given priority string.
+ * Returns P4 (lowest, invisible by default) for unknown values,
+ * ensuring items with missing priority are never displayed as high-priority.
+ *
+ * @see AD-1 — Conservative fallback: unknown = P4 = invisible.
+ */
+export function getPriorityMeta(priority: string): PriorityMeta {
+  return PRIORITY_META[priority as OperationalPriority] ?? PRIORITY_META.P4
+}
+
+/**
+ * Determine whether a priority level should be rendered in a given context.
+ * - `'always'` → visible in both list and detail.
+ * - `'detail'` → visible only in detail context.
+ * - `'filter-only'` → never visible by default (requires explicit filter).
+ */
+export function isPriorityVisible(
+  priority: OperationalPriority,
+  context: 'list' | 'detail',
+): boolean {
+  const meta = PRIORITY_META[priority]
+  if (meta.defaultVisibility === 'always') return true
+  if (meta.defaultVisibility === 'detail' && context === 'detail') return true
+  return false
+}
+
+// ---------------------------------------------------------------------------
+// Trend direction (Phase 4: Geographic Intelligence)
+// ---------------------------------------------------------------------------
+
+/** Directional trend for temporal comparisons (per-category, per-region, overall). */
+export type TrendDirection = 'up' | 'down' | 'stable'
+
+// ---------------------------------------------------------------------------
+// Threat level (Phase 4: Geographic Intelligence)
+// ---------------------------------------------------------------------------
+
+/** Five-level threat assessment scale used in geographic summaries. */
+export const THREAT_LEVELS = ['LOW', 'MODERATE', 'ELEVATED', 'HIGH', 'CRITICAL'] as const
+
+/** Threat level type. */
+export type ThreatLevel = (typeof THREAT_LEVELS)[number]
+
+// ---------------------------------------------------------------------------
+// Geographic hierarchy (Phase 4: Geographic Intelligence, AD-7)
+// ---------------------------------------------------------------------------
+
+/** Geographic hierarchy levels for intel summaries. */
+export type GeoLevel = 'world' | 'region' | 'country'
+
+/** Summary period types. */
+export type SummaryType = 'hourly' | 'daily'
+
+/**
+ * The 11 travel-security geographic region keys (AD-7).
+ * Kebab-case identifiers used as `summaryGeoKey` when `summaryGeoLevel` is `'region'`.
+ */
+export const GEO_REGION_KEYS = [
+  'north-america',
+  'central-america-caribbean',
+  'south-america',
+  'western-europe',
+  'eastern-europe',
+  'middle-east',
+  'north-africa',
+  'sub-saharan-africa',
+  'south-central-asia',
+  'east-southeast-asia',
+  'oceania',
+] as const
+
+export type GeoRegionKey = (typeof GEO_REGION_KEYS)[number]
+
+/** Display metadata for each geographic region. */
+export const GEO_REGION_META: Record<GeoRegionKey, { displayName: string; shortName: string }> = {
+  'north-america':              { displayName: 'North America',              shortName: 'N. AMERICA' },
+  'central-america-caribbean':  { displayName: 'Central America & Caribbean', shortName: 'C. AMERICA' },
+  'south-america':              { displayName: 'South America',              shortName: 'S. AMERICA' },
+  'western-europe':             { displayName: 'Western Europe',             shortName: 'W. EUROPE' },
+  'eastern-europe':             { displayName: 'Eastern Europe',             shortName: 'E. EUROPE' },
+  'middle-east':                { displayName: 'Middle East',                shortName: 'MID EAST' },
+  'north-africa':               { displayName: 'North Africa',              shortName: 'N. AFRICA' },
+  'sub-saharan-africa':         { displayName: 'Sub-Saharan Africa',        shortName: 'SS. AFRICA' },
+  'south-central-asia':         { displayName: 'South & Central Asia',      shortName: 'S/C ASIA' },
+  'east-southeast-asia':        { displayName: 'East & Southeast Asia',     shortName: 'E/SE ASIA' },
+  'oceania':                    { displayName: 'Oceania',                    shortName: 'OCEANIA' },
+}
+
+/** Check whether a string is a valid GeoRegionKey. */
+export function isValidGeoRegionKey(key: string): key is GeoRegionKey {
+  return (GEO_REGION_KEYS as readonly string[]).includes(key)
+}
+
+/** Get the display name for a geo key at any level. */
+export function getGeoDisplayName(level: GeoLevel, key: string): string {
+  if (level === 'world') return 'World'
+  if (level === 'region' && isValidGeoRegionKey(key)) {
+    return GEO_REGION_META[key].displayName
+  }
+  return key.toUpperCase()
+}
+
+// ---------------------------------------------------------------------------
 // Source status (per COVERAGE-DATA-SPEC.md)
 // ---------------------------------------------------------------------------
 
@@ -152,6 +360,8 @@ export interface CategoryGridItem {
   meta: CategoryMeta
   /** Live source count metrics. Null only during loading (should not render). */
   metrics: CoverageByCategory
+  /** Trend direction compared to previous period. Undefined when threat picture data is unavailable. */
+  trend?: TrendDirection
 }
 
 /**
@@ -160,11 +370,15 @@ export interface CategoryGridItem {
  * Unknown categories from the database that are not in KNOWN_CATEGORIES
  * are mapped to the 'other' entry.
  */
-export function buildGridItems(byCategory: CoverageByCategory[]): CategoryGridItem[] {
+export function buildGridItems(
+  byCategory: CoverageByCategory[],
+  trendMap?: Map<string, TrendDirection>,
+): CategoryGridItem[] {
   return byCategory.map((cat) => ({
     id: cat.category,
     meta: getCategoryMeta(cat.category),
     metrics: cat,
+    trend: trendMap?.get(cat.category),
   }))
 }
 
@@ -174,7 +388,10 @@ export function buildGridItems(byCategory: CoverageByCategory[]): CategoryGridIt
  * Ensures the grid always shows all categories so users can click into
  * district view even before data is populated.
  */
-export function buildAllGridItems(byCategory: CoverageByCategory[]): CategoryGridItem[] {
+export function buildAllGridItems(
+  byCategory: CoverageByCategory[],
+  trendMap?: Map<string, TrendDirection>,
+): CategoryGridItem[] {
   const liveMap = new Map(byCategory.map((c) => [c.category, c]))
 
   return KNOWN_CATEGORIES.map((meta) => ({
@@ -185,6 +402,10 @@ export function buildAllGridItems(byCategory: CoverageByCategory[]): CategoryGri
       sourceCount: 0,
       activeSources: 0,
       geographicRegions: [],
+      alertCount: 0,
+      p1Count: 0,
+      p2Count: 0,
     },
+    trend: trendMap?.get(meta.id),
   }))
 }

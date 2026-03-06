@@ -1,0 +1,850 @@
+/**
+ * Tarva UI Design Tokens
+ *
+ * Import this via: @import '@tarva/ui/styles.css';
+ *
+ * Or in your app's layout:
+ * import '@tarva/ui/styles.css';
+ */
+
+/**
+ * Tarva UI Design Tokens - Colors
+ * Based on frontend-v2 dark theme (orange/teal)
+ */
+
+:root {
+  --background: oklch(0.9702 0 0);
+  --foreground: oklch(0.1605 0.0157 219.6766);
+  --card: oklch(0.9851 0 0);
+  --card-foreground: oklch(0.1605 0.0157 219.6766);
+  --popover: oklch(0.9249 0 0);
+  --popover-foreground: oklch(0.1605 0.0157 219.6766);
+  --primary: oklch(0.6782 0.2100 23.2120);
+  --primary-foreground: oklch(0.9755 0.0161 64.6764);
+  --secondary: oklch(0.9478 0.0059 170.4429);
+  --secondary-foreground: oklch(0.5335 0.0226 200.4173);
+  --muted: oklch(0.9401 0 0);
+  --muted-foreground: oklch(0.6024 0.0122 211.0429);
+  --accent: oklch(0.6541 0.0449 201.7769);
+  --accent-foreground: oklch(0.1500 0.0162 211.0255);
+  --destructive: oklch(0.5992 0.2232 16.0740);
+  --destructive-foreground: oklch(0.9755 0.0161 64.6764);
+  --border: oklch(0.9060 0.0033 17.2182);
+  --input: oklch(0.9605 0.0032 17.2140);
+  --ring: oklch(0.7186 0.1508 23.9597);
+  --chart-1: oklch(0.6782 0.2100 23.2120);
+  --chart-2: oklch(0.6850 0.1008 202.6256);
+  --chart-3: oklch(0.6540 0.1021 218.3407);
+  --chart-4: oklch(0.7240 0.0787 189.2515);
+  --chart-5: oklch(0.7641 0.0537 138.1301);
+  --sidebar: oklch(0.9461 0 0);
+  --sidebar-foreground: oklch(0.1605 0.0157 219.6766);
+  --sidebar-primary: oklch(0.6782 0.2100 23.2120);
+  --sidebar-primary-foreground: oklch(0.9755 0.0161 64.6764);
+  --sidebar-accent: oklch(0.6541 0.0449 201.7769);
+  --sidebar-accent-foreground: oklch(0.1500 0.0162 211.0255);
+  --sidebar-border: oklch(0.9035 0.0135 28.8713);
+  --sidebar-ring: oklch(0.7186 0.1508 23.9597);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --radius: 0.625rem;
+  --shadow-x: 0;
+  --shadow-y: 1px;
+  --shadow-blur: 3px;
+  --shadow-spread: 0px;
+  --shadow-opacity: 0.1;
+  --shadow-color: #000000;
+  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
+  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
+  --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
+  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+
+  /* Status colors */
+  --status-success: #22c55e;
+  --status-warning: #eab308;
+  --status-danger: #ef4444;
+  --status-info: #3b82f6;
+  --status-neutral: #6b7280;
+  --status-muted: #9ca3af;
+
+  /* Capacity/trend colors */
+  --capacity-low: var(--status-success);
+  --capacity-medium: var(--status-warning);
+  --capacity-high: #f97316;
+  --capacity-critical: var(--status-danger);
+  --trend-positive: var(--status-success);
+  --trend-negative: var(--status-danger);
+  --trend-neutral: var(--muted-foreground);
+
+  /* Step/Progress bin colors - Light mode */
+  --step-bin-empty: #e5e7eb;
+  --step-bin-filled: #f97316;
+  --step-bin-active: #fb923c;
+  --progress-bin-empty: #d1d5db;
+  --progress-bin-filled: var(--primary);
+  --progress-bin-linked: #3b82f6;
+}
+
+.dark {
+  /* Core semantic colors - Dark Mode */
+  --background: #050911;
+  --foreground: #def6ff;
+  --card: #0f161f;
+  --card-foreground: #def6ff;
+  --popover: #121720;
+  --popover-foreground: #def6ff;
+
+  /* Primary: Warm orange */
+  --primary: #e05200;
+  --primary-foreground: #fffef6;
+
+  /* Secondary */
+  --secondary: #28313e;
+  --secondary-foreground: #d5ecf8;
+
+  /* Muted */
+  --muted: #1c222b;
+  --muted-foreground: #92a9b4;
+
+  /* Accent: Muted teal */
+  --accent: #277389;
+  --accent-foreground: #eaf7ff;
+
+  /* Destructive */
+  --destructive: #ff3d42;
+  --destructive-foreground: #fffef6;
+
+  /* Form elements */
+  --border: #232933;
+  --input: #282e38;
+  --ring: #ff773c;
+
+  /* Chart colors - Dark mode */
+  --chart-1: #ff5f00;
+  --chart-2: #00abd3;
+  --chart-3: #5194d5;
+  --chart-4: #2bb3b9;
+  --chart-5: #6dc799;
+
+  /* Status colors - brighter for dark mode */
+  --status-neutral: #9ca3af;
+  --status-muted: #6b7280;
+
+  /* Capacity/trend colors - brighter for dark mode */
+  --capacity-low: #4ade80;
+  --capacity-medium: #facc15;
+  --capacity-high: #fb923c;
+  --capacity-critical: #f87171;
+
+  /* Step/Progress bin colors - Dark mode */
+  --step-bin-empty: #374151;
+  --step-bin-filled: #fb923c;
+  --step-bin-active: #fdba74;
+  --progress-bin-empty: #4b5563;
+  --progress-bin-filled: var(--primary);
+  --progress-bin-linked: #60a5fa;
+
+  /* Sidebar - Dark mode */
+  --sidebar: #0c121a;
+  --sidebar-foreground: #def6ff;
+  --sidebar-primary: #e05200;
+  --sidebar-primary-foreground: #fffef6;
+  --sidebar-accent: #277389;
+  --sidebar-accent-foreground: #eaf7ff;
+  --sidebar-border: #232933;
+  --sidebar-ring: #ff773c;
+}
+
+/* App-specific theme overrides */
+
+/* TarvaERP - Blue primary */
+
+[data-color-scheme='tarva-erp'] {
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --ring: #60a5fa;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+}
+
+[data-color-scheme='tarva-erp'].dark {
+  --primary: #2563eb;
+  --ring: #3b82f6;
+  --sidebar-primary: #2563eb;
+}
+
+/* Safetrekr - Green primary */
+
+[data-color-scheme='safetrekr'] {
+  --background: rgb(231, 236, 238);
+  --foreground: rgb(18, 54, 70);
+  --card: rgb(247, 248, 248);
+  --card-foreground: rgb(26, 27, 28);
+  --popover: rgb(231, 235, 236);
+  --popover-foreground: rgb(7, 32, 43);
+  --primary: rgb(75, 164, 103);
+  --primary-foreground: rgb(255, 255, 255);
+  --secondary: rgb(18, 54, 70);
+  --secondary-foreground: rgb(255, 255, 255);
+  --muted: rgb(231, 236, 238);
+  --muted-foreground: rgb(97, 101, 103);
+  --accent: rgb(231, 236, 238);
+  --accent-foreground: rgb(6, 26, 35);
+  --destructive: rgb(193, 37, 62);
+  --destructive-foreground: rgb(252, 235, 238);
+  --border: rgb(138, 149, 153);
+  --input: rgb(128, 149, 155);
+  --ring: rgb(54, 84, 98);
+  --chart-1: rgb(184, 195, 199);
+  --chart-2: rgb(128, 149, 155);
+  --chart-3: rgb(65, 94, 107);
+  --chart-4: rgb(42, 74, 89);
+  --chart-5: rgb(18, 54, 70);
+  --sidebar: rgb(222, 226, 227);
+  --sidebar-foreground: rgb(26, 27, 28);
+  --sidebar-primary: rgb(18, 54, 70);
+  --sidebar-primary-foreground: rgb(249, 248, 244);
+  --sidebar-accent: rgb(150, 159, 162);
+  --sidebar-accent-foreground: rgb(26, 27, 28);
+  --sidebar-border: rgb(138, 149, 153);
+  --sidebar-ring: rgb(42, 74, 89);
+  --font-sans: Inter, ui-sans-serif, sans-serif, system-ui;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: Intel One Mono, ui-monospace, monospace;
+  --radius: 0.625rem;
+  --shadow-x: 0;
+  --shadow-y: 1px;
+  --shadow-blur: 3px;
+  --shadow-spread: 0px;
+  --shadow-opacity: 0.1;
+  --shadow-color: oklch(0 0 0);
+  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
+  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
+  --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
+  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}
+
+[data-color-scheme='safetrekr'].dark {
+  --background: rgb(6, 26, 35);
+  --foreground: rgb(250, 250, 250);
+  --card: rgb(10, 39, 51);
+  --card-foreground: rgb(250, 250, 250);
+  --popover: rgb(42, 74, 89);
+  --popover-foreground: rgb(250, 250, 250);
+  --primary: rgb(75, 164, 103);
+  --primary-foreground: rgb(255, 255, 255);
+  --secondary: rgb(18, 54, 70);
+  --secondary-foreground: rgb(255, 255, 255);
+  --muted: rgb(42, 74, 89);
+  --muted-foreground: rgb(146, 152, 153);
+  --accent: rgb(73, 77, 78);
+  --accent-foreground: rgb(250, 250, 250);
+  --destructive: rgb(201, 24, 53);
+  --destructive-foreground: rgb(250, 250, 250);
+  --border: rgb(54, 84, 98);
+  --input: rgb(54, 84, 98);
+  --ring: rgb(115, 115, 115);
+  --chart-1: rgb(237, 246, 240);
+  --chart-2: rgb(201, 228, 209);
+  --chart-3: rgb(129, 191, 149);
+  --chart-4: rgb(75, 164, 103);
+  --chart-5: rgb(47, 126, 72);
+  --sidebar: rgb(7, 33, 44);
+  --sidebar-foreground: rgb(250, 250, 250);
+  --sidebar-primary: rgb(75, 164, 103);
+  --sidebar-primary-foreground: rgb(250, 250, 250);
+  --sidebar-accent: rgb(54, 84, 98);
+  --sidebar-accent-foreground: rgb(250, 250, 250);
+  --sidebar-border: rgb(54, 84, 98);
+  --sidebar-ring: rgb(89, 114, 126);
+  --font-sans: Inter, ui-sans-serif, sans-serif, system-ui;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: Intel One Mono, ui-monospace, monospace;
+  --radius: 0.625rem;
+  --shadow-x: 0;
+  --shadow-y: 1px;
+  --shadow-blur: 3px;
+  --shadow-spread: 0px;
+  --shadow-opacity: 0.1;
+  --shadow-color: oklch(0 0 0);
+  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
+  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
+  --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
+  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+}
+
+/* On-Demand Painting - Purple primary */
+
+[data-color-scheme='on-demand-painting'] {
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #6b3da7;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #171717;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373;
+  --accent: #f6f1ff;
+  --accent-foreground: #2b1746;
+  --destructive: #cf2e2e;
+  --destructive-foreground: #ffffff;
+  --border: #e6ddf3;
+  --input: #e6ddf3;
+  --ring: #9b51e0;
+  --chart-1: #8ed1fc;
+  --chart-2: #0693e3;
+  --chart-3: #9b51e0;
+  --chart-4: #00d084;
+  --chart-5: #fcb900;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-primary: #6b3da7;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f6f1ff;
+  --sidebar-accent-foreground: #2b1746;
+  --sidebar-border: #e6ddf3;
+  --sidebar-ring: #9b51e0;
+}
+
+[data-color-scheme='on-demand-painting'].dark {
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #171717;
+  --card-foreground: #fafafa;
+  --popover: #262626;
+  --popover-foreground: #fafafa;
+  --primary: #9b51e0;
+  --primary-foreground: #ffffff;
+  --secondary: #262626;
+  --secondary-foreground: #fafafa;
+  --muted: #262626;
+  --muted-foreground: #a1a1a1;
+  --accent: #2b1d3a;
+  --accent-foreground: #fafafa;
+  --destructive: #cf2e2e;
+  --destructive-foreground: #ffffff;
+  --border: #2f243a;
+  --input: #3a2a4a;
+  --ring: #9b51e0;
+  --chart-1: #8ed1fc;
+  --chart-2: #0693e3;
+  --chart-3: #9b51e0;
+  --chart-4: #00d084;
+  --chart-5: #fcb900;
+  --sidebar: #171717;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #9b51e0;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2b1d3a;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #2f243a;
+  --sidebar-ring: #9b51e0;
+}
+
+/**
+ * Tarva UI Design Tokens - Typography
+ */
+
+:root {
+  /* Font families */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco,
+    Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  /* Font sizes */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  /* Line heights */
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* Font weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Letter spacing */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+}
+
+/**
+ * Tarva UI Design Tokens - Animations
+ * Ported from frontend-v2 motion system
+ */
+
+:root {
+  /* Duration tokens */
+  --duration-instant: 0ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+  --duration-slower: 500ms;
+
+  /* Easing tokens */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* Distance tokens */
+  --distance-xs: 4px;
+  --distance-sm: 8px;
+  --distance-md: 16px;
+  --distance-lg: 24px;
+  --distance-xl: 32px;
+}
+
+/* Keyframe animations */
+
+@keyframes tarva-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tarva-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes tarva-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(var(--distance-md, 16px));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tarva-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--distance-md, 16px) * -1));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tarva-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(var(--distance-md, 16px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes tarva-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--distance-md, 16px) * -1));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes tarva-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes tarva-scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes tarva-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes tarva-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes tarva-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes tarva-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes tarva-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+/* Status badge specific animations */
+
+@keyframes tarva-status-dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes tarva-status-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Sparkline draw animation */
+
+@keyframes tarva-sparkline-draw {
+  from {
+    stroke-dashoffset: var(--path-length);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Capacity bar segment fill animation */
+
+@keyframes tarva-segment-fill {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+/* Step cluster animations */
+
+@keyframes tarva-step-cluster-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px 2px rgba(249, 115, 22, 0.4);
+  }
+}
+
+@keyframes tarva-step-cluster-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes tarva-bin-fill {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Progress row flash */
+
+@keyframes tarva-row-flash {
+  0% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: rgba(34, 197, 94, 0.1);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* Utility classes for animations */
+
+.animate-fade-in {
+  animation: tarva-fade-in var(--duration-normal) var(--ease-out);
+}
+
+.animate-fade-out {
+  animation: tarva-fade-out var(--duration-normal) var(--ease-out);
+}
+
+.animate-slide-up {
+  animation: tarva-slide-up var(--duration-normal) var(--ease-out);
+}
+
+.animate-slide-down {
+  animation: tarva-slide-down var(--duration-normal) var(--ease-out);
+}
+
+.animate-scale-in {
+  animation: tarva-scale-in var(--duration-normal) var(--ease-spring);
+}
+
+.animate-shimmer {
+  animation: tarva-shimmer 1.5s infinite;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--muted) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+}
+
+.animate-pulse {
+  animation: tarva-pulse 2s var(--ease-in-out) infinite;
+}
+
+.animate-spin {
+  animation: tarva-spin 1s linear infinite;
+}
+
+.animate-bounce {
+  animation: tarva-bounce 0.6s var(--ease-bounce) infinite;
+}
+
+.animate-status-dot-pulse {
+  animation: tarva-status-dot-pulse 1.5s var(--ease-in-out) infinite;
+}
+
+.animate-status-pop {
+  animation: tarva-status-pop 0.3s var(--ease-bounce);
+}
+
+.animate-status-shake {
+  animation: tarva-shake 0.4s var(--ease-out);
+}
+
+.animate-step-cluster-glow {
+  animation: tarva-step-cluster-glow 1.5s var(--ease-in-out) infinite;
+}
+
+.animate-step-cluster-pop {
+  animation: tarva-step-cluster-pop 0.3s var(--ease-bounce);
+}
+
+.animate-bin-fill {
+  animation: tarva-bin-fill 0.2s var(--ease-out) forwards;
+}
+
+.animate-row-flash {
+  animation: tarva-row-flash 0.4s var(--ease-out);
+}
+
+/* Accordion animations */
+
+@keyframes tarva-accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes tarva-accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.animate-accordion-down {
+  animation: tarva-accordion-down var(--duration-normal) var(--ease-out);
+}
+
+.animate-accordion-up {
+  animation: tarva-accordion-up var(--duration-normal) var(--ease-out);
+}
+
+/* Collapsible animations */
+
+@keyframes tarva-collapsible-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+  }
+}
+
+@keyframes tarva-collapsible-up {
+  from {
+    height: var(--radix-collapsible-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.animate-collapsible-down {
+  animation: tarva-collapsible-down var(--duration-normal) var(--ease-out);
+}
+
+.animate-collapsible-up {
+  animation: tarva-collapsible-up var(--duration-normal) var(--ease-out);
+}
+
+/* Progress indeterminate animation */
+
+@keyframes tarva-progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-progress-indeterminate {
+  animation: tarva-progress-indeterminate 1.5s var(--ease-in-out) infinite;
+}
+
+/* Reduced motion - respect user preferences */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Base reset for library components */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Ensure outline colors use ring token */
+
+*:focus-visible {
+  outline-color: var(--ring);
+}
+
+/* Smooth scrolling respects reduced motion */
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}

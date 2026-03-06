@@ -1,0 +1,123 @@
+/**
+ * @tarva/ui DataGrid styles
+ *
+ * Additional styles for AG-Grid integration.
+ * The theme is primarily configured via JS, but some overrides
+ * are needed for better integration with Tarva UI.
+ *
+ * Import this file alongside the data-grid component:
+ * import '@tarva/ui/data-grid/styles.css';
+ */
+
+/* Row hover - ensure proper contrast */
+.ag-theme-quartz .ag-row-hover {
+  background-color: var(--accent) !important;
+}
+
+/* Selected row */
+.ag-theme-quartz .ag-row-selected {
+  background-color: var(--accent) !important;
+}
+
+/* Header text alignment */
+.ag-theme-quartz .ag-header-cell-text {
+  font-weight: 500;
+}
+
+/* Cell text wrapping */
+.ag-theme-quartz .ag-cell {
+  line-height: 1.4;
+}
+
+/* Loading overlay */
+.ag-theme-quartz .ag-overlay-loading-center {
+  background-color: var(--background);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+/* No rows overlay */
+.ag-theme-quartz .ag-overlay-no-rows-center {
+  background-color: transparent;
+}
+
+/* Checkbox styling */
+.ag-theme-quartz .ag-checkbox-input-wrapper {
+  border-radius: var(--radius);
+}
+
+.ag-theme-quartz .ag-checkbox-input-wrapper.ag-checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* Sort icons */
+.ag-theme-quartz .ag-sort-indicator-icon {
+  color: var(--muted-foreground);
+}
+
+.ag-theme-quartz .ag-sort-indicator-icon.ag-sort-ascending-icon,
+.ag-theme-quartz .ag-sort-indicator-icon.ag-sort-descending-icon {
+  color: var(--primary);
+}
+
+/* Filter icons */
+.ag-theme-quartz .ag-header-cell-filter-button {
+  color: var(--muted-foreground);
+}
+
+.ag-theme-quartz .ag-header-cell-filter-button:hover {
+  color: var(--foreground);
+}
+
+/* Menu popup styling */
+.ag-theme-quartz .ag-popup {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+.ag-theme-quartz .ag-menu {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+}
+
+.ag-theme-quartz .ag-menu-option:hover {
+  background-color: var(--accent);
+}
+
+/* Horizontal scrollbar */
+.ag-theme-quartz .ag-body-horizontal-scroll-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.ag-theme-quartz .ag-body-horizontal-scroll-viewport::-webkit-scrollbar {
+  height: 8px;
+}
+
+.ag-theme-quartz .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ag-theme-quartz .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 4px;
+}
+
+/* Focus states */
+.ag-theme-quartz .ag-cell:focus-within {
+  outline: none;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .ag-theme-quartz .ag-row {
+    transition: none !important;
+  }
+}
+
+/* Dark mode specific adjustments */
+.dark .ag-theme-quartz {
+  --ag-border-color: var(--border);
+}

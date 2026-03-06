@@ -4,22 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-TarvaRI Alert Viewer -- a spatial dashboard for viewing triaged intel alerts from the TarvaRI intelligence system. Built on top of the tarva-launch spatial ZUI (Zoomable User Interface) engine.
+TarvaRI Alert Viewer — a spatial dashboard for viewing triaged intel alerts from the TarvaRI intelligence system. Built on the tarva-launch spatial ZUI (Zoomable User Interface) engine.
 
-Part of the SafeTrekr platform. Reads approved intel bundles, triage decisions, and trip alerts from a shared Supabase instance populated by the TarvaRI backend workers.
+Part of the SafeTrekr platform. All data flows through the TarvaRI backend API at `localhost:8000` via `/console/*` endpoints. The Supabase client exists in the codebase but data hooks have been switched to use the TarvaRI API directly.
 
-**Origin:** Cloned from `tarva-launch` (Tarva spatial mission-control hub). The spatial ZUI engine, ambient effects, morph choreography, and design system are all inherited from that project.
+**Origin:** Cloned from `tarva-launch`. The spatial ZUI engine, ambient effects, morph choreography, and design system are inherited.
 
-**Deployment target:** GitHub Pages (Next.js static export). No server-side features needed.
+**Deployment target:** GitHub Pages (Next.js static export).
 
 ## Stack
 
 - **Framework:** Next.js 16 (App Router) + React 19 + TypeScript 5.9
 - **Styling:** Tailwind CSS v4 + @tarva/ui (workspace dep from `../../tarva-ui-library`)
 - **State:** Zustand 5 + Immer
-- **Data fetching:** TanStack Query 5 + @supabase/supabase-js v2
+- **Data fetching:** TanStack Query 5 via `src/lib/tarvari-api.ts` (typed fetch wrapper)
+- **Map:** MapLibre GL JS via react-map-gl (loaded with `next/dynamic` ssr:false)
 - **Animation:** motion/react v12 + CSS @keyframes + rAF physics (camera)
-- **Spatial:** CSS Transforms ZUI engine (pan/zoom/morph)
 - **Package manager:** pnpm (never npm)
 
 ## Commands
@@ -35,132 +35,103 @@ pnpm format           # Prettier
 
 Requires Node >= 22. Path alias: `@/*` maps to `./src/*`.
 
+**Prerequisite:** TarvaRI backend must be running on port 8000 for data. Start it from `../TarvaRI/` or via the root `dev.sh start --intel`.
+
 ## Architecture
 
-### Spatial ZUI Engine (inherited from tarva-launch)
+### Data Flow
 
-The app uses a zoomable spatial interface with CSS transforms. Key components:
+All data comes from the TarvaRI backend API (`NEXT_PUBLIC_TARVARI_API_URL`, default `http://localhost:8000`). The API client is `src/lib/tarvari-api.ts` — a simple typed `tarvariGet<T>(endpoint, params?)` wrapper.
 
-- `src/components/spatial/SpatialViewport.tsx` -- Main viewport with pan/zoom
-- `src/components/spatial/SpatialCanvas.tsx` -- Infinite canvas container
-- `src/components/spatial/NavigationHUD.tsx` -- Breadcrumb + minimap + zoom
-- `src/components/spatial/CommandPalette.tsx` -- Cmd+K search/navigation
-- `src/components/spatial/ViewportCuller.tsx` -- Performance culling
-- `src/components/districts/` -- Spatial node containers (capsules, rings, connectors)
-- `src/components/ambient/` -- Visual effects layer (dot grid, halo, scan lines, particles)
+Five TanStack Query hooks fetch data:
 
-### State Management (Zustand stores in `src/stores/`)
+| Hook | API Endpoint | Returns | Poll |
+|------|-------------|---------|------|
+| `useCoverageMetrics` | `/console/coverage` + `/console/intel` | Source counts, alert counts per category | 60s |
+| `useCoverageMapData` | `/console/coverage/map-data` | `MapMarker[]` from GeoJSON FeatureCollection | 30s |
+| `useIntelFeed` | `/console/intel?limit=50` | Recent intel items for feed panels | 30s |
+| `useIntelBundles` | `/console/bundles` | Clustered intel bundles | 45s |
+| `useBundleDetail` | `/console/bundles/:id` | Single bundle with full detail | on-demand |
 
-| Store | Purpose |
-|-------|---------|
-| `auth.store.ts` | Authentication state |
-| `ui.store.ts` | Morph state machine, modal visibility, camera pan |
-| `camera.store.ts` | Camera position, zoom level |
-| `settings.store.ts` | User preferences |
-| `enrichment.store.ts` | Ambient effect toggles |
-| `districts.store.ts` | District/node data + navigation |
-| `triage.store.ts` | Exception classification (adapt for alert triage) |
-| `ai.store.ts` | AI provider state |
-| `builder.store.ts` | Builder mode state |
-| `attention.store.ts` | Attention choreography |
-| `narration.store.ts` | Narration state |
+All hooks live in `src/hooks/` and normalize API snake_case responses to camelCase TypeScript types. Shared types are in `src/lib/coverage-utils.ts` (`MapMarker`, `CoverageByCategory`, `CoverageMetrics`).
 
-### Data Source
+### Two-Store Architecture
 
-All data comes from TarvaRI's Supabase instance via client-side queries:
+**`ui.store.ts`** — animation & navigation state
+- Morph state machine (phase, direction, targetId)
+- Selected district ID
+- Command palette visibility
+- Only `useMorphChoreography()` should call `setMorphPhase()` directly
 
-```typescript
-// Approved alerts
-const { data } = await supabase
-  .from('intel_bundles')
-  .select('*, triage_decisions(*)')
-  .eq('status', 'approved')
-  .order('created_at', { ascending: false })
-  .limit(50)
+**`coverage.store.ts`** — data filtering & view modes
+- Selected categories for map filtering (empty = show all)
+- View mode: `'triaged' | 'all-bundles' | 'raw'`
+- Selected bundle ID for detail panel
+- URL sync helpers: `syncCoverageFromUrl()`, `syncCategoriesToUrl()`, `syncViewModeToUrl()`
+
+Design decision: animation state and data filtering are deliberately separate stores.
+
+### Morph State Machine
+
+The core navigation pattern. When a user clicks a category card, a 6-phase state machine drives the transition from grid view to full-screen district view.
+
+```
+Forward:  idle → expanding (400ms) → settled (200ms hold) → entering-district (600ms) → district
+Reverse:  district → leaving-district (400ms) → idle
 ```
 
-Key TarvaRI tables:
-- `intel_bundles` -- Clustered intel with risk scores, categories, GeoJSON geometry
-- `triage_decisions` -- Approve/reject decisions with rationale and confidence
-- `trip_alerts` -- Alerts matched to trips with relevance scores
-- `intel_normalized` -- Raw parsed intel (member data for bundles)
-- `intel_sources` -- Source configs and health metrics
+Defined in `src/lib/morph-types.ts`. Driven exclusively by `useMorphChoreography()` hook — no other code should call `setMorphPhase()`.
+
+### Semantic Zoom (Z-Levels)
+
+The grid switches representation based on camera zoom via `useSemanticZoom()`:
+
+- **Z0** (far): `CategoryIconGrid` — colored dots with short codes (SEIS, WX, FIR...)
+- **Z1+** (closer): `CoverageGrid` — 9-column CSS Grid of `CategoryCard` components with live metrics
+
+`MorphOrchestrator` swaps between the two with `AnimatePresence mode="wait"`. The `ZoomGate` component gates child visibility by zoom level.
+
+### Page Composition (`src/app/(launch)/page.tsx`)
+
+The main page wires together all layers in the spatial canvas:
+
+1. **Background:** DotGrid, SectorGrid, enrichment effects (HaloGlow, RangeRings)
+2. **Data layer:** ViewModeToggle → CoverageMap → CoverageOverviewStats → MorphOrchestrator (grid/icons)
+3. **Panels:** SystemStatusPanel, FeedPanel, ActivityTicker (ambient data panels)
+4. **Overlays:** DistrictViewOverlay (z-30), TriageRationalePanel (z-45), NavigationHUD (z-40)
+5. **Fixed chrome:** HorizonScanLine, SessionTimecode, CalibrationMarks, TopTelemetryBar, BottomStatusStrip
+
+Grid layout constants (world-space pixels): `GRID_WIDTH=1600`, `GRID_HEIGHT=400`, `GRID_COLUMNS=9`.
 
 ### Authentication
 
-Currently uses passphrase auth (inherited from tarva-launch). Plan is to swap for Supabase Auth (email/magic link) which shares auth with the rest of SafeTrekr.
+Passphrase auth inherited from tarva-launch. Login at `/login`, session stored in sessionStorage. The `(launch)/layout.tsx` guard redirects unauthenticated users.
 
 ## Configuration
 
-Copy `.env.example` to `.env.local` and fill in values:
+`.env.local` requires:
 
 ```bash
-# Supabase (required)
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-
-# Optional — Claude AI features
-ANTHROPIC_API_KEY=          # Only if using Claude AI features
-ANTHROPIC_MODEL=            # Override default (claude-sonnet-4-20250514)
-NEXT_PUBLIC_OLLAMA_URL=http://localhost:11434  # Only if using local AI
+NEXT_PUBLIC_TARVARI_API_URL=http://localhost:8000
 ```
 
 ## Conventions
 
 - Import `motion/react` (never `framer-motion`)
 - Use `pnpm` (never `npm`)
-- Types go in `src/lib/interfaces/` (contracts) or feature-local, never `src/types/`
-- Severity colors: Extreme (red), Severe (orange), Moderate (yellow), Minor (blue), Unknown (gray)
-- Categories: weather, seismic, health, conflict, humanitarian, infrastructure, fire, flood, storm, other
+- Types: `src/lib/interfaces/` for shared contracts, feature-local otherwise. Never `src/types/`.
+- Severity levels: Extreme (red), Severe (orange), Moderate (yellow), Minor (blue), Unknown (gray)
+- 15 known categories defined in `src/lib/interfaces/coverage.ts` (`KNOWN_CATEGORIES` array)
 - All timestamps ISO 8601 UTC
 - GeoJSON for geometry data
-
-## What Needs To Be Done
-
-### Phase 1: Adapt for Alert Viewing
-- Connect to TarvaRI Supabase instance
-- Replace/adapt district content with alert data visualization
-- Add alert list, detail panels, and map views to the spatial interface
-- Swap passphrase auth for Supabase Auth
-
-### Phase 2: Remove Unused Server Features
-- Remove `/api/*` routes (not needed for GitHub Pages static export)
-- Configure `next.config.ts` with `output: 'export'` for static build
-- Set up GitHub Pages deployment (build + push `out/` to `gh-pages` branch)
+- `SpatialCanvas` disables pointer-events on children; re-enable with `style={{ pointerEvents: 'auto' }}` on interactive elements
 
 ## Related Projects
 
 | Project | Path | Relationship |
 |---------|------|-------------|
-| TarvaRI (backend) | `../TarvaRI/` | Intel API + workers -- writes the data this app reads |
+| TarvaRI (backend) | `../TarvaRI/` | Intel API + workers — the data source for this app |
 | @tarva/ui | `../../tarva-ui-library/` | Shared component library (workspace dependency) |
 | SafeTrekr App | `../safetrekr-app-v2/` | Main SafeTrekr app (also reads trip_alerts) |
-
-## File Structure
-
-```
-src/
-  app/                    # Next.js App Router pages
-    (launch)/             # Main spatial layout + page
-    api/                  # Server API routes (to be removed for GitHub Pages)
-    login/                # Login page
-  components/
-    spatial/              # ZUI engine (viewport, canvas, HUD, command palette)
-    districts/            # Spatial nodes (capsules, rings, connectors, dot grid)
-    district-view/        # District detail views and scenes
-    ambient/              # Visual effects (glow, particles, scan lines, etc.)
-    stations/             # Station panels (content containers)
-    auth/                 # Login UI components
-    telemetry/            # Health badges, sparklines, metrics
-    providers/            # React Query + Theme providers
-    ui/                   # Shared UI components
-    ai/                   # AI integration components
-    evidence-ledger/      # Timeline/ledger components
-  hooks/                  # ~31 custom hooks (camera, morph, shortcuts, etc.)
-  stores/                 # Zustand state stores
-  styles/                 # CSS modules (spatial tokens, morph, enrichment)
-  lib/                    # Utilities, types, AI, interfaces, Supabase client
-docs/                     # Design docs and planning artifacts from tarva-launch
-public/                   # Static assets (logos, favicons)
-supabase/                 # Supabase migrations (launch-specific, may be replaced)
-```

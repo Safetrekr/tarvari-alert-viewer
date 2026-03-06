@@ -11,7 +11,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import type { NodeId } from '@/lib/interfaces/district'
-import type { MorphPhase, MorphDirection, MorphState } from '@/lib/morph-types'
+import type { MorphPhase, MorphDirection, MorphState, StartMorphOptions } from '@/lib/morph-types'
 
 // ============================================================
 // STATE
@@ -45,7 +45,7 @@ interface UIActions {
    * Only valid when morph.phase === 'idle'.
    * Sets selectedDistrictId, morph.phase, morph.direction, morph.targetId.
    */
-  startMorph: (nodeId: NodeId) => void
+  startMorph: (nodeId: NodeId, options?: StartMorphOptions) => void
 
   /**
    * Begin reverse morph back to the atrium.
@@ -82,6 +82,7 @@ const INITIAL_MORPH_STATE: MorphState = {
   direction: 'forward',
   targetId: null,
   phaseStartedAt: null,
+  fast: false,
 }
 
 // ============================================================
@@ -99,14 +100,23 @@ export const useUIStore = create<UIStore>()(
         state.selectedDistrictId = id
       }),
 
-    startMorph: (districtId) =>
+    startMorph: (districtId, options) =>
       set((state) => {
         if (state.morph.phase !== 'idle') return // Guard: only start from idle
         state.selectedDistrictId = districtId
-        state.morph.phase = 'expanding'
         state.morph.direction = 'forward'
         state.morph.targetId = districtId
         state.morph.phaseStartedAt = performance.now()
+
+        if (options?.fast) {
+          // Fast path: skip expanding + settled, jump to entering-district
+          state.morph.phase = 'entering-district'
+          state.morph.fast = true
+        } else {
+          // Normal path: begin expanding phase
+          state.morph.phase = 'expanding'
+          state.morph.fast = false
+        }
       }),
 
     reverseMorph: () =>
@@ -178,4 +188,7 @@ export const uiSelectors = {
 
   /** The district being morphed to/from, or null. */
   morphTargetId: (state: UIStore): NodeId | null => state.morph.targetId,
+
+  /** Whether the current morph is using the fast path (search-initiated). */
+  isFastMorph: (state: UIStore): boolean => state.morph.fast,
 }

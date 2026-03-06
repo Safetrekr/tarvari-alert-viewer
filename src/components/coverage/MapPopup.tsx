@@ -26,13 +26,19 @@ interface MapPopupProps {
   readonly ingestedAt: string
   /** Callback to close the popup. */
   readonly onClose: () => void
+  /** Alert ID for the INSPECT action. */
+  readonly id?: string
+  /** Alert category for the INSPECT action. */
+  readonly category?: string
+  /** Called when user clicks INSPECT to view full detail. */
+  readonly onInspect?: (id: string, category: string, basic: { title: string; severity: string; ingestedAt: string }) => void
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-export function MapPopup({ title, severity, ingestedAt, onClose }: MapPopupProps) {
+export function MapPopup({ title, severity, ingestedAt, onClose, id, category, onInspect }: MapPopupProps) {
   const severityColor = SEVERITY_MAP_COLORS[severity] ?? DEFAULT_MARKER_COLOR
 
   return (
@@ -114,6 +120,48 @@ export function MapPopup({ title, severity, ingestedAt, onClose }: MapPopupProps
       >
         {formatRelativeTime(ingestedAt)}
       </div>
+
+      {/* INSPECT button */}
+      {id && category && onInspect && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onInspect(id, category, { title, severity, ingestedAt })
+            onClose()
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            width: '100%',
+            marginTop: 8,
+            padding: '5px 8px',
+            fontFamily: 'var(--font-geist-mono, monospace)',
+            fontSize: 9,
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'rgba(255, 255, 255, 0.45)',
+            background: 'rgba(255, 255, 255, 0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.10)',
+            borderRadius: 4,
+            cursor: 'pointer',
+            transition: 'background 150ms ease, color 150ms ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'
+            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'
+            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.45)'
+          }}
+        >
+          INSPECT
+          <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 400 }}>→</span>
+        </button>
+      )}
     </div>
   )
 }

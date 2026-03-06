@@ -20,6 +20,13 @@ import { persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 
 // ============================================================================
+// Notification consent type
+// ============================================================================
+
+/** User's notification consent state for the two-step permission flow. */
+export type NotificationConsent = 'undecided' | 'granted' | 'denied'
+
+// ============================================================================
 // State
 // ============================================================================
 
@@ -35,6 +42,18 @@ interface SettingsState {
 
   /** Whether the spatial breadcrumb is visible. */
   breadcrumbVisible: boolean
+
+  /** User's notification consent state. Persisted to localStorage. */
+  notificationConsent: NotificationConsent
+
+  /** Whether in-app toast notifications are enabled. */
+  inAppNotificationsEnabled: boolean
+
+  /** Whether browser (native) notifications are enabled. */
+  browserNotificationsEnabled: boolean
+
+  /** Whether audio cues are enabled for P1 alerts. */
+  audioNotificationsEnabled: boolean
 }
 
 // ============================================================================
@@ -55,6 +74,18 @@ interface SettingsActions {
 
   /** Toggle the spatial breadcrumb visibility. */
   toggleBreadcrumb: () => void
+
+  /** Set the notification consent state. */
+  setNotificationConsent: (consent: NotificationConsent) => void
+
+  /** Set whether in-app toast notifications are enabled. */
+  setInAppNotifications: (enabled: boolean) => void
+
+  /** Set whether browser notifications are enabled. */
+  setBrowserNotifications: (enabled: boolean) => void
+
+  /** Set whether audio cues are enabled. */
+  setAudioNotifications: (enabled: boolean) => void
 }
 
 export type SettingsStore = SettingsState & SettingsActions
@@ -68,6 +99,10 @@ const DEFAULT_SETTINGS: SettingsState = {
   minimapVisible: true,
   effectsEnabled: true,
   breadcrumbVisible: true,
+  notificationConsent: 'undecided',
+  inAppNotificationsEnabled: true,
+  browserNotificationsEnabled: false,
+  audioNotificationsEnabled: false,
 }
 
 // ============================================================================
@@ -103,6 +138,26 @@ export const useSettingsStore = create<SettingsStore>()(
         set((state) => {
           state.breadcrumbVisible = !state.breadcrumbVisible
         }),
+
+      setNotificationConsent: (consent) =>
+        set((state) => {
+          state.notificationConsent = consent
+        }),
+
+      setInAppNotifications: (enabled) =>
+        set((state) => {
+          state.inAppNotificationsEnabled = enabled
+        }),
+
+      setBrowserNotifications: (enabled) =>
+        set((state) => {
+          state.browserNotificationsEnabled = enabled
+        }),
+
+      setAudioNotifications: (enabled) =>
+        set((state) => {
+          state.audioNotificationsEnabled = enabled
+        }),
     })),
     {
       name: 'tarva-launch-settings',
@@ -111,6 +166,10 @@ export const useSettingsStore = create<SettingsStore>()(
         minimapVisible: state.minimapVisible,
         effectsEnabled: state.effectsEnabled,
         breadcrumbVisible: state.breadcrumbVisible,
+        notificationConsent: state.notificationConsent,
+        inAppNotificationsEnabled: state.inAppNotificationsEnabled,
+        browserNotificationsEnabled: state.browserNotificationsEnabled,
+        audioNotificationsEnabled: state.audioNotificationsEnabled,
       }),
     },
   ),
@@ -136,4 +195,24 @@ export const settingsSelectors = {
   /** Whether the breadcrumb is visible. */
   isBreadcrumbVisible: (state: SettingsStore): boolean =>
     state.breadcrumbVisible,
+
+  /** Current notification consent state. */
+  notificationConsent: (state: SettingsStore): NotificationConsent =>
+    state.notificationConsent,
+
+  /** Whether notifications are actively granted. */
+  isNotificationsGranted: (state: SettingsStore): boolean =>
+    state.notificationConsent === 'granted',
+
+  /** Whether in-app toast notifications are enabled. */
+  isInAppNotificationsEnabled: (state: SettingsStore): boolean =>
+    state.inAppNotificationsEnabled,
+
+  /** Whether browser notifications are enabled. */
+  isBrowserNotificationsEnabled: (state: SettingsStore): boolean =>
+    state.browserNotificationsEnabled,
+
+  /** Whether audio cues are enabled. */
+  isAudioNotificationsEnabled: (state: SettingsStore): boolean =>
+    state.audioNotificationsEnabled,
 } as const
