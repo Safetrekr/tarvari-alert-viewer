@@ -19,6 +19,7 @@
  */
 
 import { getSupabaseBrowserClient } from './client'
+import type { ThreatPicture } from '@/hooks/use-threat-picture'
 import type { IntelFeedItem } from '@/hooks/use-intel-feed'
 import type { CoverageMapFilters } from '@/hooks/use-coverage-map-data'
 import type { CategoryIntelItem } from '@/hooks/use-category-intel'
@@ -362,4 +363,108 @@ export async function fetchCategoryIntelFromSupabase(
     sentAt: null,
     operationalPriority: null,
   }))
+}
+
+// ============================================================================
+// fetchThreatPictureFromSupabase
+// ============================================================================
+
+/**
+ * Derive an approximate threat picture from `public_intel_feed`.
+ *
+ * Mirrors `fetchThreatPicture()` in `use-threat-picture.ts`.
+ * Priority and region breakdowns are not available — returned as empty.
+ */
+export async function fetchThreatPictureFromSupabase(): Promise<ThreatPicture> {
+  const supabase = getSupabaseBrowserClient()
+
+  const { data, error } = await supabase
+    .from('public_intel_feed')
+    .select('category, severity')
+    .limit(10000)
+
+  if (error) {
+    throw new Error('Supabase query failed (public_intel_feed/threat-picture): ' + error.message)
+  }
+
+  const rows = data ?? []
+
+  const categoryCounts = new Map<string, number>()
+  const severityCounts = new Map<string, number>()
+
+  for (const row of rows) {
+    const r = row as Record<string, unknown>
+    const cat = r.category as string
+    const sev = r.severity as string
+    categoryCounts.set(cat, (categoryCounts.get(cat) ?? 0) + 1)
+    severityCounts.set(sev, (severityCounts.get(sev) ?? 0) + 1)
+  }
+
+  const total = rows.length || 1
+
+  return {
+    totalActiveAlerts: rows.length,
+    byCategory: Array.from(categoryCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([category, count]) => ({ category, count, trend: 'stable' as const })),
+    bySeverity: Array.from(severityCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([severity, count]) => ({
+        severity: severity as import('@/lib/interfaces/coverage').SeverityLevel,
+        count,
+        percentage: Math.round((count / total) * 100),
+      })),
+    byPriority: [],
+    byRegion: [],
+    overallTrend: 'stable',
+    trendDetail: null,
+    generatedAt: new Date().toISOString(),
+    periodStart: new Date().toISOString(),
+    periodEnd: new Date().toISOString(),
+  }
+}
+
+// ============================================================================
+// fetchSummaryAvailabilityFromSupabase
+// ============================================================================
+
+/**
+ * Fetch summary availability from the `public_geo_summaries` view.
+ *
+ * Returns the same shape used by ThreatPictureCard's summary availability.
+ */
+export async function fetchSummaryAvailabilityFromSupabase(): Promise<{
+  global: { hourly: string | null; daily: string | null }
+  regions: Array<{ key: string; type: string; generatedAt: string }>
+}> {
+  const supabase = getSupabaseBrowserClient()
+
+  const { data, error } = await supabase
+    .from('public_geo_summaries')
+    .select('geo_level, geo_key, summary_type, generated_at')
+    .order('generated_at', { ascending: false })
+
+  if (error) {
+    return { global: { hourly: null, daily: null }, regions: [] }
+  }
+
+  let hourly: string | null = null
+  let daily: string | null = null
+  const regions: Array<{ key: string; type: string; generatedAt: string }> = []
+
+  for (const row of data ?? []) {
+    const r = row as Record<string, unknown>
+    const level = r.geo_level as string
+    const type = r.summary_type as string
+    const genAt = r.generated_at as string
+
+    if (level === 'world') {
+      if (type === 'hourly' && !hourly) hourly = genAt
+      if (type === 'daily' && !daily) daily = genAt
+    } else if (level === 'region' || level === 'country') {
+      regions.push({ key: r.geo_key as string, type, generatedAt: genAt })
+    }
+  }
+
+  return { global: { hourly, daily }, regions }
 }

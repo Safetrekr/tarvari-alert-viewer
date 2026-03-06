@@ -30,6 +30,7 @@ import { useThreatPicture } from '@/hooks/use-threat-picture'
 import { tarvariGet } from '@/lib/tarvari-api'
 import { getCategoryMeta } from '@/lib/interfaces/coverage'
 import { DATA_MODE } from '@/lib/data-mode'
+import { fetchSummaryAvailabilityFromSupabase } from '@/lib/supabase/queries'
 
 // ============================================================================
 // Constants
@@ -76,7 +77,7 @@ interface SummaryAvailability {
 
 async function fetchSummaryAvailability(): Promise<SummaryAvailability> {
   if (DATA_MODE === 'supabase') {
-    return { global: { hourly: null, daily: null }, regions: [] }
+    return fetchSummaryAvailabilityFromSupabase()
   }
 
   const data = await tarvariGet<{ items: SummaryIndexItem[] }>('/console/summaries')
@@ -128,9 +129,8 @@ export function ThreatPictureCard({ onClick }: ThreatPictureCardProps) {
   const { data: tp, isLoading } = useThreatPicture()
 
   const { data: summaryAvail } = useQuery({
-    queryKey: ['summary-availability'],
+    queryKey: ['summary-availability', DATA_MODE],
     queryFn: fetchSummaryAvailability,
-    enabled: DATA_MODE !== 'supabase',
     staleTime: 120_000,
     refetchInterval: 120_000,
   })

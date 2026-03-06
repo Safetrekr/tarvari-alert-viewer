@@ -111,6 +111,9 @@ export function isOllamaRateLimited(): boolean {
  * @returns true if Ollama is available, false otherwise.
  */
 export async function checkOllamaHealth(): Promise<boolean> {
+  // Ollama is local-only — never reachable from a static deployment
+  if (process.env.NEXT_PUBLIC_DATA_MODE === 'supabase') return false
+
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), OLLAMA_HEALTH_TIMEOUT_MS)
