@@ -21,6 +21,7 @@
 import { useQuery, keepPreviousData, type UseQueryResult } from '@tanstack/react-query'
 import { tarvariGet } from '@/lib/tarvari-api'
 import { DATA_MODE } from '@/lib/data-mode'
+import { fetchGeoSummariesFromSupabase } from '@/lib/supabase/queries'
 import type { GeoLevel, ThreatLevel, TrendDirection, SummaryType } from '@/lib/interfaces/coverage'
 
 // ============================================================================
@@ -270,8 +271,15 @@ export function useLatestGeoSummary(
 ): UseQueryResult<GeoSummary | null> {
   return useQuery<GeoSummary | null>({
     queryKey: GEO_SUMMARY_QUERY_KEYS.latest(geoLevel!, geoKey!),
-    queryFn: () => fetchLatestSummary(geoLevel!, geoKey!),
-    enabled: DATA_MODE !== 'supabase' && geoLevel != null && geoKey != null,
+    queryFn: async () => {
+      if (DATA_MODE === 'supabase') {
+        const rows = await fetchGeoSummariesFromSupabase()
+        const match = rows.find((r) => r.geo_level === geoLevel && r.geo_key === geoKey)
+        return match ? normalizeGeoSummary(match as ApiGeoSummary) : null
+      }
+      return fetchLatestSummary(geoLevel!, geoKey!)
+    },
+    enabled: geoLevel != null && geoKey != null,
     staleTime: 60_000,
     refetchInterval: 120_000,
     placeholderData: keepPreviousData,
@@ -295,8 +303,16 @@ export function useGeoSummaryHistory(
 ): UseQueryResult<GeoSummary[]> {
   return useQuery<GeoSummary[]>({
     queryKey: GEO_SUMMARY_QUERY_KEYS.history(geoLevel!, geoKey!, type!),
-    queryFn: () => fetchSummaryHistory(geoLevel!, geoKey!, type!),
-    enabled: DATA_MODE !== 'supabase' && geoLevel != null && geoKey != null && type != null,
+    queryFn: async () => {
+      if (DATA_MODE === 'supabase') {
+        const rows = await fetchGeoSummariesFromSupabase()
+        return rows
+          .filter((r) => r.geo_level === geoLevel && r.geo_key === geoKey && r.summary_type === type)
+          .map((r) => normalizeGeoSummary(r as ApiGeoSummary))
+      }
+      return fetchSummaryHistory(geoLevel!, geoKey!, type!)
+    },
+    enabled: geoLevel != null && geoKey != null && type != null,
     staleTime: 120_000,
     refetchInterval: false,
     placeholderData: keepPreviousData,
@@ -311,12 +327,16 @@ export function useGeoSummaryHistory(
  */
 export function useAllGeoSummaries(enabled: boolean): UseQueryResult<GeoSummary[]> {
   return useQuery<GeoSummary[]>({
-    queryKey: ['geo-summary', 'all-index'],
+    queryKey: ['geo-summary', 'all-index', DATA_MODE],
     queryFn: async () => {
+      if (DATA_MODE === 'supabase') {
+        const rows = await fetchGeoSummariesFromSupabase()
+        return rows.map((r) => normalizeGeoSummary(r as ApiGeoSummary))
+      }
       const data = await tarvariGet<ApiSummariesResponse>('/console/summaries')
       return (data.items ?? []).map(normalizeGeoSummary)
     },
-    enabled: DATA_MODE !== 'supabase' && enabled,
+    enabled,
     staleTime: 90_000,
     refetchInterval: 120_000,
     retry: 1,

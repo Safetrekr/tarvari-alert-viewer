@@ -20,6 +20,7 @@
 
 import { getSupabaseBrowserClient } from './client'
 import type { ThreatPicture } from '@/hooks/use-threat-picture'
+import type { GeoSummary } from '@/hooks/use-geo-summaries'
 import type { IntelFeedItem } from '@/hooks/use-intel-feed'
 import type { CoverageMapFilters } from '@/hooks/use-coverage-map-data'
 import type { CategoryIntelItem } from '@/hooks/use-category-intel'
@@ -467,4 +468,49 @@ export async function fetchSummaryAvailabilityFromSupabase(): Promise<{
   }
 
   return { global: { hourly, daily }, regions }
+}
+
+// ============================================================================
+// fetchGeoSummariesFromSupabase
+// ============================================================================
+
+/**
+ * Fetch all geo summaries from the `public_geo_summaries` view.
+ *
+ * Mirrors `useAllGeoSummaries` query function. Returns raw rows in the
+ * ApiGeoSummary shape so the existing `normalizeGeoSummary` can process them.
+ */
+export async function fetchGeoSummariesFromSupabase(): Promise<
+  Array<{
+    id: string
+    geo_level: string
+    geo_key: string
+    summary_type: string
+    summary_text: string
+    structured_breakdown: Record<string, unknown> | string
+    generated_at: string
+    validated_at: string | null
+  }>
+> {
+  const supabase = getSupabaseBrowserClient()
+
+  const { data, error } = await supabase
+    .from('public_geo_summaries')
+    .select('id, geo_level, geo_key, summary_type, summary_text, structured_breakdown, generated_at, validated_at')
+    .order('generated_at', { ascending: false })
+
+  if (error) {
+    throw new Error('Supabase query failed (public_geo_summaries): ' + error.message)
+  }
+
+  return (data ?? []) as Array<{
+    id: string
+    geo_level: string
+    geo_key: string
+    summary_type: string
+    summary_text: string
+    structured_breakdown: Record<string, unknown> | string
+    generated_at: string
+    validated_at: string | null
+  }>
 }
