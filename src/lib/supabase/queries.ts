@@ -235,9 +235,9 @@ export async function fetchBundlesFromSupabase(
   const supabase = getSupabaseBrowserClient()
 
   let query = supabase
-    .from('public_bundles')
+    .from('public_bundle_detail')
     .select(
-      'id, title, status, final_severity, intel_count, source_count, risk_score, created_at, routed_at, routed_alert_count',
+      'id, title, status, final_severity, intel_count, source_count, risk_score, created_at, routed_at, routed_alert_count, representative_coordinates',
     )
     .order('created_at', { ascending: false })
     .limit(100)
@@ -267,7 +267,7 @@ export async function fetchBundlesFromSupabase(
       member_intel_ids: [],
       primary_intel_id: '',
       dedup_hash: '',
-      representative_coordinates: null,
+      representative_coordinates: r.representative_coordinates as IntelBundleRow['representative_coordinates'],
       geographic_scope: null,
       temporal_scope: null,
       risk_details: null,

@@ -68,7 +68,8 @@ const MAP_STYLE: maplibregl.StyleSpecification = {
       source: 'carto-dark',
       paint: {
         'raster-brightness-max': 0.45,
-        'raster-saturation': -0.2,
+        'raster-saturation': -0.3,
+        'raster-hue-rotate': 200,
       },
     },
   ],

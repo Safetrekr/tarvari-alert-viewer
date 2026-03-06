@@ -31,7 +31,7 @@ export const VIEW_MODE_LABELS: Record<ViewMode, string> = {
 } as const
 
 /** Default view mode on initial load. */
-export const DEFAULT_VIEW_MODE: ViewMode = 'triaged'
+export const DEFAULT_VIEW_MODE: ViewMode = 'raw'
 
 // ============================================================================
 // Composite types

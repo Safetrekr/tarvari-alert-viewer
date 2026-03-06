@@ -35,6 +35,7 @@ interface ApiBundleItem {
   routed_at: string | null
   routed_alert_count: number | null
   operational_priority: string | null
+  representative_coordinates?: { lat: number | null; lon: number | null } | null
 }
 
 interface ApiBundlesList {
@@ -61,7 +62,7 @@ function apiToBundle(item: ApiBundleItem): BundleWithDecision {
     member_intel_ids: [],
     primary_intel_id: '',
     dedup_hash: '',
-    representative_coordinates: null,
+    representative_coordinates: item.representative_coordinates ?? null,
     geographic_scope: null,
     temporal_scope: null,
     risk_details: null,

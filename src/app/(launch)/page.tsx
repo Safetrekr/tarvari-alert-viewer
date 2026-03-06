@@ -87,6 +87,7 @@ import { TimeRangeSelector } from '@/components/coverage/TimeRangeSelector'
 import { GRID_WIDTH, GRID_HEIGHT } from '@/components/coverage/CoverageGrid'
 import type { ViewMode } from '@/lib/interfaces/intel-bundles'
 import { useIntelBundles } from '@/hooks/use-intel-bundles'
+import type { MapMarker } from '@/lib/coverage-utils'
 import { TriageRationalePanel } from '@/components/coverage/TriageRationalePanel'
 import { GeoSummaryPanel } from '@/components/coverage/GeoSummaryPanel'
 import { AlertDetailPanel } from '@/components/coverage/AlertDetailPanel'
@@ -218,6 +219,32 @@ export default function LaunchPage() {
   const { data: bundles = [], isLoading: isBundlesLoading } = useIntelBundles(viewMode)
   const selectedBundleId = useCoverageStore((s) => s.selectedBundleId)
   const setSelectedBundleId = useCoverageStore((s) => s.setSelectedBundleId)
+
+  // Compute display markers based on view mode
+  const displayMarkers: MapMarker[] = useMemo(() => {
+    if (viewMode === 'raw') return mapMarkers
+
+    // Bundle modes: convert bundle representative_coordinates to MapMarker[]
+    const bundleMarkers: MapMarker[] = []
+    for (const b of bundles) {
+      const coords = b.bundle.representative_coordinates
+      if (!coords || coords.lat == null || coords.lon == null) continue
+      bundleMarkers.push({
+        id: b.bundle.id,
+        lat: coords.lat,
+        lng: coords.lon,
+        title: b.bundle.title ?? `${b.bundle.final_severity} Bundle`,
+        severity: b.bundle.final_severity,
+        category: b.bundle.categories?.[0] ?? 'bundle',
+        sourceId: '',
+        ingestedAt: b.bundle.created_at,
+        operationalPriority: b.operationalPriority,
+      })
+    }
+    return bundleMarkers
+  }, [viewMode, mapMarkers, bundles])
+
+  const isDisplayLoading = viewMode === 'raw' ? isMapLoading : isBundlesLoading
 
   const viewModeCounts = useMemo(
     () => ({
@@ -496,8 +523,8 @@ export default function LaunchPage() {
               <CoverageMapDynamic
                 categoryId="all"
                 categoryName="All Categories"
-                markers={mapMarkers}
-                isLoading={isMapLoading}
+                markers={displayMarkers}
+                isLoading={isDisplayLoading}
                 overview
                 onInspect={handleInspect}
               />
