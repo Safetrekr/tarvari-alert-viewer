@@ -350,25 +350,121 @@ function SummaryTimestamp({ generatedAt, validatedAt }: { generatedAt: string; v
   )
 }
 
+/**
+ * Parse a lightweight markdown string into an array of React nodes.
+ * Handles: ## headings, **bold**, - bullet lists, blank-line paragraphs.
+ */
+function renderMarkdown(text: string): React.ReactNode[] {
+  const lines = text.split('\n')
+  const nodes: React.ReactNode[] = []
+  let bulletBuffer: string[] = []
+  let key = 0
+
+  const flushBullets = () => {
+    if (bulletBuffer.length === 0) return
+    nodes.push(
+      <ul key={key++} style={{ margin: '6px 0', paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {bulletBuffer.map((item, i) => (
+          <li key={i} style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 12, lineHeight: 1.65 }}>
+            {inlineBold(item)}
+          </li>
+        ))}
+      </ul>,
+    )
+    bulletBuffer = []
+  }
+
+  for (const raw of lines) {
+    const line = raw.trimEnd()
+
+    // Blank line — flush bullets, add spacing
+    if (line.trim() === '') {
+      flushBullets()
+      continue
+    }
+
+    // Heading (## or ###)
+    const headingMatch = line.match(/^#{1,3}\s+(.+)$/)
+    if (headingMatch) {
+      flushBullets()
+      nodes.push(
+        <div
+          key={key++}
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: 'rgba(255, 255, 255, 0.5)',
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            marginTop: nodes.length > 0 ? 12 : 0,
+            marginBottom: 4,
+          }}
+        >
+          {headingMatch[1]}
+        </div>,
+      )
+      continue
+    }
+
+    // Bullet item (- or *)
+    const bulletMatch = line.match(/^\s*[-*]\s+(.+)$/)
+    if (bulletMatch) {
+      bulletBuffer.push(bulletMatch[1])
+      continue
+    }
+
+    // Numbered list (1. 2. etc.)
+    const numberedMatch = line.match(/^\s*\d+\.\s+(.+)$/)
+    if (numberedMatch) {
+      bulletBuffer.push(numberedMatch[1])
+      continue
+    }
+
+    // Regular paragraph line
+    flushBullets()
+    nodes.push(
+      <p key={key++} style={{ margin: '4px 0', color: 'rgba(255, 255, 255, 0.4)', fontSize: 12, lineHeight: 1.7 }}>
+        {inlineBold(line)}
+      </p>,
+    )
+  }
+
+  flushBullets()
+  return nodes
+}
+
+/** Replace **bold** spans with styled <strong> elements. */
+function inlineBold(text: string): React.ReactNode {
+  const parts = text.split(/\*\*(.+?)\*\*/g)
+  if (parts.length === 1) return text
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <strong key={i} style={{ fontWeight: 600, color: 'rgba(255, 255, 255, 0.55)' }}>
+        {part}
+      </strong>
+    ) : (
+      part
+    ),
+  )
+}
+
 function ExecutiveSummary({ text }: { text: string }) {
+  const rendered = useMemo(() => renderMarkdown(text), [text])
+
   return (
     <div>
       <GhostLabel>Executive Summary</GhostLabel>
       <div
         style={{
           ...MONO,
-          fontSize: 12,
-          lineHeight: 1.7,
-          color: 'rgba(255, 255, 255, 0.4)',
           letterSpacing: '0.01em',
           background: 'rgba(255, 255, 255, 0.02)',
           border: '1px solid rgba(255, 255, 255, 0.04)',
           borderRadius: 8,
           padding: '16px 18px',
-          whiteSpace: 'pre-wrap',
         }}
       >
-        {text}
+        {rendered}
       </div>
     </div>
   )
