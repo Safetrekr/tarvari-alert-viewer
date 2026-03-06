@@ -20,6 +20,7 @@
 
 import { getSupabaseBrowserClient } from './client'
 import type { ThreatPicture } from '@/hooks/use-threat-picture'
+import type { PriorityFeedSummary, PriorityFeedItem } from '@/hooks/use-priority-feed'
 import type { GeoSummary } from '@/hooks/use-geo-summaries'
 import type { IntelFeedItem } from '@/hooks/use-intel-feed'
 import type { CoverageMapFilters } from '@/hooks/use-coverage-map-data'
@@ -422,6 +423,56 @@ export async function fetchThreatPictureFromSupabase(): Promise<ThreatPicture> {
     generatedAt: new Date().toISOString(),
     periodStart: new Date().toISOString(),
     periodEnd: new Date().toISOString(),
+  }
+}
+
+// ============================================================================
+// fetchPriorityFeedFromSupabase
+// ============================================================================
+
+/**
+ * Fetch P1/P2 priority items from `public_intel_feed`.
+ *
+ * Mirrors `fetchPriorityFeed()` in `use-priority-feed.ts`.
+ */
+export async function fetchPriorityFeedFromSupabase(): Promise<PriorityFeedSummary> {
+  const supabase = getSupabaseBrowserClient()
+
+  const { data, error } = await supabase
+    .from('public_intel_feed')
+    .select('id, title, severity, category, source_key, ingested_at, operational_priority')
+    .in('operational_priority', ['P1', 'P2'])
+    .order('ingested_at', { ascending: false })
+    .limit(100)
+
+  if (error) {
+    throw new Error('Supabase query failed (public_intel_feed/priority): ' + error.message)
+  }
+
+  const items: PriorityFeedItem[] = (data ?? []).map((r: Record<string, unknown>) => ({
+    id: r.id as string,
+    title: r.title as string,
+    severity: r.severity as string,
+    category: r.category as string,
+    operationalPriority: (r.operational_priority as string) as PriorityFeedItem['operationalPriority'],
+    shortSummary: null,
+    eventType: null,
+    geoScope: null,
+    sourceKey: (r.source_key as string) ?? null,
+    ingestedAt: r.ingested_at as string,
+    sentAt: null,
+  }))
+
+  const p1Count = items.filter((i) => i.operationalPriority === 'P1').length
+  const p2Count = items.filter((i) => i.operationalPriority === 'P2').length
+
+  return {
+    items,
+    p1Count,
+    p2Count,
+    totalCount: items.length,
+    mostRecentP1: items.find((i) => i.operationalPriority === 'P1') ?? null,
+    mostRecentP2: items.find((i) => i.operationalPriority === 'P2') ?? null,
   }
 }
 
