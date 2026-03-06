@@ -330,8 +330,8 @@ export function ThreatPictureCard({ onClick }: ThreatPictureCardProps) {
             <SummaryTypePill type="daily" available={!!summaryAvail?.global.daily} timestamp={summaryAvail?.global.daily ?? null} />
           </div>
 
-          {/* Region summaries */}
-          {(summaryAvail?.regions ?? []).map((r) => (
+          {/* Region summaries (capped at 3) */}
+          {(summaryAvail?.regions ?? []).slice(0, 3).map((r) => (
             <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 10, flexShrink: 0 }} />
               <span style={{ ...MONO, fontSize: 9, color: 'rgba(255, 255, 255, 0.25)', flex: 1 }}>
@@ -344,6 +344,11 @@ export function ThreatPictureCard({ onClick }: ThreatPictureCardProps) {
               />
             </div>
           ))}
+          {(summaryAvail?.regions ?? []).length > 3 && (
+            <span style={{ ...MONO, fontSize: 8, color: 'rgba(255, 255, 255, 0.15)', paddingLeft: 10 }}>
+              +{(summaryAvail?.regions ?? []).length - 3} more
+            </span>
+          )}
 
           {/* No summaries state */}
           {!summaryAvail?.global.hourly && !summaryAvail?.global.daily && (summaryAvail?.regions ?? []).length === 0 && (
