@@ -32,15 +32,24 @@ export function MobileMapView({
   const mapRef = useRef<MapRef>(null)
   const geoControlAdded = useRef(false)
 
-  // Attach GeolocateControl after map loads
+  // Attach GeolocateControl after map loads (once)
   useEffect(() => {
     if (geoControlAdded.current) return
 
     const checkMap = () => {
       const map = mapRef.current?.getMap()
       if (!map) return
-      geoControlAdded.current = true
 
+      // Prevent duplicate controls if already added by a previous mount
+      const existing = map._controls?.some(
+        (c: unknown) => c instanceof maplibregl.GeolocateControl,
+      )
+      if (existing) {
+        geoControlAdded.current = true
+        return
+      }
+
+      geoControlAdded.current = true
       const geoControl = new maplibregl.GeolocateControl({
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: false,

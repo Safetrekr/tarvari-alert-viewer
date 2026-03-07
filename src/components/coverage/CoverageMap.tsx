@@ -184,6 +184,7 @@ function MapNavControls({ mapRef }: { mapRef: React.RefObject<MapRef | null> }) 
 
   return (
     <div
+      className="map-nav-controls"
       style={{
         position: 'absolute',
         top: 10,

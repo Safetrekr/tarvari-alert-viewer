@@ -46,6 +46,7 @@ export function useMobileMorphBridge(
   const resetMorph = useUIStore((s) => s.resetMorph)
   const startMorph = useUIStore((s) => s.startMorph)
 
+  const setMorphPhase = useUIStore((s) => s.setMorphPhase)
   const selectMapAlert = useCoverageStore((s) => s.selectMapAlert)
   const toggleCategory = useCoverageStore((s) => s.toggleCategory)
 
@@ -58,6 +59,17 @@ export function useMobileMorphBridge(
     morphPhase === 'entering-district' || morphPhase === 'district'
 
   const activeCategoryId = isCategorySheetOpen ? (morphTargetId as string) : null
+
+  // Mobile doesn't use useMorphChoreography (that's desktop-only).
+  // Advance entering-district → district after a short delay so the morph settles.
+  useEffect(() => {
+    if (morphPhase === 'entering-district') {
+      const timer = setTimeout(() => {
+        setMorphPhase('district')
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [morphPhase, setMorphPhase])
 
   // Track phase changes -- when morph enters 'idle' from a non-idle phase, clean up
   useEffect(() => {

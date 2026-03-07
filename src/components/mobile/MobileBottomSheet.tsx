@@ -4,7 +4,7 @@ import '@/styles/mobile-bottom-sheet.css'
 
 import { useRef, useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { motion, AnimatePresence, useMotionValue, animate } from 'motion/react'
+import { motion, useMotionValue, animate } from 'motion/react'
 import type { PanInfo } from 'motion/react'
 import type { BottomSheetConfig } from '@/lib/interfaces/mobile'
 
@@ -22,8 +22,6 @@ const DISMISS_VELOCITY = 500
 const PROMOTE_VELOCITY = 500
 
 function snapPercentsToPixels(percents: readonly number[], vh: number): number[] {
-  // Convert percentage of viewport height to Y position from top
-  // 70% snap = sheet occupies 70% of viewport = top edge at 30% from top
   return percents.map((p) => vh * (1 - p / 100))
 }
 
@@ -51,38 +49,47 @@ export function MobileBottomSheet({
   const [mounted, setMounted] = useState(false)
   const sheetRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const y = useMotionValue(0)
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800
+  const y = useMotionValue(vh)
   const backdropOpacity = useMotionValue(0)
   const currentSnapRef = useRef(config.initialSnapIndex)
-  const dragEnabledRef = useRef(true)
+  const dismissingRef = useRef(false)
+  const isAnimatingOpenRef = useRef(false)
+  const openedAtRef = useRef(0)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
   // Compute snap positions in pixels
-  const vh = typeof window !== 'undefined' ? window.innerHeight : 800
   const snapPositions = snapPercentsToPixels(config.snapPoints, vh)
-  const closedY = vh // fully off-screen
+  const closedY = vh
 
-  // Animate to initial snap when opening
+  // Open animation — guarded against Strict Mode double-fire
   useEffect(() => {
     if (isOpen && mounted) {
+      if (isAnimatingOpenRef.current) return
+      isAnimatingOpenRef.current = true
+      dismissingRef.current = false
+
+      openedAtRef.current = performance.now()
       const targetY = snapPositions[config.initialSnapIndex] ?? snapPositions[0]
       y.set(closedY)
       animate(y, targetY, SPRING)
       backdropOpacity.set(0)
       animate(backdropOpacity, 0.4, { duration: 0.3 })
       currentSnapRef.current = config.initialSnapIndex
-
-      // Push history entry for back button dismiss
-      history.pushState({ sheet: config.id }, '')
-      const handlePop = () => onDismiss()
-      window.addEventListener('popstate', handlePop)
-      return () => window.removeEventListener('popstate', handlePop)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, mounted])
+
+  // Reset the open guard when sheet closes
+  useEffect(() => {
+    if (!isOpen) {
+      isAnimatingOpenRef.current = false
+      dismissingRef.current = false
+    }
+  }, [isOpen])
 
   const snapTo = useCallback(
     (index: number) => {
@@ -96,6 +103,8 @@ export function MobileBottomSheet({
   )
 
   const handleDismiss = useCallback(() => {
+    if (dismissingRef.current) return
+    dismissingRef.current = true
     animate(y, closedY, SPRING)
     animate(backdropOpacity, 0, { duration: 0.2 })
     setTimeout(onDismiss, 300)
@@ -116,7 +125,7 @@ export function MobileBottomSheet({
       if (velocityY < -PROMOTE_VELOCITY) {
         const higherSnaps = snapPositions.filter((s) => s < currentY)
         if (higherSnaps.length > 0) {
-          const target = Math.max(...higherSnaps) // nearest higher (smallest Y = highest position)
+          const target = Math.max(...higherSnaps)
           const idx = snapPositions.indexOf(target)
           snapTo(idx)
           return
@@ -138,13 +147,6 @@ export function MobileBottomSheet({
     [y, snapPositions, config.dismissible, handleDismiss, snapTo],
   )
 
-  // Scroll-vs-drag: disable drag when scrolled inside content
-  const handleScroll = useCallback(() => {
-    if (scrollRef.current) {
-      dragEnabledRef.current = scrollRef.current.scrollTop <= 0
-    }
-  }, [])
-
   if (!mounted || !isOpen) return null
 
   return createPortal(
@@ -153,7 +155,12 @@ export function MobileBottomSheet({
       <motion.div
         className="mobile-sheet-backdrop"
         style={{ opacity: backdropOpacity }}
-        onClick={config.dismissible !== false ? handleDismiss : undefined}
+        onClick={config.dismissible !== false ? () => {
+          // Ignore synthesized clicks within 400ms of opening — prevents the
+          // browser's click event from the card tap hitting the newly-mounted backdrop.
+          if (performance.now() - openedAtRef.current < 400) return
+          handleDismiss()
+        } : undefined}
         aria-hidden="true"
       />
 
@@ -183,7 +190,6 @@ export function MobileBottomSheet({
         <div
           ref={scrollRef}
           className="mobile-sheet-scroll"
-          onScroll={handleScroll}
         >
           {children}
         </div>

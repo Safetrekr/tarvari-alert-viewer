@@ -77,7 +77,7 @@ async function fetchCategoryIntelFromConsole(category: string): Promise<Category
     category: r.category,
     eventType: r.event_type,
     sourceKey: r.source_key,
-    confidence: r.confidence,
+    confidence: r.confidence != null && r.confidence > 1 ? r.confidence / 100 : r.confidence,
     geoScope: r.geo_scope,
     shortSummary: r.short_summary,
     ingestedAt: r.ingested_at,

@@ -58,4 +58,16 @@ export const SHEET_CONFIGS = {
     initialSnapIndex: 0,
     dismissible: true,
   },
+  threatPosture: {
+    id: 'threat-posture',
+    snapPoints: [65, 100] as const,
+    initialSnapIndex: 0,
+    dismissible: true,
+  },
+  regionDetail: {
+    id: 'region-detail',
+    snapPoints: [70, 100] as const,
+    initialSnapIndex: 0,
+    dismissible: true,
+  },
 } as const satisfies Record<string, BottomSheetConfig>

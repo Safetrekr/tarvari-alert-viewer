@@ -1,7 +1,7 @@
 /**
  * Coverage category types and constants for the TarvaRI Alert Viewer.
  *
- * Defines the 15 known intel categories, their display metadata,
+ * Defines the known intel categories, their display metadata,
  * color mappings, icon mappings, and associated severity/source types.
  *
  * @module coverage
@@ -39,7 +39,7 @@ export interface CategoryMeta {
 // ---------------------------------------------------------------------------
 
 /**
- * The 15 known TarvaRI intel categories, ordered for grid display.
+ * The known TarvaRI intel categories, ordered for grid display.
  * Categories not in this list fall back to the 'other' entry.
  */
 export const KNOWN_CATEGORIES: readonly CategoryMeta[] = [
@@ -57,6 +57,15 @@ export const KNOWN_CATEGORIES: readonly CategoryMeta[] = [
   { id: 'flood',          displayName: 'Flood',          shortName: 'FLD',  icon: 'waves',          color: 'var(--category-flood, #4f46e5)',          description: 'Flood warnings and events' },
   { id: 'storm',          displayName: 'Storm',          shortName: 'STM',  icon: 'cloud-lightning', color: 'var(--category-storm, #0ea5e9)',         description: 'Storm systems and warnings' },
   { id: 'multi-hazard',   displayName: 'Multi-Hazard',   shortName: 'MHZ',  icon: 'layers',         color: 'var(--category-multi-hazard, #6b7280)',  description: 'Multi-hazard compound events' },
+  { id: 'volcanic',       displayName: 'Volcanic',       shortName: 'VOL',  icon: 'mountain-snow',  color: 'var(--category-volcanic, #b91c1c)',      description: 'Volcanic activity and eruptions' },
+  { id: 'travel',         displayName: 'Travel',         shortName: 'TRV',  icon: 'map-pin',        color: 'var(--category-travel, #0d9488)',         description: 'Travel advisories and warnings' },
+  { id: 'cybersecurity',  displayName: 'Cybersecurity',  shortName: 'CYB',  icon: 'shield',         color: 'var(--category-cybersecurity, #7c3aed)',  description: 'Cyber threats and incidents' },
+  { id: 'political',      displayName: 'Political',      shortName: 'POL',  icon: 'landmark',       color: 'var(--category-political, #be185d)',      description: 'Political instability and events' },
+  { id: 'security',       displayName: 'Security',       shortName: 'SEC',  icon: 'shield-check',   color: 'var(--category-security, #991b1b)',       description: 'Security incidents and threats' },
+  { id: 'transportation', displayName: 'Transportation', shortName: 'TRN',  icon: 'truck',          color: 'var(--category-transportation, #0369a1)', description: 'Transportation disruptions' },
+  { id: 'wildfire',       displayName: 'Wildfire',       shortName: 'WFR',  icon: 'flame-kindling', color: 'var(--category-wildfire, #c2410c)',        description: 'Wildfire incidents and alerts' },
+  { id: 'news',           displayName: 'News',           shortName: 'NWS',  icon: 'newspaper',      color: 'var(--category-news, #64748b)',           description: 'News intelligence items' },
+  { id: 'events',         displayName: 'Events',         shortName: 'EVT',  icon: 'calendar',       color: 'var(--category-events, #059669)',         description: 'Significant events and incidents' },
   { id: 'other',          displayName: 'Other',          shortName: 'OTH',  icon: 'circle-dot',     color: 'var(--category-other, #9ca3af)',          description: 'Uncategorized intelligence' },
 ] as const
 
@@ -383,7 +392,7 @@ export function buildGridItems(
 }
 
 /**
- * Build grid items for ALL 15 known categories, merging live metrics where
+ * Build grid items for ALL known categories, merging live metrics where
  * available and filling zeroed metrics for categories with no sources.
  * Ensures the grid always shows all categories so users can click into
  * district view even before data is populated.

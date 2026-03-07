@@ -69,6 +69,15 @@
   display: none;
 }
 
+/* Placeholder text in region scroll */
+.mobile-intel-region-placeholder {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.2);
+  padding: 12px 0;
+  white-space: nowrap;
+}
+
 /* Feed list */
 .mobile-intel-feed {
   display: flex;

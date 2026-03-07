@@ -131,7 +131,7 @@
 }
 
 .mobile-tab-button[data-active='false'] .mobile-tab-label {
-  opacity: 0.2;
+  opacity: 0.45;
 }
 
 /* Active tab underline */

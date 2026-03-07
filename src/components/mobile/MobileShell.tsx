@@ -107,6 +107,7 @@ export function MobileShell({
         scanLine={<MobileScanLine />}
         threatIndicator={threatIndicator}
         onSearchPress={onSearchPress}
+        onLogoPress={() => handleTabChange('situation')}
       />
 
       <main className="mobile-content" id="mobile-main-content">

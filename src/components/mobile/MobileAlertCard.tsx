@@ -48,11 +48,12 @@ export function MobileAlertCard({ item, onTap, isSelected }: MobileAlertCardProp
         background: isSelected
           ? 'rgba(100, 180, 220, 0.06)'
           : 'transparent',
+        borderTop: 'none',
+        borderRight: 'none',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
         borderLeft: isSelected
           ? '2px solid rgba(100, 180, 220, 0.4)'
           : '2px solid transparent',
-        border: 'none',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
         cursor: 'pointer',
         textAlign: 'left',
         WebkitTapHighlightColor: 'transparent',

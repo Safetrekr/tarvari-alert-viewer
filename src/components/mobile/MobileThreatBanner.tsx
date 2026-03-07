@@ -10,7 +10,7 @@ import type { ThreatLevel } from '@/lib/interfaces/coverage'
  * 56px threat posture banner for the Situation tab.
  * Shows posture badge, active alert count, P1/P2 counts, and trend.
  */
-export function MobileThreatBanner() {
+export function MobileThreatBanner({ onTap }: { onTap?: () => void }) {
   const { data: tp, isLoading } = useThreatPicture()
 
   const posture: ThreatLevel = useMemo(() => {
@@ -45,17 +45,23 @@ export function MobileThreatBanner() {
   }
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={onTap}
       style={{
         height: 56,
         display: 'flex',
         alignItems: 'center',
         gap: 10,
+        width: 'calc(100% - 2 * var(--space-content-padding, 12px))',
         padding: '0 var(--space-content-padding, 12px)',
         margin: '0 var(--space-content-padding, 12px)',
         background: ps.bg,
         border: `1px solid ${ps.border}`,
         borderRadius: 8,
+        cursor: 'pointer',
+        textAlign: 'left',
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
       {/* Posture badge */}
@@ -136,6 +142,6 @@ export function MobileThreatBanner() {
           </span>
         )}
       </div>
-    </div>
+    </button>
   )
 }

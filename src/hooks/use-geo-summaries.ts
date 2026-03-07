@@ -176,6 +176,19 @@ function deriveThreatLevel(severityDist: Record<string, number>): ThreatLevel {
   return 'LOW'
 }
 
+/** Normalize threats_by_category: API may return { count, ... } objects or plain numbers. */
+function normalizeThreatsByCategory(raw: Record<string, unknown>): Record<string, number> {
+  const result: Record<string, number> = {}
+  for (const [key, value] of Object.entries(raw)) {
+    if (typeof value === 'number') {
+      result[key] = value
+    } else if (value && typeof value === 'object' && 'count' in value) {
+      result[key] = (value as { count: number }).count
+    }
+  }
+  return result
+}
+
 function normalizeGeoSummary(api: ApiGeoSummary): GeoSummary {
   // Defensive structured_breakdown parsing (WS-4.2 D-3)
   let breakdown: ApiStructuredBreakdown
@@ -198,7 +211,7 @@ function normalizeGeoSummary(api: ApiGeoSummary): GeoSummary {
     threatLevel: (api.threat_level as ThreatLevel) ?? deriveThreatLevel(severityDist),
     summaryText: api.summary_text,
     structuredBreakdown: {
-      threatsByCategory: breakdown.threats_by_category ?? {},
+      threatsByCategory: normalizeThreatsByCategory(breakdown.threats_by_category ?? {}),
       severityDistribution: severityDist,
       keyEvents: (breakdown.key_events ?? []).map((e) => ({
         title: e.title,

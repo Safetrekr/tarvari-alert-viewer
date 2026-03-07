@@ -35,7 +35,7 @@ export function MobileCategoryCard({
     [id, onLongPressProp],
   )
 
-  const handlers = useLongPress({
+  const { isPressed, ...handlers } = useLongPress({
     onTap: handleTap,
     onLongPress: handleLongPress,
   })
@@ -62,7 +62,7 @@ export function MobileCategoryCard({
         cursor: 'pointer',
         WebkitTapHighlightColor: 'transparent',
         touchAction: 'manipulation',
-        transform: handlers.isPressed ? 'scale(0.97)' : 'scale(1)',
+        transform: isPressed ? 'scale(0.97)' : 'scale(1)',
         transition: 'transform var(--duration-card-press, 100ms) ease',
         opacity: hasAlerts ? 1 : 0.5,
       }}

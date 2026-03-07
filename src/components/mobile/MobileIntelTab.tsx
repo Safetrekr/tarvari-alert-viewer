@@ -4,7 +4,7 @@ import '@/styles/mobile-intel-tab.css'
 
 import { useState, useCallback, useMemo } from 'react'
 import { useIntelFeed } from '@/hooks/use-intel-feed'
-import { useLatestGeoSummary } from '@/hooks/use-geo-summaries'
+import { useAllGeoSummaries } from '@/hooks/use-geo-summaries'
 import type { GeoSummary } from '@/hooks/use-geo-summaries'
 import { adaptFeedItem } from '@/lib/adapters/intel-adapters'
 import { MobileAlertCard } from './MobileAlertCard'
@@ -18,22 +18,13 @@ export interface MobileIntelTabProps {
   readonly onSearchTap?: () => void
 }
 
-const GEO_REGIONS = [
-  'world',
-  'north-america',
-  'europe',
-  'middle-east',
-  'east-asia',
-  'africa',
-] as const
-
 export function MobileIntelTab({
   onAlertTap,
   onRegionTap,
   onSearchTap,
 }: MobileIntelTabProps) {
   const feedQuery = useIntelFeed()
-  const globalSummary = useLatestGeoSummary('world', 'world')
+  const geoSummaries = useAllGeoSummaries(true)
 
   // Adapt feed items to CategoryIntelItem for MobileAlertCard
   const feedItems = useMemo(() => {
@@ -64,9 +55,18 @@ export function MobileIntelTab({
       <section className="mobile-intel-section">
         <h3 className="mobile-intel-section-title">Geographic Intelligence</h3>
         <div className="mobile-intel-region-scroll">
-          {/* Global summary card */}
-          {globalSummary.data && onRegionTap && (
-            <MobileRegionCard summary={globalSummary.data} onTap={onRegionTap} />
+          {(geoSummaries.data ?? []).map((summary) => (
+            <MobileRegionCard
+              key={summary.id}
+              summary={summary}
+              onTap={onRegionTap ?? (() => {})}
+            />
+          ))}
+          {geoSummaries.isLoading && (
+            <div className="mobile-intel-region-placeholder">Loading summaries...</div>
+          )}
+          {geoSummaries.isSuccess && (geoSummaries.data ?? []).length === 0 && (
+            <div className="mobile-intel-region-placeholder">No summaries available</div>
           )}
         </div>
       </section>

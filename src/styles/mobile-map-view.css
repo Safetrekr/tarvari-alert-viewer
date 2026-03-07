@@ -5,7 +5,9 @@
 .mobile-map-tab {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  /* Use viewport-relative height minus header (48px) and bottom nav (56px).
+     Cannot use height:100% because parent is inside a scroll container. */
+  height: calc(100dvh - 48px - 56px);
   min-height: 0;
 }
 
@@ -119,7 +121,8 @@
 
 /* Hide desktop MapNavControls on mobile */
 @media (max-width: 767px) {
-  .mobile-map-container .maplibregl-ctrl-top-left {
+  .mobile-map-container .maplibregl-ctrl-top-left,
+  .mobile-map-container .map-nav-controls {
     display: none !important;
   }
 }
@@ -170,6 +173,7 @@
 @media (orientation: landscape) {
   .mobile-map-tab {
     flex-direction: row;
+    height: calc(100dvh - var(--space-header-height, 40px) - var(--space-bottom-nav-height, 48px));
   }
 
   .mobile-filter-chips {

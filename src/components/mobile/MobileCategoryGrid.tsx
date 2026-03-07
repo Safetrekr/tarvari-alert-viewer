@@ -10,7 +10,7 @@ import { MobileCategoryCard } from './MobileCategoryCard'
 import { MobileStateView } from './MobileStateView'
 
 /**
- * 2-column CSS Grid of 15 category cards for the Situation tab.
+ * 2-column CSS Grid of category cards for the Situation tab.
  * Tap = startMorph (fast path). Long-press = toggle map filter.
  */
 export function MobileCategoryGrid() {

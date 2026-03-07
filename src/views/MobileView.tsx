@@ -6,12 +6,13 @@ import { MobileShell } from '@/components/mobile/MobileShell'
 import { MobileSituationTab } from '@/components/mobile/MobileSituationTab'
 import { MobileThreatIndicator } from '@/components/mobile/MobileThreatIndicator'
 import { MobileFilterChips } from '@/components/mobile/MobileFilterChips'
-import { MobileAlertDetailStub } from '@/components/mobile/MobileAlertDetailStub'
 import { MobileSettings } from '@/components/mobile/MobileSettings'
 import { MobileBottomSheet } from '@/components/mobile/MobileBottomSheet'
 import { MobileCategoryDetail } from '@/components/mobile/MobileCategoryDetail'
 import { MobileAlertDetail } from '@/components/mobile/MobileAlertDetail'
 import { MobileIntelTab } from '@/components/mobile/MobileIntelTab'
+import { MobileThreatPostureDetail } from '@/components/mobile/MobileThreatPostureDetail'
+import { MobileRegionDetail } from '@/components/mobile/MobileRegionDetail'
 import { MobileSearchOverlay } from '@/components/mobile/MobileSearchOverlay'
 import { MobileIdleLockOverlay } from '@/components/mobile/MobileIdleLockOverlay'
 import { MobileConnectionToast } from '@/components/mobile/MobileConnectionToast'
@@ -23,6 +24,7 @@ import { useConnectionToast } from '@/hooks/use-connection-toast'
 import { useCoverageMapData } from '@/hooks/use-coverage-map-data'
 import type { CoverageMapFilters } from '@/hooks/use-coverage-map-data'
 import { useCategoryIntel } from '@/hooks/use-category-intel'
+import { usePriorityFeed } from '@/hooks/use-priority-feed'
 import { useCoverageStore } from '@/stores/coverage.store'
 import {
   syncCategoriesToUrl,
@@ -31,7 +33,7 @@ import {
 import { MobileStateView } from '@/components/mobile/MobileStateView'
 import { useMobileMorphBridge } from '@/hooks/use-mobile-morph-bridge'
 import type { CategoryIntelItem } from '@/hooks/use-category-intel'
-import type { MobileTab } from '@/lib/interfaces/mobile'
+import type { GeoSummary } from '@/hooks/use-geo-summaries'
 
 const MobileMapView = dynamic(
   () =>
@@ -76,6 +78,36 @@ function MobileMapTabContent() {
 
   const mapQuery = useCoverageMapData(mapFilters)
   const displayMarkers = mapQuery.data ?? []
+
+  // Fetch full intel for the selected map alert's category
+  const mapAlertIntel = useCategoryIntel(selectedMapAlertCategory)
+
+  // Resolve full alert item from category intel, or construct from basic marker data
+  const mapAlertItem = useMemo<CategoryIntelItem | null>(() => {
+    if (!selectedMapAlertId || !selectedMapAlertBasic) return null
+
+    // Prefer the full item from category intel
+    if (mapAlertIntel.data) {
+      const fullItem = mapAlertIntel.data.find((item) => item.id === selectedMapAlertId)
+      if (fullItem) return fullItem
+    }
+
+    // Construct from basic marker data while full data loads
+    return {
+      id: selectedMapAlertId,
+      title: selectedMapAlertBasic.title,
+      severity: selectedMapAlertBasic.severity,
+      category: selectedMapAlertCategory ?? '',
+      eventType: null,
+      sourceKey: null,
+      confidence: null,
+      geoScope: null,
+      shortSummary: null,
+      ingestedAt: selectedMapAlertBasic.ingestedAt,
+      sentAt: null,
+      operationalPriority: null,
+    }
+  }, [selectedMapAlertId, selectedMapAlertBasic, selectedMapAlertCategory, mapAlertIntel.data])
 
   const categoryLabel = useMemo(() => {
     if (selectedCategories.length === 0) return 'All Categories'
@@ -150,12 +182,10 @@ function MobileMapTabContent() {
         config={SHEET_CONFIGS.alertDetail}
         ariaLabel="Alert detail"
       >
-        {selectedMapAlertBasic && (
-          <MobileAlertDetailStub
-            title={selectedMapAlertBasic.title}
-            severity={selectedMapAlertBasic.severity}
-            category={selectedMapAlertCategory ?? ''}
-            ingestedAt={selectedMapAlertBasic.ingestedAt}
+        {mapAlertItem && (
+          <MobileAlertDetail
+            item={mapAlertItem}
+            canShowOnMap={false}
           />
         )}
       </MobileBottomSheet>
@@ -170,13 +200,11 @@ function MobileMapTabContent() {
 export default function MobileView() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<MobileTab>('situation')
+  const [directAlertItem, setDirectAlertItem] = useState<CategoryIntelItem | null>(null)
+  const [threatPostureOpen, setThreatPostureOpen] = useState(false)
+  const [regionDetail, setRegionDetail] = useState<GeoSummary | null>(null)
 
-  const handleSwitchToMap = useCallback(() => {
-    setActiveTab('map')
-  }, [])
-
-  const morph = useMobileMorphBridge(handleSwitchToMap)
+  const morph = useMobileMorphBridge()
 
   // Protective ops hooks
   const idleLock = useIdleLock()
@@ -184,12 +212,20 @@ export default function MobileView() {
   useDataFreshnessMobile()
   const connectionToast = useConnectionToast()
 
+  // Priority feed for situation tab alert taps (P1 banner, priority strip)
+  const { data: priorityFeed } = usePriorityFeed()
+
   // Fetch full intel data for selected alert in category detail
   const categoryIntel = useCategoryIntel(morph.activeCategoryId)
+
+  // Resolve alert item: prefer direct item (from intel/search tap), fall back to category lookup
   const selectedAlertItem = useMemo(() => {
+    if (directAlertItem) return directAlertItem
     if (!morph.selectedAlertId || !categoryIntel.data) return null
     return categoryIntel.data.find((item) => item.id === morph.selectedAlertId) ?? null
-  }, [morph.selectedAlertId, categoryIntel.data])
+  }, [directAlertItem, morph.selectedAlertId, categoryIntel.data])
+
+  const isAlertSheetOpen = morph.isAlertSheetOpen || directAlertItem !== null
 
   const handleMenuPress = useCallback(() => {
     setSettingsOpen(true)
@@ -207,40 +243,64 @@ export default function MobileView() {
     setSearchOpen(false)
   }, [])
 
-  // Intel tab: alert tap opens alert detail sheet
+  const handleThreatBannerTap = useCallback(() => {
+    setThreatPostureOpen(true)
+  }, [])
+
+  const handleRegionTap = useCallback((summary: GeoSummary) => {
+    setRegionDetail(summary)
+  }, [])
+
+  // Situation tab: P1 banner / priority strip alert tap
+  const handleSituationAlertTap = useCallback(
+    (alertId: string) => {
+      if (!priorityFeed) return
+      const feedItem = priorityFeed.items.find((item) => item.id === alertId)
+      if (!feedItem) return
+      setDirectAlertItem({
+        id: feedItem.id,
+        title: feedItem.title,
+        severity: feedItem.severity,
+        category: feedItem.category,
+        eventType: feedItem.eventType,
+        sourceKey: feedItem.sourceKey,
+        confidence: null,
+        geoScope: feedItem.geoScope,
+        shortSummary: feedItem.shortSummary,
+        ingestedAt: feedItem.ingestedAt,
+        sentAt: feedItem.sentAt,
+        operationalPriority: feedItem.operationalPriority,
+      })
+    },
+    [priorityFeed],
+  )
+
+  // Intel tab: alert tap opens alert detail sheet with the full item
   const handleIntelAlertTap = useCallback(
     (item: CategoryIntelItem) => {
-      morph.handleAlertTap(item.id)
+      setDirectAlertItem(item)
     },
-    [morph],
+    [],
   )
 
   // Intel tab: search result tap opens alert detail sheet then closes search
   const handleSearchResultTap = useCallback(
     (item: CategoryIntelItem) => {
-      morph.handleAlertTap(item.id)
+      setDirectAlertItem(item)
       setSearchOpen(false)
     },
-    [morph],
-  )
-
-  // Tab change with morph reset
-  const handleTabChange = useCallback(
-    (tab: MobileTab) => {
-      morph.handleTabChangeWithMorphReset()
-      setActiveTab(tab)
-    },
-    [morph],
+    [],
   )
 
   return (
     <>
       <MobileShell
-        situationContent={<MobileSituationTab />}
+        situationContent={<MobileSituationTab onAlertTap={handleSituationAlertTap} onThreatBannerTap={handleThreatBannerTap} />}
         mapContent={<MobileMapTabContent />}
         intelContent={
           <MobileIntelTab
             onAlertTap={handleIntelAlertTap}
+            onRegionTap={handleRegionTap}
             onSearchTap={handleSearchOpen}
           />
         }
@@ -268,10 +328,13 @@ export default function MobileView() {
         )}
       </MobileBottomSheet>
 
-      {/* Alert detail bottom sheet (nested from category) */}
+      {/* Alert detail bottom sheet (from category detail or intel/search) */}
       <MobileBottomSheet
-        isOpen={morph.isAlertSheetOpen}
-        onDismiss={morph.dismissAlertSheet}
+        isOpen={isAlertSheetOpen}
+        onDismiss={() => {
+          morph.dismissAlertSheet()
+          setDirectAlertItem(null)
+        }}
         config={SHEET_CONFIGS.alertDetail}
         ariaLabel="Alert detail"
       >
@@ -283,6 +346,26 @@ export default function MobileView() {
             canShowOnMap
           />
         )}
+      </MobileBottomSheet>
+
+      {/* Threat posture detail bottom sheet */}
+      <MobileBottomSheet
+        isOpen={threatPostureOpen}
+        onDismiss={() => setThreatPostureOpen(false)}
+        config={SHEET_CONFIGS.threatPosture}
+        ariaLabel="Threat posture detail"
+      >
+        <MobileThreatPostureDetail />
+      </MobileBottomSheet>
+
+      {/* Region detail bottom sheet */}
+      <MobileBottomSheet
+        isOpen={!!regionDetail}
+        onDismiss={() => setRegionDetail(null)}
+        config={SHEET_CONFIGS.regionDetail}
+        ariaLabel="Region detail"
+      >
+        {regionDetail && <MobileRegionDetail summary={regionDetail} />}
       </MobileBottomSheet>
 
       {/* Settings bottom sheet */}

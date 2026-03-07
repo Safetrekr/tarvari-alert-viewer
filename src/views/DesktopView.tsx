@@ -353,7 +353,7 @@ export default function DesktopView() {
     return new Map(threatPicture.byCategory.map((t) => [t.category, t.trend]))
   }, [threatPicture])
 
-  // Build grid items for all 15 categories, merging live metrics + trend data
+  // Build grid items for all categories, merging live metrics + trend data
   const gridItems: CategoryGridItem[] = useMemo(
     () => buildAllGridItems(coverageMetrics?.byCategory ?? [], trendMap),
     [coverageMetrics, trendMap],
