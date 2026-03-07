@@ -11,6 +11,8 @@ import { MobileSettings } from '@/components/mobile/MobileSettings'
 import { MobileBottomSheet } from '@/components/mobile/MobileBottomSheet'
 import { MobileCategoryDetail } from '@/components/mobile/MobileCategoryDetail'
 import { MobileAlertDetail } from '@/components/mobile/MobileAlertDetail'
+import { MobileIntelTab } from '@/components/mobile/MobileIntelTab'
+import { MobileSearchOverlay } from '@/components/mobile/MobileSearchOverlay'
 import { SHEET_CONFIGS } from '@/lib/interfaces/mobile'
 import { useCoverageMapData } from '@/hooks/use-coverage-map-data'
 import type { CoverageMapFilters } from '@/hooks/use-coverage-map-data'
@@ -22,6 +24,7 @@ import {
 } from '@/stores/coverage.store'
 import { MobileStateView } from '@/components/mobile/MobileStateView'
 import { useMobileMorphBridge } from '@/hooks/use-mobile-morph-bridge'
+import type { CategoryIntelItem } from '@/hooks/use-category-intel'
 import type { MobileTab } from '@/lib/interfaces/mobile'
 
 const MobileMapView = dynamic(
@@ -160,6 +163,7 @@ function MobileMapTabContent() {
 
 export default function MobileView() {
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<MobileTab>('situation')
 
   const handleSwitchToMap = useCallback(() => {
@@ -183,6 +187,31 @@ export default function MobileView() {
     setSettingsOpen(false)
   }, [])
 
+  const handleSearchOpen = useCallback(() => {
+    setSearchOpen(true)
+  }, [])
+
+  const handleSearchClose = useCallback(() => {
+    setSearchOpen(false)
+  }, [])
+
+  // Intel tab: alert tap opens alert detail sheet
+  const handleIntelAlertTap = useCallback(
+    (item: CategoryIntelItem) => {
+      morph.handleAlertTap(item.id)
+    },
+    [morph],
+  )
+
+  // Intel tab: search result tap opens alert detail sheet then closes search
+  const handleSearchResultTap = useCallback(
+    (item: CategoryIntelItem) => {
+      morph.handleAlertTap(item.id)
+      setSearchOpen(false)
+    },
+    [morph],
+  )
+
   // Tab change with morph reset
   const handleTabChange = useCallback(
     (tab: MobileTab) => {
@@ -197,8 +226,15 @@ export default function MobileView() {
       <MobileShell
         situationContent={<MobileSituationTab />}
         mapContent={<MobileMapTabContent />}
+        intelContent={
+          <MobileIntelTab
+            onAlertTap={handleIntelAlertTap}
+            onSearchTap={handleSearchOpen}
+          />
+        }
         threatIndicator={<MobileThreatIndicator />}
         onMenuPress={handleMenuPress}
+        onSearchPress={handleSearchOpen}
       />
 
       {/* Category detail bottom sheet */}
@@ -246,6 +282,13 @@ export default function MobileView() {
       >
         <MobileSettings />
       </MobileBottomSheet>
+
+      {/* Full-screen search overlay */}
+      <MobileSearchOverlay
+        isOpen={searchOpen}
+        onClose={handleSearchClose}
+        onResultTap={handleSearchResultTap}
+      />
     </>
   )
 }
