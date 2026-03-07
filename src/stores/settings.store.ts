@@ -54,6 +54,9 @@ interface SettingsState {
 
   /** Whether audio cues are enabled for P1 alerts. */
   audioNotificationsEnabled: boolean
+
+  /** Idle lock timeout in minutes. 0 = never auto-lock. */
+  idleLockTimeoutMinutes: number
 }
 
 // ============================================================================
@@ -86,6 +89,9 @@ interface SettingsActions {
 
   /** Set whether audio cues are enabled. */
   setAudioNotifications: (enabled: boolean) => void
+
+  /** Set the idle lock timeout in minutes. 0 = never. */
+  setIdleLockTimeout: (minutes: number) => void
 }
 
 export type SettingsStore = SettingsState & SettingsActions
@@ -103,6 +109,7 @@ const DEFAULT_SETTINGS: SettingsState = {
   inAppNotificationsEnabled: true,
   browserNotificationsEnabled: false,
   audioNotificationsEnabled: false,
+  idleLockTimeoutMinutes: 5,
 }
 
 // ============================================================================
@@ -158,6 +165,11 @@ export const useSettingsStore = create<SettingsStore>()(
         set((state) => {
           state.audioNotificationsEnabled = enabled
         }),
+
+      setIdleLockTimeout: (minutes) =>
+        set((state) => {
+          state.idleLockTimeoutMinutes = minutes
+        }),
     })),
     {
       name: 'tarva-launch-settings',
@@ -170,6 +182,7 @@ export const useSettingsStore = create<SettingsStore>()(
         inAppNotificationsEnabled: state.inAppNotificationsEnabled,
         browserNotificationsEnabled: state.browserNotificationsEnabled,
         audioNotificationsEnabled: state.audioNotificationsEnabled,
+        idleLockTimeoutMinutes: state.idleLockTimeoutMinutes,
       }),
     },
   ),
@@ -215,4 +228,8 @@ export const settingsSelectors = {
   /** Whether audio cues are enabled. */
   isAudioNotificationsEnabled: (state: SettingsStore): boolean =>
     state.audioNotificationsEnabled,
+
+  /** Current idle lock timeout in minutes. 0 = never. */
+  idleLockTimeoutMinutes: (state: SettingsStore): number =>
+    state.idleLockTimeoutMinutes,
 } as const

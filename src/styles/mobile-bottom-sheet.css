@@ -1,0 +1,65 @@
+/* =================================================================
+   Mobile Bottom Sheet -- structural CSS
+   ================================================================= */
+
+.mobile-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.4);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 51;
+  background: var(--glass-sheet-bg, rgba(5, 9, 17, 0.92));
+  backdrop-filter: var(--glass-sheet-blur, blur(16px) saturate(130%));
+  -webkit-backdrop-filter: var(--glass-sheet-blur, blur(16px) saturate(130%));
+  border-top: var(--glass-sheet-border, 1px solid rgba(255, 255, 255, 0.08));
+  border-radius: var(--glass-sheet-radius, 16px 16px 0 0);
+  box-shadow: var(--glass-sheet-shadow, 0 -4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04));
+  display: flex;
+  flex-direction: column;
+  touch-action: none;
+  will-change: transform;
+}
+
+.mobile-sheet-handle-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--space-bottom-sheet-handle, 24px);
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
+.mobile-sheet-handle-zone:active {
+  cursor: grabbing;
+}
+
+.mobile-sheet-handle {
+  width: var(--drag-handle-width, 40px);
+  height: var(--drag-handle-height, 2px);
+  border-radius: 1px;
+  background: var(--drag-handle-color, rgba(255, 255, 255, 0.20));
+  box-shadow: var(--drag-handle-glow, 0 0 8px rgba(255, 255, 255, 0.06));
+}
+
+.mobile-sheet-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-sheet {
+    transition: none !important;
+  }
+}

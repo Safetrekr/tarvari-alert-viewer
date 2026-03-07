@@ -1,0 +1,201 @@
+/* =================================================================
+   Mobile Settings Sheet -- settings-specific styles
+   ================================================================= */
+
+.mobile-settings {
+  padding: 0 var(--space-content-padding, 12px) 24px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-section-gap, 20px);
+}
+
+.mobile-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mobile-settings-section-title {
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.3);
+  padding: 0 0 8px 0;
+  margin: 0;
+}
+
+.mobile-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--touch-target-comfortable, 48px);
+  padding: 0 4px;
+  gap: 12px;
+}
+
+.mobile-settings-row-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.mobile-settings-row-label svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.5;
+}
+
+.mobile-settings-row-value {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Toggle switch */
+.mobile-toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: background 200ms, border-color 200ms;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+
+.mobile-toggle[data-on='true'] {
+  background: rgba(100, 180, 220, 0.25);
+  border-color: rgba(100, 180, 220, 0.4);
+}
+
+.mobile-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transition: transform 200ms;
+}
+
+.mobile-toggle[data-on='true'] .mobile-toggle-knob {
+  transform: translateX(18px);
+  background: rgba(100, 180, 220, 0.9);
+}
+
+/* Segmented control */
+.mobile-segmented {
+  display: flex;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 2px;
+}
+
+.mobile-segmented-option {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: none;
+  background: none;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: background 150ms, color 150ms;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-segmented-option[data-active='true'] {
+  background: rgba(100, 180, 220, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Health indicator */
+.mobile-settings-health-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Logout button */
+.mobile-settings-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: var(--touch-target-comfortable, 48px);
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.06);
+  color: rgba(239, 68, 68, 0.7);
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms;
+  -webkit-tap-highlight-color: transparent;
+  width: 100%;
+}
+
+.mobile-settings-logout:active {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.mobile-settings-confirm {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.mobile-settings-confirm button {
+  flex: 1;
+  height: var(--touch-target-comfortable, 48px);
+  border-radius: 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-settings-confirm-cancel {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.mobile-settings-confirm-yes {
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+  color: rgba(239, 68, 68, 0.8);
+}
+
+/* Divider */
+.mobile-settings-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 4px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-toggle,
+  .mobile-toggle-knob,
+  .mobile-segmented-option {
+    transition: none;
+  }
+}

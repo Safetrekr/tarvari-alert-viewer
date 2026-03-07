@@ -1,0 +1,164 @@
+/* =================================================================
+   Mobile Map View -- map tab layout and filter chips
+   ================================================================= */
+
+.mobile-map-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* -- Filter Chips ------------------------------------------------- */
+
+.mobile-filter-chips {
+  height: var(--space-filter-chips-height, 40px);
+  flex-shrink: 0;
+  background: var(--glass-header-bg, rgba(5, 9, 17, 0.85));
+  backdrop-filter: var(--glass-header-blur, blur(8px) saturate(120%));
+  -webkit-backdrop-filter: var(--glass-header-blur, blur(8px) saturate(120%));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+}
+
+.mobile-filter-chips-scroll {
+  display: flex;
+  align-items: center;
+  gap: var(--space-inline-gap, 8px);
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0 var(--space-content-padding, 12px);
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.mobile-filter-chips-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.45);
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: background 150ms, border-color 150ms, color 150ms;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.mobile-chip[data-active='true'] {
+  background: rgba(var(--chip-color-rgb, 255 255 255) / 0.12);
+  border-color: rgba(var(--chip-color-rgb, 255 255 255) / 0.30);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.mobile-chip-all[data-active='true'] {
+  background: rgba(100, 180, 220, 0.12);
+  border-color: rgba(100, 180, 220, 0.30);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.mobile-chip-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* Scroll fade gradients */
+.mobile-filter-chips::before,
+.mobile-filter-chips::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.mobile-filter-chips::before {
+  left: 0;
+  background: linear-gradient(
+    to right,
+    var(--glass-header-bg, rgba(5, 9, 17, 0.85)),
+    transparent
+  );
+}
+
+.mobile-filter-chips::after {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    var(--glass-header-bg, rgba(5, 9, 17, 0.85)),
+    transparent
+  );
+}
+
+/* -- Map Container ------------------------------------------------ */
+
+.mobile-map-container {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+/* Hide desktop MapNavControls on mobile */
+@media (max-width: 767px) {
+  .mobile-map-container .maplibregl-ctrl-top-left {
+    display: none !important;
+  }
+}
+
+/* -- Floating Controls -------------------------------------------- */
+
+.mobile-map-controls {
+  position: absolute;
+  bottom: var(--space-content-padding, 12px);
+  left: var(--space-content-padding, 12px);
+  right: var(--space-content-padding, 12px);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.mobile-map-controls > * {
+  pointer-events: auto;
+}
+
+/* Geolocate control overrides */
+.mobile-map-container .maplibregl-ctrl-bottom-right {
+  bottom: 56px;
+  right: 8px;
+}
+
+.mobile-map-container .maplibregl-ctrl-geolocate {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--glass-header-bg, rgba(5, 9, 17, 0.85));
+  backdrop-filter: blur(8px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-chip {
+    transition: none;
+  }
+}
