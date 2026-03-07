@@ -1,0 +1,122 @@
+/* =================================================================
+   Mobile Protective Ops -- idle lock overlay + data freshness CSS
+   ================================================================= */
+
+/* -- Idle Lock Overlay --------------------------------------------- */
+
+.mobile-idle-lock-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(5, 9, 17, 0.98);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-content-padding, 12px);
+}
+
+.mobile-idle-lock-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 320px;
+  width: 100%;
+}
+
+.mobile-idle-lock-icon {
+  font-size: 32px;
+  opacity: 0.4;
+}
+
+.mobile-idle-lock-heading {
+  margin: 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.mobile-idle-lock-message {
+  margin: 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.mobile-idle-lock-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.mobile-idle-lock-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  outline: none;
+  text-align: center;
+}
+
+.mobile-idle-lock-input:focus {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.mobile-idle-lock-input[aria-invalid='true'] {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.mobile-idle-lock-error {
+  margin: 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: #ef4444;
+  text-align: center;
+}
+
+.mobile-idle-lock-button {
+  width: 100%;
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.6);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-idle-lock-button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* -- Data Freshness CSS Degradation -------------------------------- */
+
+[data-freshness='stale'] .mobile-content {
+  opacity: 0.85;
+}
+
+[data-freshness='offline'] .mobile-content {
+  opacity: 0.6;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-idle-lock-overlay {
+    animation: none;
+  }
+}

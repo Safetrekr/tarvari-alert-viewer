@@ -161,6 +161,26 @@
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
+
+  /* ==============================================================
+     LANDSCAPE ORIENTATION OVERRIDES
+     Compound query: max-width:767px AND orientation:landscape
+     ============================================================== */
+  @media (orientation: landscape) {
+    :root {
+      /* Layout dimension overrides */
+      --space-header-height: 40px;
+      --space-bottom-nav-height: 48px;
+      --space-content-padding: 8px;
+      --space-card-gap: 8px;
+      --space-section-gap: 12px;
+
+      /* Typography: tighter for reduced vertical space */
+      --text-card-title: 11px;
+      --text-label: 10px;
+      --text-caption: 9px;
+    }
+  }
 }
 
 /* ============================================================

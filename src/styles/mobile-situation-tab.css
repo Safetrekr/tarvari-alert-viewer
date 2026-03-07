@@ -1,0 +1,42 @@
+/* =================================================================
+   Mobile Situation Tab -- landscape layout
+   ================================================================= */
+
+/* Portrait: posture column is a simple vertical flow */
+.mobile-situation-posture-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-section-gap, 16px);
+}
+
+/* =================================================================
+   LANDSCAPE ORIENTATION
+   ================================================================= */
+
+@media (orientation: landscape) {
+  .mobile-situation-tab {
+    display: grid;
+    grid-template-columns: 40% 60%;
+    grid-template-rows: 1fr;
+    gap: var(--space-content-padding, 8px);
+    height: 100%;
+    overflow: hidden;
+    padding-top: 0;
+  }
+
+  .mobile-situation-posture-column {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    padding: var(--space-content-padding, 8px);
+  }
+
+  .mobile-category-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    align-content: start;
+  }
+}

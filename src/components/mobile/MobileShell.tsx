@@ -1,6 +1,7 @@
 'use client'
 
 import '@/styles/mobile-shell.css'
+import '@/styles/mobile-reduced-motion.css'
 
 import { useState, useCallback, useSyncExternalStore } from 'react'
 import { MobileHeader } from './MobileHeader'
@@ -93,6 +94,14 @@ export function MobileShell({
       className="mobile-shell"
       data-orientation={isLandscape ? 'landscape' : 'portrait'}
     >
+      {/* Skip-to-content link (a11y) */}
+      <a
+        href="#mobile-main-content"
+        className="mobile-skip-link"
+      >
+        Skip to content
+      </a>
+
       <ThreatPulseBackground />
       <MobileHeader
         scanLine={<MobileScanLine />}
@@ -100,7 +109,7 @@ export function MobileShell({
         onSearchPress={onSearchPress}
       />
 
-      <main className="mobile-content">
+      <main className="mobile-content" id="mobile-main-content">
         <DataStaleBanner />
         {activeTab === 'situation' && (
           <div id="tab-situation" role="tabpanel">

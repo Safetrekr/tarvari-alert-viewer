@@ -1,0 +1,23 @@
+/* =================================================================
+   Mobile Reduced Motion Overrides (WCAG 2.1 AA SC 2.3.3)
+   Consolidates all mobile animation opt-outs.
+   Individual component CSS files also have local overrides;
+   this file catches any gaps.
+   ================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Global: disable all CSS animations and transitions on mobile components */
+  .mobile-shell *,
+  .mobile-sheet *,
+  .mobile-idle-lock-overlay * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Keep opacity and visibility transitions for functional state changes */
+  .mobile-tab-underline,
+  .mobile-chip {
+    transition: opacity 0.01ms, background 0.01ms, border-color 0.01ms !important;
+  }
+}

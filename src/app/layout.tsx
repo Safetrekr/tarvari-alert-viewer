@@ -20,11 +20,18 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  themeColor: '#050911',
 }
 
 export const metadata: Metadata = {
   title: 'TarvaRI',
   description: 'TarvaRI Intelligence Console',
+  manifest: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/manifest.json`,
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'TarvaRI',
+  },
   icons: {
     icon: [
       { url: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/favicon-32x32.png`, sizes: '32x32', type: 'image/png' },

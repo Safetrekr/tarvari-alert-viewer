@@ -63,3 +63,21 @@
     transition: none !important;
   }
 }
+
+/* =================================================================
+   LANDSCAPE ORIENTATION
+   ================================================================= */
+
+@media (orientation: landscape) {
+  .mobile-sheet {
+    max-height: var(--sheet-landscape-max-height, 60%);
+  }
+
+  .mobile-sheet-handle-zone {
+    height: 20px;
+  }
+
+  .mobile-sheet-scroll {
+    padding: 8px var(--space-content-padding, 8px);
+  }
+}

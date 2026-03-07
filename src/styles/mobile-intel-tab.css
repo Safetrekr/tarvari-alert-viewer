@@ -77,3 +77,45 @@
   border: 1px solid rgba(255, 255, 255, 0.04);
   overflow: hidden;
 }
+
+/* =================================================================
+   LANDSCAPE ORIENTATION
+   ================================================================= */
+
+@media (orientation: landscape) {
+  .mobile-intel-tab {
+    display: grid;
+    grid-template-columns: 45% 55%;
+    grid-template-rows: 1fr;
+    gap: 1px;
+    height: 100%;
+    overflow: hidden;
+    padding-top: 0;
+  }
+
+  /* Search spans full width above the columns */
+  .mobile-intel-search-entry {
+    grid-column: 1 / -1;
+  }
+
+  /* Left column: latest feed, independently scrollable */
+  .mobile-intel-tab > .mobile-intel-section:last-child {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+    order: 1;
+  }
+
+  /* Right column: geographic intelligence, independently scrollable */
+  .mobile-intel-tab > .mobile-intel-section:nth-child(2) {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    order: 2;
+  }
+
+  .mobile-intel-section-title {
+    margin-bottom: 6px;
+  }
+}

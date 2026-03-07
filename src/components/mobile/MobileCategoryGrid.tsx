@@ -43,6 +43,7 @@ export function MobileCategoryGrid() {
 
   return (
     <div
+      className="mobile-category-grid"
       style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',

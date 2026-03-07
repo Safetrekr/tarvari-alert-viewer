@@ -13,7 +13,13 @@ import { MobileCategoryDetail } from '@/components/mobile/MobileCategoryDetail'
 import { MobileAlertDetail } from '@/components/mobile/MobileAlertDetail'
 import { MobileIntelTab } from '@/components/mobile/MobileIntelTab'
 import { MobileSearchOverlay } from '@/components/mobile/MobileSearchOverlay'
+import { MobileIdleLockOverlay } from '@/components/mobile/MobileIdleLockOverlay'
+import { MobileConnectionToast } from '@/components/mobile/MobileConnectionToast'
 import { SHEET_CONFIGS } from '@/lib/interfaces/mobile'
+import { useIdleLock } from '@/hooks/use-idle-lock'
+import { useP1AudioAlert } from '@/hooks/use-p1-audio-alert'
+import { useDataFreshnessMobile } from '@/hooks/use-data-freshness-mobile'
+import { useConnectionToast } from '@/hooks/use-connection-toast'
 import { useCoverageMapData } from '@/hooks/use-coverage-map-data'
 import type { CoverageMapFilters } from '@/hooks/use-coverage-map-data'
 import { useCategoryIntel } from '@/hooks/use-category-intel'
@@ -172,6 +178,12 @@ export default function MobileView() {
 
   const morph = useMobileMorphBridge(handleSwitchToMap)
 
+  // Protective ops hooks
+  const idleLock = useIdleLock()
+  useP1AudioAlert()
+  useDataFreshnessMobile()
+  const connectionToast = useConnectionToast()
+
   // Fetch full intel data for selected alert in category detail
   const categoryIntel = useCategoryIntel(morph.activeCategoryId)
   const selectedAlertItem = useMemo(() => {
@@ -288,6 +300,18 @@ export default function MobileView() {
         isOpen={searchOpen}
         onClose={handleSearchClose}
         onResultTap={handleSearchResultTap}
+      />
+
+      {/* Idle lock overlay (z-60, above everything) */}
+      <MobileIdleLockOverlay
+        isLocked={idleLock.isLocked}
+        onUnlock={idleLock.unlock}
+      />
+
+      {/* Connection restored toast */}
+      <MobileConnectionToast
+        isVisible={connectionToast.isVisible}
+        message={connectionToast.message}
       />
     </>
   )

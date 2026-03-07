@@ -162,3 +162,43 @@
     transition: none;
   }
 }
+
+/* =================================================================
+   LANDSCAPE ORIENTATION
+   ================================================================= */
+
+@media (orientation: landscape) {
+  .mobile-map-tab {
+    flex-direction: row;
+  }
+
+  .mobile-filter-chips {
+    width: 30%;
+    height: 100%;
+    flex-shrink: 0;
+    border-bottom: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .mobile-filter-chips-scroll {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: var(--space-content-padding, 8px);
+    height: 100%;
+  }
+
+  .mobile-filter-chips::before,
+  .mobile-filter-chips::after {
+    display: none;
+  }
+
+  .mobile-chip {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .mobile-map-container {
+    width: 70%;
+  }
+}
