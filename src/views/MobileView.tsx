@@ -9,15 +9,20 @@ import { MobileFilterChips } from '@/components/mobile/MobileFilterChips'
 import { MobileAlertDetailStub } from '@/components/mobile/MobileAlertDetailStub'
 import { MobileSettings } from '@/components/mobile/MobileSettings'
 import { MobileBottomSheet } from '@/components/mobile/MobileBottomSheet'
+import { MobileCategoryDetail } from '@/components/mobile/MobileCategoryDetail'
+import { MobileAlertDetail } from '@/components/mobile/MobileAlertDetail'
 import { SHEET_CONFIGS } from '@/lib/interfaces/mobile'
 import { useCoverageMapData } from '@/hooks/use-coverage-map-data'
 import type { CoverageMapFilters } from '@/hooks/use-coverage-map-data'
+import { useCategoryIntel } from '@/hooks/use-category-intel'
 import { useCoverageStore } from '@/stores/coverage.store'
 import {
   syncCategoriesToUrl,
   timePresetToStartDate,
 } from '@/stores/coverage.store'
 import { MobileStateView } from '@/components/mobile/MobileStateView'
+import { useMobileMorphBridge } from '@/hooks/use-mobile-morph-bridge'
+import type { MobileTab } from '@/lib/interfaces/mobile'
 
 const MobileMapView = dynamic(
   () =>
@@ -27,8 +32,11 @@ const MobileMapView = dynamic(
   { ssr: false },
 )
 
+// ---------------------------------------------------------------------------
+// Map Tab Content
+// ---------------------------------------------------------------------------
+
 function MobileMapTabContent() {
-  // Store state
   const selectedCategories = useCoverageStore((s) => s.selectedCategories)
   const toggleCategory = useCoverageStore((s) => s.toggleCategory)
   const clearSelection = useCoverageStore((s) => s.clearSelection)
@@ -41,14 +49,15 @@ function MobileMapTabContent() {
   const selectMapAlert = useCoverageStore((s) => s.selectMapAlert)
   const clearMapAlert = useCoverageStore((s) => s.clearMapAlert)
 
-  // Build map filters from store state
   const mapFilters = useMemo<CoverageMapFilters>(() => {
     const filters: CoverageMapFilters = {}
     if (selectedCategories.length > 0) {
       filters.categories = selectedCategories
     }
     const startDate =
-      mapTimePreset === 'custom' ? customTimeStart ?? undefined : timePresetToStartDate(mapTimePreset)
+      mapTimePreset === 'custom'
+        ? customTimeStart ?? undefined
+        : timePresetToStartDate(mapTimePreset)
     if (startDate) filters.startDate = startDate
     if (mapTimePreset === 'custom' && customTimeEnd) {
       filters.endDate = customTimeEnd
@@ -59,14 +68,12 @@ function MobileMapTabContent() {
   const mapQuery = useCoverageMapData(mapFilters)
   const displayMarkers = mapQuery.data ?? []
 
-  // Category label for ARIA
   const categoryLabel = useMemo(() => {
     if (selectedCategories.length === 0) return 'All Categories'
     if (selectedCategories.length === 1) return selectedCategories[0]
     return `${selectedCategories.length} categories`
   }, [selectedCategories])
 
-  // Handlers
   const handleFilterToggle = useCallback(
     (categoryId: string) => {
       toggleCategory(categoryId)
@@ -128,7 +135,6 @@ function MobileMapTabContent() {
         />
       )}
 
-      {/* Alert detail bottom sheet */}
       <MobileBottomSheet
         isOpen={!!selectedMapAlertId}
         onDismiss={handleDismissAlert}
@@ -148,8 +154,26 @@ function MobileMapTabContent() {
   )
 }
 
+// ---------------------------------------------------------------------------
+// Main MobileView
+// ---------------------------------------------------------------------------
+
 export default function MobileView() {
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<MobileTab>('situation')
+
+  const handleSwitchToMap = useCallback(() => {
+    setActiveTab('map')
+  }, [])
+
+  const morph = useMobileMorphBridge(handleSwitchToMap)
+
+  // Fetch full intel data for selected alert in category detail
+  const categoryIntel = useCategoryIntel(morph.activeCategoryId)
+  const selectedAlertItem = useMemo(() => {
+    if (!morph.selectedAlertId || !categoryIntel.data) return null
+    return categoryIntel.data.find((item) => item.id === morph.selectedAlertId) ?? null
+  }, [morph.selectedAlertId, categoryIntel.data])
 
   const handleMenuPress = useCallback(() => {
     setSettingsOpen(true)
@@ -159,6 +183,15 @@ export default function MobileView() {
     setSettingsOpen(false)
   }, [])
 
+  // Tab change with morph reset
+  const handleTabChange = useCallback(
+    (tab: MobileTab) => {
+      morph.handleTabChangeWithMorphReset()
+      setActiveTab(tab)
+    },
+    [morph],
+  )
+
   return (
     <>
       <MobileShell
@@ -167,6 +200,42 @@ export default function MobileView() {
         threatIndicator={<MobileThreatIndicator />}
         onMenuPress={handleMenuPress}
       />
+
+      {/* Category detail bottom sheet */}
+      <MobileBottomSheet
+        isOpen={morph.isCategorySheetOpen}
+        onDismiss={morph.dismissCategorySheet}
+        config={SHEET_CONFIGS.categoryDetail}
+        ariaLabel="Category detail"
+        onSnapChange={morph.handleSnapChange}
+      >
+        {morph.activeCategoryId && (
+          <MobileCategoryDetail
+            categoryId={morph.activeCategoryId}
+            onBack={morph.dismissCategorySheet}
+            onAlertTap={morph.handleAlertTap}
+            currentSnap={morph.currentSnap}
+            selectedAlertId={morph.selectedAlertId}
+          />
+        )}
+      </MobileBottomSheet>
+
+      {/* Alert detail bottom sheet (nested from category) */}
+      <MobileBottomSheet
+        isOpen={morph.isAlertSheetOpen}
+        onDismiss={morph.dismissAlertSheet}
+        config={SHEET_CONFIGS.alertDetail}
+        ariaLabel="Alert detail"
+      >
+        {selectedAlertItem && (
+          <MobileAlertDetail
+            item={selectedAlertItem}
+            onShowOnMap={morph.navigateToMap}
+            onViewCategory={morph.navigateToCategory}
+            canShowOnMap
+          />
+        )}
+      </MobileBottomSheet>
 
       {/* Settings bottom sheet */}
       <MobileBottomSheet
