@@ -76,4 +76,10 @@ export const SHEET_CONFIGS = {
     initialSnapIndex: 0,
     dismissible: true,
   },
+  mapFilter: {
+    id: 'map-filter',
+    snapPoints: [70, 95] as const,
+    initialSnapIndex: 0,
+    dismissible: true,
+  },
 } as const satisfies Record<string, BottomSheetConfig>

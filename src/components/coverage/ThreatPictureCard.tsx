@@ -316,8 +316,8 @@ export function ThreatPictureCard({ onClick }: ThreatPictureCardProps) {
           </div>
 
           {/* Region summaries (capped at 3) */}
-          {(summaryAvail?.regions ?? []).slice(0, 3).map((r) => (
-            <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {(summaryAvail?.regions ?? []).slice(0, 3).map((r, i) => (
+            <div key={`${r.key}-${r.type}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 10, flexShrink: 0 }} />
               <span style={{ ...MONO, fontSize: 9, color: 'rgba(255, 255, 255, 0.25)', flex: 1 }}>
                 {r.key}

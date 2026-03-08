@@ -18,7 +18,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import type { ViewMode } from '@/lib/interfaces/intel-bundles'
 import { DEFAULT_VIEW_MODE } from '@/lib/interfaces/intel-bundles'
-import { PRIORITY_LEVELS, type OperationalPriority, type GeoLevel, type SummaryType, isValidGeoRegionKey } from '@/lib/interfaces/coverage'
+import { PRIORITY_LEVELS, SEVERITY_LEVELS, type OperationalPriority, type SeverityLevel, type GeoLevel, type SummaryType, isValidGeoRegionKey } from '@/lib/interfaces/coverage'
 import { useCameraStore } from '@/stores/camera.store'
 import { useUIStore } from '@/stores/ui.store'
 
@@ -102,6 +102,8 @@ interface CoverageState {
   summaryGeoKey: string
   /** Whether to display hourly delta summaries or daily comprehensive brief. */
   summaryType: SummaryType
+  /** Currently selected severity levels for map filtering. Empty = show all. */
+  selectedSeverities: SeverityLevel[]
   /** Source filter for district view (null = all sources). */
   districtSourceFilter: string | null
   /** Whether bounding-box viewport filtering is enabled in district view. */
@@ -145,6 +147,10 @@ interface CoverageActions {
   drillDownGeo: (level: GeoLevel, key: string) => void
   /** Set the summary type (hourly or daily). */
   setSummaryType: (type: SummaryType) => void
+  /** Toggle a severity level in the filter set. */
+  toggleSeverity: (severity: SeverityLevel) => void
+  /** Clear all severity filters (show all). */
+  clearSeverities: () => void
   /** Set the source filter for district view. null = no filter. */
   setDistrictSourceFilter: (sourceKey: string | null) => void
   /** Toggle bounding-box viewport filtering in district view. */
@@ -178,6 +184,7 @@ export const useCoverageStore = create<CoverageStore>()(
     summaryGeoLevel: 'world' as GeoLevel,
     summaryGeoKey: 'world',
     summaryType: 'daily' as SummaryType,
+    selectedSeverities: [],
     districtSourceFilter: null,
     districtBboxEnabled: false,
 
@@ -302,6 +309,22 @@ export const useCoverageStore = create<CoverageStore>()(
         state.summaryType = type
       }),
 
+    toggleSeverity: (severity) =>
+      set((state) => {
+        if (!(SEVERITY_LEVELS as readonly string[]).includes(severity)) return
+        const idx = state.selectedSeverities.indexOf(severity)
+        if (idx >= 0) {
+          state.selectedSeverities.splice(idx, 1)
+        } else {
+          state.selectedSeverities.push(severity)
+        }
+      }),
+
+    clearSeverities: () =>
+      set((state) => {
+        state.selectedSeverities = []
+      }),
+
     setDistrictSourceFilter: (sourceKey) =>
       set((state) => {
         state.districtSourceFilter = sourceKey
@@ -357,6 +380,12 @@ export const coverageSelectors = {
 
   /** The current summary type (hourly or daily). */
   summaryType: (state: CoverageStore): SummaryType => state.summaryType,
+
+  /** Whether any severity filter is active. */
+  hasSeveritySelection: (state: CoverageStore): boolean => state.selectedSeverities.length > 0,
+
+  /** The selected severity levels. */
+  selectedSeverities: (state: CoverageStore): SeverityLevel[] => state.selectedSeverities,
 
   /** Whether any district-scoped filter is active. */
   hasDistrictFilter: (state: CoverageStore): boolean =>

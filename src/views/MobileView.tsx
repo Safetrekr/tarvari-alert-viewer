@@ -5,9 +5,8 @@ import dynamic from 'next/dynamic'
 import { MobileShell } from '@/components/mobile/MobileShell'
 import { MobileSituationTab } from '@/components/mobile/MobileSituationTab'
 import { MobileThreatIndicator } from '@/components/mobile/MobileThreatIndicator'
-import { MobileFilterChips } from '@/components/mobile/MobileFilterChips'
 import { MobileViewModeToggle } from '@/components/mobile/MobileViewModeToggle'
-import { MobileTimeRangeSheet } from '@/components/mobile/MobileTimeRangeSheet'
+import { MobileMapFilterSheet } from '@/components/mobile/MobileMapFilterSheet'
 import { MobileSettings } from '@/components/mobile/MobileSettings'
 import { MobileBottomSheet } from '@/components/mobile/MobileBottomSheet'
 import { MobileCategoryDetail } from '@/components/mobile/MobileCategoryDetail'
@@ -51,15 +50,14 @@ const MobileMapView = dynamic(
 // Map Tab Content
 // ---------------------------------------------------------------------------
 
-function MobileMapTabContent({ onTimeChipTap }: { onTimeChipTap: () => void }) {
+function MobileMapTabContent({ onFilterTap }: { onFilterTap: () => void }) {
   const selectedCategories = useCoverageStore((s) => s.selectedCategories)
-  const toggleCategory = useCoverageStore((s) => s.toggleCategory)
-  const clearSelection = useCoverageStore((s) => s.clearSelection)
   const viewMode = useCoverageStore((s) => s.viewMode)
   const setViewMode = useCoverageStore((s) => s.setViewMode)
   const mapTimePreset = useCoverageStore((s) => s.mapTimePreset)
   const customTimeStart = useCoverageStore((s) => s.customTimeStart)
   const customTimeEnd = useCoverageStore((s) => s.customTimeEnd)
+  const selectedSeverities = useCoverageStore((s) => s.selectedSeverities)
   const selectedMapAlertId = useCoverageStore((s) => s.selectedMapAlertId)
   const selectedMapAlertBasic = useCoverageStore((s) => s.selectedMapAlertBasic)
   const selectedMapAlertCategory = useCoverageStore((s) => s.selectedMapAlertCategory)
@@ -83,7 +81,22 @@ function MobileMapTabContent({ onTimeChipTap }: { onTimeChipTap: () => void }) {
   }, [selectedCategories, mapTimePreset, customTimeStart, customTimeEnd])
 
   const mapQuery = useCoverageMapData(mapFilters)
-  const displayMarkers = mapQuery.data ?? []
+
+  // Client-side severity filtering
+  const displayMarkers = useMemo(() => {
+    const markers = mapQuery.data ?? []
+    if (selectedSeverities.length === 0) return markers
+    return markers.filter((m) => selectedSeverities.includes(m.severity as import('@/lib/interfaces/coverage').SeverityLevel))
+  }, [mapQuery.data, selectedSeverities])
+
+  // Active filter count by dimension (0-3)
+  const activeFilterCount = useMemo(() => {
+    let count = 0
+    if (mapTimePreset !== 'all') count++
+    if (selectedSeverities.length > 0) count++
+    if (selectedCategories.length > 0) count++
+    return count
+  }, [mapTimePreset, selectedSeverities, selectedCategories])
 
   // Fetch full intel for the selected map alert's category
   const mapAlertIntel = useCategoryIntel(selectedMapAlertCategory)
@@ -121,20 +134,6 @@ function MobileMapTabContent({ onTimeChipTap }: { onTimeChipTap: () => void }) {
     return `${selectedCategories.length} categories`
   }, [selectedCategories])
 
-  const handleFilterToggle = useCallback(
-    (categoryId: string) => {
-      toggleCategory(categoryId)
-      const fresh = useCoverageStore.getState().selectedCategories
-      syncCategoriesToUrl(fresh)
-    },
-    [toggleCategory],
-  )
-
-  const handleClearAll = useCallback(() => {
-    clearSelection()
-    syncCategoriesToUrl([])
-  }, [clearSelection])
-
   const handleMarkerTap = useCallback(
     (markerId: string) => {
       const marker = displayMarkers.find((m) => m.id === markerId)
@@ -166,13 +165,6 @@ function MobileMapTabContent({ onTimeChipTap }: { onTimeChipTap: () => void }) {
   return (
     <div className="mobile-map-tab">
       <MobileViewModeToggle value={viewMode} onChange={setViewMode} />
-      <MobileFilterChips
-        selectedCategories={selectedCategories}
-        onToggle={handleFilterToggle}
-        onClearAll={handleClearAll}
-        timePreset={mapTimePreset}
-        onTimeTap={onTimeChipTap}
-      />
       <MobileStateView query={mapQuery} emptyMessage="No geo-located alerts" />
       {mapQuery.isSuccess && (
         <MobileMapView
@@ -182,6 +174,8 @@ function MobileMapTabContent({ onTimeChipTap }: { onTimeChipTap: () => void }) {
           onMarkerTap={handleMarkerTap}
           onInspect={handleInspect}
           categoryLabel={categoryLabel}
+          activeFilterCount={activeFilterCount}
+          onFilterTap={onFilterTap}
         />
       )}
 
@@ -212,7 +206,7 @@ export default function MobileView() {
   const [directAlertItem, setDirectAlertItem] = useState<CategoryIntelItem | null>(null)
   const [threatPostureOpen, setThreatPostureOpen] = useState(false)
   const [regionDetail, setRegionDetail] = useState<GeoSummary | null>(null)
-  const [timeRangeSheetOpen, setTimeRangeSheetOpen] = useState(false)
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
   const [selectedBundleId, setSelectedBundleId] = useState<string | null>(null)
   const [priorityFeedSheetOpen, setPriorityFeedSheetOpen] = useState(false)
 
@@ -256,16 +250,38 @@ export default function MobileView() {
     setSearchOpen(false)
   }, [])
 
-  // Time range sheet
+  // Filter sheet store reads
   const mapTimePreset = useCoverageStore((s) => s.mapTimePreset)
   const customTimeStart = useCoverageStore((s) => s.customTimeStart)
   const customTimeEnd = useCoverageStore((s) => s.customTimeEnd)
   const setMapTimePreset = useCoverageStore((s) => s.setMapTimePreset)
   const setCustomTimeRange = useCoverageStore((s) => s.setCustomTimeRange)
+  const selectedSeverities = useCoverageStore((s) => s.selectedSeverities)
+  const toggleSeverity = useCoverageStore((s) => s.toggleSeverity)
+  const selectedCategories = useCoverageStore((s) => s.selectedCategories)
+  const toggleCategory = useCoverageStore((s) => s.toggleCategory)
+  const clearSelection = useCoverageStore((s) => s.clearSelection)
+  const clearSeverities = useCoverageStore((s) => s.clearSeverities)
 
-  const handleTimeChipTap = useCallback(() => {
-    setTimeRangeSheetOpen(true)
+  const handleFilterTap = useCallback(() => {
+    setFilterSheetOpen(true)
   }, [])
+
+  const handleResetAllFilters = useCallback(() => {
+    clearSelection()
+    clearSeverities()
+    setMapTimePreset('all' as import('@/stores/coverage.store').TimePreset)
+    syncCategoriesToUrl([])
+  }, [clearSelection, clearSeverities, setMapTimePreset])
+
+  const handleToggleCategory = useCallback(
+    (categoryId: string) => {
+      toggleCategory(categoryId)
+      const fresh = useCoverageStore.getState().selectedCategories
+      syncCategoriesToUrl(fresh)
+    },
+    [toggleCategory],
+  )
 
   const handleBundleTap = useCallback((bundleId: string) => {
     setSelectedBundleId(bundleId)
@@ -350,7 +366,7 @@ export default function MobileView() {
     <>
       <MobileShell
         situationContent={<MobileSituationTab onAlertTap={handleSituationAlertTap} onThreatBannerTap={handleThreatBannerTap} onBundleTap={handleBundleTap} onExpandPriorityFeed={handleExpandPriorityFeed} />}
-        mapContent={<MobileMapTabContent onTimeChipTap={handleTimeChipTap} />}
+        mapContent={<MobileMapTabContent onFilterTap={handleFilterTap} />}
         intelContent={
           <MobileIntelTab
             onAlertTap={handleIntelAlertTap}
@@ -445,20 +461,25 @@ export default function MobileView() {
         {selectedBundleId && <MobileBundleDetail bundleId={selectedBundleId} />}
       </MobileBottomSheet>
 
-      {/* Time range filter bottom sheet */}
+      {/* Unified map filter bottom sheet */}
       <MobileBottomSheet
-        isOpen={timeRangeSheetOpen}
-        onDismiss={() => setTimeRangeSheetOpen(false)}
-        config={SHEET_CONFIGS.filterTimeRange}
-        ariaLabel="Time range filter"
+        isOpen={filterSheetOpen}
+        onDismiss={() => setFilterSheetOpen(false)}
+        config={SHEET_CONFIGS.mapFilter}
+        ariaLabel="Map filters"
       >
-        <MobileTimeRangeSheet
-          value={mapTimePreset}
-          customStart={customTimeStart}
-          customEnd={customTimeEnd}
-          onPresetChange={setMapTimePreset}
-          onCustomChange={setCustomTimeRange}
-          onDismiss={() => setTimeRangeSheetOpen(false)}
+        <MobileMapFilterSheet
+          timePreset={mapTimePreset}
+          customTimeStart={customTimeStart}
+          customTimeEnd={customTimeEnd}
+          onTimePresetChange={setMapTimePreset}
+          onCustomTimeChange={setCustomTimeRange}
+          selectedSeverities={selectedSeverities}
+          onToggleSeverity={toggleSeverity}
+          selectedCategories={selectedCategories}
+          onToggleCategory={handleToggleCategory}
+          onResetAll={handleResetAllFilters}
+          onDismiss={() => setFilterSheetOpen(false)}
         />
       </MobileBottomSheet>
 

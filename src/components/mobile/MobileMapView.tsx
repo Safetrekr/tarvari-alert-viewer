@@ -5,6 +5,7 @@ import '@/styles/mobile-map-view.css'
 import { useRef, useEffect } from 'react'
 import { CoverageMap } from '@/components/coverage/CoverageMap'
 import { MobileMapLegend } from '@/components/mobile/MobileMapLegend'
+import { MobileMapFilterButton } from '@/components/mobile/MobileMapFilterButton'
 import type { MapMarker } from '@/lib/coverage-utils'
 import type { MapRef } from 'react-map-gl/maplibre'
 import maplibregl from 'maplibre-gl'
@@ -20,6 +21,8 @@ export interface MobileMapViewProps {
     basic: { title: string; severity: string; ingestedAt: string },
   ) => void
   readonly categoryLabel?: string
+  readonly activeFilterCount?: number
+  readonly onFilterTap?: () => void
 }
 
 export function MobileMapView({
@@ -29,6 +32,8 @@ export function MobileMapView({
   onMarkerTap,
   onInspect,
   categoryLabel = 'All Categories',
+  activeFilterCount = 0,
+  onFilterTap,
 }: MobileMapViewProps) {
   const mapRef = useRef<MapRef>(null)
   const geoControlAdded = useRef(false)
@@ -81,6 +86,22 @@ export function MobileMapView({
         selectedMarkerId={selectedMarkerId}
         externalMapRef={mapRef}
       />
+      {onFilterTap && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            zIndex: 10,
+            pointerEvents: 'auto',
+          }}
+        >
+          <MobileMapFilterButton
+            activeFilterCount={activeFilterCount}
+            onTap={onFilterTap}
+          />
+        </div>
+      )}
       <div
         style={{
           position: 'absolute',
