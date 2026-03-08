@@ -164,7 +164,7 @@ export const useCoverageStore = create<CoverageStore>()(
     selectedCategories: [],
     viewMode: DEFAULT_VIEW_MODE,
     selectedBundleId: null,
-    mapTimePreset: 'all',
+    mapTimePreset: '2h',
     customTimeStart: null,
     customTimeEnd: null,
     selectedMapAlertId: null,

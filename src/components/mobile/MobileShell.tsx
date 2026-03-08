@@ -3,7 +3,7 @@
 import '@/styles/mobile-shell.css'
 import '@/styles/mobile-reduced-motion.css'
 
-import { useState, useCallback, useSyncExternalStore } from 'react'
+import { useState, useCallback, useEffect, useSyncExternalStore } from 'react'
 import { MobileHeader } from './MobileHeader'
 import { MobileBottomNav } from './MobileBottomNav'
 import { MobileScanLine } from './MobileScanLine'
@@ -62,6 +62,9 @@ export interface MobileShellProps {
   threatIndicator?: React.ReactNode
   onMenuPress?: () => void
   onSearchPress?: () => void
+  /** When set, programmatically switches to this tab and then calls onTabSwitched. */
+  requestedTab?: MobileTab | null
+  onTabSwitched?: () => void
 }
 
 export function MobileShell({
@@ -71,8 +74,20 @@ export function MobileShell({
   threatIndicator,
   onMenuPress,
   onSearchPress,
+  requestedTab,
+  onTabSwitched,
 }: MobileShellProps) {
   const [activeTab, setActiveTab] = useState<MobileTab>(getInitialTab)
+
+  // Programmatic tab switch from parent
+  useEffect(() => {
+    if (requestedTab && requestedTab !== activeTab) {
+      setActiveTab(requestedTab)
+      onTabSwitched?.()
+    } else if (requestedTab) {
+      onTabSwitched?.()
+    }
+  }, [requestedTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const isLandscape = useSyncExternalStore(
     subscribeLandscape,

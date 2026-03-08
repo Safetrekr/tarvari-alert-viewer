@@ -49,6 +49,7 @@ export function useMobileMorphBridge(
   const setMorphPhase = useUIStore((s) => s.setMorphPhase)
   const selectMapAlert = useCoverageStore((s) => s.selectMapAlert)
   const toggleCategory = useCoverageStore((s) => s.toggleCategory)
+  const clearDistrictFilters = useCoverageStore((s) => s.clearDistrictFilters)
 
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null)
   const [currentSnap, setCurrentSnap] = useState(65) // SHEET_CONFIGS.categoryDetail.initialSnapIndex -> 65%
@@ -81,8 +82,9 @@ export function useMobileMorphBridge(
   }, [morphPhase])
 
   const dismissCategorySheet = useCallback(() => {
+    clearDistrictFilters()
     resetMorph()
-  }, [resetMorph])
+  }, [clearDistrictFilters, resetMorph])
 
   const handleAlertTap = useCallback((alertId: string) => {
     setSelectedAlertId(alertId)

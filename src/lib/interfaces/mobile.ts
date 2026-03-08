@@ -70,4 +70,10 @@ export const SHEET_CONFIGS = {
     initialSnapIndex: 0,
     dismissible: true,
   },
+  bundleDetail: {
+    id: 'bundle-detail',
+    snapPoints: [65, 100] as const,
+    initialSnapIndex: 0,
+    dismissible: true,
+  },
 } as const satisfies Record<string, BottomSheetConfig>

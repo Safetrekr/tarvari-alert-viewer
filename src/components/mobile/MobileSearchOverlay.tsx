@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useIntelSearch, type SearchResult } from '@/hooks/use-intel-search'
 import { getCategoryMeta } from '@/lib/interfaces/coverage'
 import { MobileAlertCard } from './MobileAlertCard'
+import { HighlightedSnippet } from './HighlightedSnippet'
 import type { CategoryIntelItem } from '@/hooks/use-category-intel'
 
 export interface MobileSearchOverlayProps {
@@ -12,7 +13,11 @@ export interface MobileSearchOverlayProps {
   readonly onResultTap?: (item: CategoryIntelItem) => void
 }
 
-function adaptSearchResult(result: SearchResult): CategoryIntelItem {
+interface AdaptedSearchResult extends CategoryIntelItem {
+  snippetHtml: string | null
+}
+
+function adaptSearchResult(result: SearchResult): AdaptedSearchResult {
   return {
     id: result.id,
     title: result.title,
@@ -23,6 +28,7 @@ function adaptSearchResult(result: SearchResult): CategoryIntelItem {
     confidence: null,
     geoScope: null,
     shortSummary: result.snippet.replace(/<[^>]*>/g, ''),
+    snippetHtml: result.snippet,
     ingestedAt: new Date().toISOString(),
     sentAt: null,
     operationalPriority: result.operationalPriority,
@@ -195,11 +201,25 @@ export function MobileSearchOverlay({
         )}
 
         {adaptedResults.map((item) => (
-          <MobileAlertCard
-            key={item.id}
-            item={item}
-            onTap={handleResultTap}
-          />
+          <div key={item.id}>
+            <MobileAlertCard
+              item={item}
+              onTap={handleResultTap}
+            />
+            {item.snippetHtml && (
+              <div style={{ padding: '0 var(--space-content-padding, 12px) 8px' }}>
+                <HighlightedSnippet
+                  html={item.snippetHtml}
+                  style={{
+                    fontFamily: 'var(--font-mono, monospace)',
+                    fontSize: 10,
+                    color: 'rgba(255, 255, 255, 0.35)',
+                    lineHeight: 1.5,
+                  }}
+                />
+              </div>
+            )}
+          </div>
         ))}
       </div>
     </div>

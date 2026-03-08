@@ -4,6 +4,7 @@ import '@/styles/mobile-map-view.css'
 
 import { useRef, useEffect } from 'react'
 import { CoverageMap } from '@/components/coverage/CoverageMap'
+import { MobileMapLegend } from '@/components/mobile/MobileMapLegend'
 import type { MapMarker } from '@/lib/coverage-utils'
 import type { MapRef } from 'react-map-gl/maplibre'
 import maplibregl from 'maplibre-gl'
@@ -80,6 +81,17 @@ export function MobileMapView({
         selectedMarkerId={selectedMarkerId}
         externalMapRef={mapRef}
       />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 12,
+          left: 12,
+          zIndex: 2,
+          pointerEvents: 'auto',
+        }}
+      >
+        <MobileMapLegend />
+      </div>
     </div>
   )
 }

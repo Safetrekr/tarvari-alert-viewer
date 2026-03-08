@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useSettingsStore } from '@/stores/settings.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { useApiHealth } from '@/hooks/use-api-health'
+import { useCoverageMetrics } from '@/hooks/use-coverage-metrics'
 import { SessionTimecode } from '@/components/ambient/session-timecode'
 
 const LOCK_OPTIONS = [
@@ -60,6 +61,7 @@ export function MobileSettings() {
   const sessionKey = useAuthStore((s) => s.sessionKey)
 
   const health = useApiHealth()
+  const metricsQuery = useCoverageMetrics()
 
   const handleLogout = useCallback(() => {
     logout()
@@ -153,6 +155,94 @@ export function MobileSettings() {
             <span className="mobile-settings-row-value">{health.label}</span>
           </div>
         </div>
+
+        {health.secondsSinceLastUpdate != null && (
+          <div className="mobile-settings-row">
+            <span className="mobile-settings-row-label">Last Update</span>
+            <span className="mobile-settings-row-value">
+              {health.secondsSinceLastUpdate < 60
+                ? `${health.secondsSinceLastUpdate}s ago`
+                : `${Math.floor(health.secondsSinceLastUpdate / 60)}m ago`}
+            </span>
+          </div>
+        )}
+
+        {metricsQuery.data && (
+          <>
+            <div className="mobile-settings-row">
+              <span className="mobile-settings-row-label">Sources</span>
+              <span className="mobile-settings-row-value">
+                {metricsQuery.data.activeSources}/{metricsQuery.data.totalSources} active
+              </span>
+            </div>
+            <div className="mobile-settings-row">
+              <span className="mobile-settings-row-label">Categories</span>
+              <span className="mobile-settings-row-value">
+                {metricsQuery.data.categoriesCovered}
+              </span>
+            </div>
+            <div className="mobile-settings-row">
+              <span className="mobile-settings-row-label">Total Alerts</span>
+              <span className="mobile-settings-row-value">
+                {metricsQuery.data.totalAlerts}
+              </span>
+            </div>
+            {metricsQuery.data.byCategory.length > 0 && (
+              <div className="mobile-settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
+                <span className="mobile-settings-row-label">Severity</span>
+                <div
+                  style={{
+                    display: 'flex',
+                    height: 4,
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    background: 'rgba(255,255,255,0.04)',
+                  }}
+                >
+                  {(() => {
+                    const dist: Record<string, number> = {}
+                    for (const cat of metricsQuery.data!.byCategory) {
+                      // We only have alert counts per category, not severity breakdown
+                      // Show a proportional bar by alert count per category
+                      if (cat.p1Count > 0) dist['p1'] = (dist['p1'] ?? 0) + cat.p1Count
+                      if (cat.p2Count > 0) dist['p2'] = (dist['p2'] ?? 0) + cat.p2Count
+                      const rest = cat.alertCount - cat.p1Count - cat.p2Count
+                      if (rest > 0) dist['other'] = (dist['other'] ?? 0) + rest
+                    }
+                    const entries = [
+                      { key: 'p1', color: '#ef4444', count: dist['p1'] ?? 0 },
+                      { key: 'p2', color: '#f97316', count: dist['p2'] ?? 0 },
+                      { key: 'other', color: '#3b82f6', count: dist['other'] ?? 0 },
+                    ].filter((e) => e.count > 0)
+                    return entries.map((e) => (
+                      <div key={e.key} style={{ flex: e.count, background: e.color }} />
+                    ))
+                  })()}
+                </div>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-start' }}>
+                  {[
+                    { label: 'P1', color: '#ef4444' },
+                    { label: 'P2', color: '#f97316' },
+                    { label: 'Other', color: '#3b82f6' },
+                  ].map((item) => (
+                    <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: item.color }} />
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-mono, monospace)',
+                          fontSize: 9,
+                          color: 'rgba(255,255,255,0.3)',
+                        }}
+                      >
+                        {item.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </section>
 
       <div className="mobile-settings-divider" />

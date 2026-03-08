@@ -6,10 +6,14 @@ import { MobileShell } from '@/components/mobile/MobileShell'
 import { MobileSituationTab } from '@/components/mobile/MobileSituationTab'
 import { MobileThreatIndicator } from '@/components/mobile/MobileThreatIndicator'
 import { MobileFilterChips } from '@/components/mobile/MobileFilterChips'
+import { MobileViewModeToggle } from '@/components/mobile/MobileViewModeToggle'
+import { MobileTimeRangeSheet } from '@/components/mobile/MobileTimeRangeSheet'
 import { MobileSettings } from '@/components/mobile/MobileSettings'
 import { MobileBottomSheet } from '@/components/mobile/MobileBottomSheet'
 import { MobileCategoryDetail } from '@/components/mobile/MobileCategoryDetail'
 import { MobileAlertDetail } from '@/components/mobile/MobileAlertDetail'
+import { MobileBundleDetail } from '@/components/mobile/MobileBundleDetail'
+import { MobilePriorityFeedSheet } from '@/components/mobile/MobilePriorityFeedSheet'
 import { MobileIntelTab } from '@/components/mobile/MobileIntelTab'
 import { MobileThreatPostureDetail } from '@/components/mobile/MobileThreatPostureDetail'
 import { MobileRegionDetail } from '@/components/mobile/MobileRegionDetail'
@@ -47,10 +51,12 @@ const MobileMapView = dynamic(
 // Map Tab Content
 // ---------------------------------------------------------------------------
 
-function MobileMapTabContent() {
+function MobileMapTabContent({ onTimeChipTap }: { onTimeChipTap: () => void }) {
   const selectedCategories = useCoverageStore((s) => s.selectedCategories)
   const toggleCategory = useCoverageStore((s) => s.toggleCategory)
   const clearSelection = useCoverageStore((s) => s.clearSelection)
+  const viewMode = useCoverageStore((s) => s.viewMode)
+  const setViewMode = useCoverageStore((s) => s.setViewMode)
   const mapTimePreset = useCoverageStore((s) => s.mapTimePreset)
   const customTimeStart = useCoverageStore((s) => s.customTimeStart)
   const customTimeEnd = useCoverageStore((s) => s.customTimeEnd)
@@ -159,10 +165,13 @@ function MobileMapTabContent() {
 
   return (
     <div className="mobile-map-tab">
+      <MobileViewModeToggle value={viewMode} onChange={setViewMode} />
       <MobileFilterChips
         selectedCategories={selectedCategories}
         onToggle={handleFilterToggle}
         onClearAll={handleClearAll}
+        timePreset={mapTimePreset}
+        onTimeTap={onTimeChipTap}
       />
       <MobileStateView query={mapQuery} emptyMessage="No geo-located alerts" />
       {mapQuery.isSuccess && (
@@ -203,7 +212,11 @@ export default function MobileView() {
   const [directAlertItem, setDirectAlertItem] = useState<CategoryIntelItem | null>(null)
   const [threatPostureOpen, setThreatPostureOpen] = useState(false)
   const [regionDetail, setRegionDetail] = useState<GeoSummary | null>(null)
+  const [timeRangeSheetOpen, setTimeRangeSheetOpen] = useState(false)
+  const [selectedBundleId, setSelectedBundleId] = useState<string | null>(null)
+  const [priorityFeedSheetOpen, setPriorityFeedSheetOpen] = useState(false)
 
+  const [pendingSwitchToMap, setPendingSwitchToMap] = useState(false)
   const morph = useMobileMorphBridge()
 
   // Protective ops hooks
@@ -242,6 +255,47 @@ export default function MobileView() {
   const handleSearchClose = useCallback(() => {
     setSearchOpen(false)
   }, [])
+
+  // Time range sheet
+  const mapTimePreset = useCoverageStore((s) => s.mapTimePreset)
+  const customTimeStart = useCoverageStore((s) => s.customTimeStart)
+  const customTimeEnd = useCoverageStore((s) => s.customTimeEnd)
+  const setMapTimePreset = useCoverageStore((s) => s.setMapTimePreset)
+  const setCustomTimeRange = useCoverageStore((s) => s.setCustomTimeRange)
+
+  const handleTimeChipTap = useCallback(() => {
+    setTimeRangeSheetOpen(true)
+  }, [])
+
+  const handleBundleTap = useCallback((bundleId: string) => {
+    setSelectedBundleId(bundleId)
+  }, [])
+
+  const handleExpandPriorityFeed = useCallback(() => {
+    setPriorityFeedSheetOpen(true)
+  }, [])
+
+  const handlePriorityFeedAlertTap = useCallback(
+    (item: CategoryIntelItem) => {
+      setDirectAlertItem(item)
+      setPriorityFeedSheetOpen(false)
+    },
+    [],
+  )
+
+  // Category detail "View on Map" — pre-filter map to this category and switch to map tab
+  const handleViewCategoryOnMap = useCallback(
+    (categoryId: string) => {
+      const current = useCoverageStore.getState().selectedCategories
+      if (!current.includes(categoryId)) {
+        useCoverageStore.getState().toggleCategory(categoryId)
+        syncCategoriesToUrl([...current, categoryId])
+      }
+      morph.dismissCategorySheet()
+      setPendingSwitchToMap(true)
+    },
+    [morph],
+  )
 
   const handleThreatBannerTap = useCallback(() => {
     setThreatPostureOpen(true)
@@ -295,8 +349,8 @@ export default function MobileView() {
   return (
     <>
       <MobileShell
-        situationContent={<MobileSituationTab onAlertTap={handleSituationAlertTap} onThreatBannerTap={handleThreatBannerTap} />}
-        mapContent={<MobileMapTabContent />}
+        situationContent={<MobileSituationTab onAlertTap={handleSituationAlertTap} onThreatBannerTap={handleThreatBannerTap} onBundleTap={handleBundleTap} onExpandPriorityFeed={handleExpandPriorityFeed} />}
+        mapContent={<MobileMapTabContent onTimeChipTap={handleTimeChipTap} />}
         intelContent={
           <MobileIntelTab
             onAlertTap={handleIntelAlertTap}
@@ -307,6 +361,8 @@ export default function MobileView() {
         threatIndicator={<MobileThreatIndicator />}
         onMenuPress={handleMenuPress}
         onSearchPress={handleSearchOpen}
+        requestedTab={pendingSwitchToMap ? 'map' : null}
+        onTabSwitched={() => setPendingSwitchToMap(false)}
       />
 
       {/* Category detail bottom sheet */}
@@ -324,6 +380,7 @@ export default function MobileView() {
             onAlertTap={morph.handleAlertTap}
             currentSnap={morph.currentSnap}
             selectedAlertId={morph.selectedAlertId}
+            onViewOnMap={handleViewCategoryOnMap}
           />
         )}
       </MobileBottomSheet>
@@ -366,6 +423,43 @@ export default function MobileView() {
         ariaLabel="Region detail"
       >
         {regionDetail && <MobileRegionDetail summary={regionDetail} />}
+      </MobileBottomSheet>
+
+      {/* Priority feed bottom sheet */}
+      <MobileBottomSheet
+        isOpen={priorityFeedSheetOpen}
+        onDismiss={() => setPriorityFeedSheetOpen(false)}
+        config={SHEET_CONFIGS.priorityFeed}
+        ariaLabel="Priority feed"
+      >
+        <MobilePriorityFeedSheet onAlertTap={handlePriorityFeedAlertTap} />
+      </MobileBottomSheet>
+
+      {/* Bundle detail bottom sheet */}
+      <MobileBottomSheet
+        isOpen={!!selectedBundleId}
+        onDismiss={() => setSelectedBundleId(null)}
+        config={SHEET_CONFIGS.bundleDetail}
+        ariaLabel="Bundle detail"
+      >
+        {selectedBundleId && <MobileBundleDetail bundleId={selectedBundleId} />}
+      </MobileBottomSheet>
+
+      {/* Time range filter bottom sheet */}
+      <MobileBottomSheet
+        isOpen={timeRangeSheetOpen}
+        onDismiss={() => setTimeRangeSheetOpen(false)}
+        config={SHEET_CONFIGS.filterTimeRange}
+        ariaLabel="Time range filter"
+      >
+        <MobileTimeRangeSheet
+          value={mapTimePreset}
+          customStart={customTimeStart}
+          customEnd={customTimeEnd}
+          onPresetChange={setMapTimePreset}
+          onCustomChange={setCustomTimeRange}
+          onDismiss={() => setTimeRangeSheetOpen(false)}
+        />
       </MobileBottomSheet>
 
       {/* Settings bottom sheet */}

@@ -1,11 +1,17 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, lazy, Suspense } from 'react'
 import { useCategoryIntel, type CategoryIntelItem } from '@/hooks/use-category-intel'
 import { useCoverageMetrics } from '@/hooks/use-coverage-metrics'
+import { useCoverageMapData } from '@/hooks/use-coverage-map-data'
 import { getCategoryMeta, getCategoryColor } from '@/lib/interfaces/coverage'
 import { MobileAlertCard } from './MobileAlertCard'
 import { MobileStateView } from './MobileStateView'
+import { MobileCategoryFilters } from './MobileCategoryFilters'
+
+const MobileMapView = lazy(() =>
+  import('./MobileMapView').then((m) => ({ default: m.MobileMapView })),
+)
 
 export interface MobileCategoryDetailProps {
   readonly categoryId: string
@@ -13,6 +19,7 @@ export interface MobileCategoryDetailProps {
   readonly onAlertTap: (alertId: string) => void
   readonly currentSnap: number
   readonly selectedAlertId?: string | null
+  readonly onViewOnMap?: (categoryId: string) => void
 }
 
 type SortKey = 'time' | 'severity' | 'priority'
@@ -37,11 +44,19 @@ export function MobileCategoryDetail({
   onAlertTap,
   currentSnap,
   selectedAlertId,
+  onViewOnMap,
 }: MobileCategoryDetailProps) {
   const meta = getCategoryMeta(categoryId)
   const color = getCategoryColor(categoryId)
   const intelQuery = useCategoryIntel(categoryId)
   const metricsQuery = useCoverageMetrics()
+
+  // Category-filtered map data — only fetched when at 100% snap
+  const categoryMapFilters = useMemo(
+    () => (currentSnap >= 100 ? { category: categoryId } : undefined),
+    [categoryId, currentSnap],
+  )
+  const categoryMapQuery = useCoverageMapData(categoryMapFilters)
 
   const [sortBy, setSortBy] = useState<SortKey>('time')
 
@@ -154,6 +169,7 @@ export function MobileCategoryDetail({
           >
             {totalItems} alert{totalItems !== 1 ? 's' : ''}
           </span>
+          <MobileCategoryFilters categoryId={categoryId} />
         </div>
 
         {/* Summary bar -- visible at 35%+ */}
@@ -254,6 +270,92 @@ export function MobileCategoryDetail({
                 />
               ))}
           </div>
+        </div>
+      )}
+
+      {/* Category map -- visible at 100% */}
+      {currentSnap >= 100 && (
+        <div
+          style={{
+            padding: '0 var(--space-content-padding, 12px)',
+            flexShrink: 0,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'var(--font-mono, monospace)',
+              fontSize: 9,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: 'rgba(255,255,255,0.3)',
+              marginBottom: 8,
+            }}
+          >
+            Alert Map
+          </div>
+          <div
+            style={{
+              height: 200,
+              borderRadius: 8,
+              overflow: 'hidden',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}
+          >
+            <Suspense
+              fallback={
+                <div
+                  style={{
+                    height: 200,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(255,255,255,0.02)',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono, monospace)',
+                      fontSize: 10,
+                      color: 'rgba(255,255,255,0.2)',
+                    }}
+                  >
+                    Loading map...
+                  </span>
+                </div>
+              }
+            >
+              <MobileMapView
+                markers={categoryMapQuery.data ?? []}
+                isLoading={categoryMapQuery.isLoading}
+                categoryLabel={meta.displayName}
+              />
+            </Suspense>
+          </div>
+          {onViewOnMap && (
+            <button
+              type="button"
+              onClick={() => onViewOnMap(categoryId)}
+              style={{
+                width: '100%',
+                marginTop: 8,
+                padding: '8px 0',
+                borderRadius: 6,
+                border: '1px solid rgba(100,180,220,0.2)',
+                background: 'rgba(100,180,220,0.06)',
+                color: 'rgba(100,180,220,0.7)',
+                fontFamily: 'var(--font-mono, monospace)',
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              View on Map &rsaquo;
+            </button>
+          )}
         </div>
       )}
 
