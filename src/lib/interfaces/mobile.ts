@@ -82,4 +82,16 @@ export const SHEET_CONFIGS = {
     initialSnapIndex: 0,
     dismissible: true,
   },
+  briefingDetail: {
+    id: 'briefing-detail',
+    snapPoints: [70, 100] as const,
+    initialSnapIndex: 0,
+    dismissible: true,
+  },
+  briefingList: {
+    id: 'briefing-list',
+    snapPoints: [60, 100] as const,
+    initialSnapIndex: 0,
+    dismissible: true,
+  },
 } as const satisfies Record<string, BottomSheetConfig>

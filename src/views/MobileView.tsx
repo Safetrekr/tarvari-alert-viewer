@@ -13,6 +13,8 @@ import { MobileCategoryDetail } from '@/components/mobile/MobileCategoryDetail'
 import { MobileAlertDetail } from '@/components/mobile/MobileAlertDetail'
 import { MobileBundleDetail } from '@/components/mobile/MobileBundleDetail'
 import { MobilePriorityFeedSheet } from '@/components/mobile/MobilePriorityFeedSheet'
+import { MobileBriefingDetail } from '@/components/mobile/MobileBriefingDetail'
+import { MobileBriefingListSheet } from '@/components/mobile/MobileBriefingListSheet'
 import { MobileIntelTab } from '@/components/mobile/MobileIntelTab'
 import { MobileThreatPostureDetail } from '@/components/mobile/MobileThreatPostureDetail'
 import { MobileRegionDetail } from '@/components/mobile/MobileRegionDetail'
@@ -37,6 +39,7 @@ import { MobileStateView } from '@/components/mobile/MobileStateView'
 import { useMobileMorphBridge } from '@/hooks/use-mobile-morph-bridge'
 import type { CategoryIntelItem } from '@/hooks/use-category-intel'
 import type { GeoSummary } from '@/hooks/use-geo-summaries'
+import type { DigestResponse } from '@/lib/interfaces/digest'
 
 const MobileMapView = dynamic(
   () =>
@@ -210,6 +213,8 @@ export default function MobileView() {
   const [selectedBundleId, setSelectedBundleId] = useState<string | null>(null)
   const [priorityFeedSheetOpen, setPriorityFeedSheetOpen] = useState(false)
 
+  const [briefingDigest, setBriefingDigest] = useState<DigestResponse | null>(null)
+  const [briefingListOpen, setBriefingListOpen] = useState(false)
   const [pendingSwitchToMap, setPendingSwitchToMap] = useState(false)
   const morph = useMobileMorphBridge()
 
@@ -299,6 +304,19 @@ export default function MobileView() {
     [],
   )
 
+  const handleBriefingTap = useCallback((digest: DigestResponse) => {
+    setBriefingDigest(digest)
+  }, [])
+
+  const handleViewAllBriefings = useCallback(() => {
+    setBriefingListOpen(true)
+  }, [])
+
+  const handleBriefingListDigestTap = useCallback((digest: DigestResponse) => {
+    setBriefingListOpen(false)
+    setBriefingDigest(digest)
+  }, [])
+
   // Category detail "View on Map" — pre-filter map to this category and switch to map tab
   const handleViewCategoryOnMap = useCallback(
     (categoryId: string) => {
@@ -365,7 +383,7 @@ export default function MobileView() {
   return (
     <>
       <MobileShell
-        situationContent={<MobileSituationTab onAlertTap={handleSituationAlertTap} onThreatBannerTap={handleThreatBannerTap} onBundleTap={handleBundleTap} onExpandPriorityFeed={handleExpandPriorityFeed} />}
+        situationContent={<MobileSituationTab onAlertTap={handleSituationAlertTap} onThreatBannerTap={handleThreatBannerTap} onBundleTap={handleBundleTap} onExpandPriorityFeed={handleExpandPriorityFeed} onBriefingTap={handleBriefingTap} onViewAllBriefings={handleViewAllBriefings} />}
         mapContent={<MobileMapTabContent onFilterTap={handleFilterTap} />}
         intelContent={
           <MobileIntelTab
@@ -481,6 +499,26 @@ export default function MobileView() {
           onResetAll={handleResetAllFilters}
           onDismiss={() => setFilterSheetOpen(false)}
         />
+      </MobileBottomSheet>
+
+      {/* Briefing detail bottom sheet */}
+      <MobileBottomSheet
+        isOpen={!!briefingDigest}
+        onDismiss={() => setBriefingDigest(null)}
+        config={SHEET_CONFIGS.briefingDetail}
+        ariaLabel="Briefing detail"
+      >
+        {briefingDigest && <MobileBriefingDetail digest={briefingDigest} />}
+      </MobileBottomSheet>
+
+      {/* Briefing list bottom sheet */}
+      <MobileBottomSheet
+        isOpen={briefingListOpen}
+        onDismiss={() => setBriefingListOpen(false)}
+        config={SHEET_CONFIGS.briefingList}
+        ariaLabel="All briefings"
+      >
+        <MobileBriefingListSheet onDigestTap={handleBriefingListDigestTap} />
       </MobileBottomSheet>
 
       {/* Settings bottom sheet */}
