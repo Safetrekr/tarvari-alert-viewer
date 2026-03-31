@@ -55,3 +55,12 @@ pnpm-debug.log*
 
 # Vendored @tarva/ui build for CI (committed intentionally)
 !vendor/
+
+# Debug screenshots
+*.png
+
+# Session continuation logs
+*-this-session-is-being-continued-*.txt
+
+# Audit logs
+audit-log/
